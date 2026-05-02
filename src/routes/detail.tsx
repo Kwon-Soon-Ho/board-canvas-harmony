@@ -154,9 +154,9 @@ function DetailWindow() {
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]">
                       <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                             <h4 className="text-sm font-black text-white/40 tracking-widest">상세 업무</h4>
-                             <span className="text-sm font-bold text-white/40">({project.tasks.length})</span>
+                          <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
+                             <h4 className="text-[15px] font-black text-white/40 tracking-widest">상세 업무</h4>
+                             <span className="text-[15px] font-bold text-white/40">({project.tasks.length})</span>
                           </div>
                           {[...project.tasks].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(t => (
                             <div key={t.id} id={`tracker-item-${t.id}`}>
@@ -165,9 +165,9 @@ function DetailWindow() {
                           ))}
                         </div>
                         <div className="space-y-3 pt-8 border-t border-white/10">
-                          <div className="flex items-center justify-between mb-3 pl-1 pr-1">
-                             <h4 className="text-sm font-black text-rose-500/50 tracking-widest">이슈 사항</h4>
-                             <span className="text-sm font-bold text-rose-500/50">({project.issues.length})</span>
+                          <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
+                             <h4 className="text-[15px] font-black text-rose-500/50 tracking-widest">이슈 사항</h4>
+                             <span className="text-[15px] font-bold text-rose-500/50">({project.issues.length})</span>
                           </div>
                           {[...project.issues].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(iss => (
                             <div key={iss.id} id={`tracker-item-${iss.id}`}>
@@ -315,7 +315,7 @@ function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActiv
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{issue.startDate.slice(5)}</span>
-              <span className={`text-lg font-bold truncate text-left text-white/90 ${issue.resolved ? 'line-through text-white/30' : ''}`}>{issue.title}</span>
+              <span className={`text-lg font-bold truncate text-left ${issue.resolved ? 'text-white/50' : 'text-white/90'}`}>{issue.title}</span>
             </div>
             <span className={`text-sm font-bold px-3 py-1.5 rounded border shrink-0 ${issue.resolved ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
               {issue.status === "Issue" ? "이슈 발생" : "해결됨"}
@@ -492,9 +492,11 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
 
   const allItems = [...tasks, ...issues];
   const minDate = useMemo(() => new Date(Math.min(...allItems.map(t => new Date(t.startDate).getTime()))), [allItems]);
+  const maxDate = useMemo(() => new Date(Math.max(...allItems.map(t => new Date(t.endDate).getTime()))), [allItems]);
   if (isNaN(minDate.getTime())) return <div className="flex h-full items-center justify-center text-white/30 font-bold text-xl">워크 플랜 데이터가 없습니다.</div>;
 
-  const totalDays = viewWeeks * 7;
+  const projectDays = Math.max(0, Math.ceil((maxDate.getTime() - minDate.getTime()) / 86400000)) + 14;
+  const totalDays = Math.max(viewWeeks * 7, projectDays);
   const dayWidth = viewWeeks === 4 ? 90 : viewWeeks === 8 ? 50 : 35; 
   const totalWidth = totalDays * dayWidth;
 
@@ -576,11 +578,14 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
   const durationDays = Math.max(1, Math.ceil((new Date(item.endDate).getTime() - new Date(item.startDate).getTime()) / 86400000));
   
   const progress = isTask ? item.progress : ((item as any).resolved ? 100 : 0);
+  const isResolvedIssue = !isTask && progress === 100;
   
   let gradientClass = "";
   if (isTask) gradientClass = "bg-gradient-to-r from-[#0d3b2f] to-[#147058]";
   else if (progress === 100) gradientClass = "bg-white/90";
   else gradientClass = "bg-gradient-to-r from-red-800 to-red-950";
+
+  const textColor = isResolvedIssue ? "text-black" : "text-[#FFFFFF]";
 
   return (
     <div className="relative h-14 w-full group mb-5">
@@ -591,10 +596,10 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
       >
         <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 1 }} />
         
-        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-[#FFFFFF]">
+        <span className={`relative z-10 text-lg font-black truncate pr-4 drop-shadow-md ${textColor}`}>
           {item.title}
         </span>
-        <span className="relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm bg-black/80 text-[#FFFFFF]">
+        <span className={`relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm ${isResolvedIssue ? 'bg-black/10' : 'bg-black/80'} ${textColor}`}>
           {durationDays} days
         </span>
       </div>
