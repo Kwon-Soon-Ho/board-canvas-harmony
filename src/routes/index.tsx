@@ -35,22 +35,6 @@ function ControlCenter() {
     clearSearch();
   };
 
-  // Department counts: always against full dataset
-  const deptCounts = useMemo(() => {
-    const m: Record<string, number> = { 전체: MOCK_PROJECTS.length };
-    for (const p of MOCK_PROJECTS) m[p.department] = (m[p.department] ?? 0) + 1;
-    return m;
-  }, []);
-  // Status counts: scoped to currently selected department for real-time sync
-  const statusCounts = useMemo(() => {
-    const m = { 진행: 0, 상시: 0, 대기: 0, 완료: 0 } as Record<Status, number>;
-    for (const p of MOCK_PROJECTS) {
-      if (dept !== "전체" && p.department !== dept) continue;
-      m[p.status] += 1;
-    }
-    return m;
-  }, [dept]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return MOCK_PROJECTS.filter((p) => {
@@ -105,8 +89,6 @@ function ControlCenter() {
           setDeptRaw("전체");
           setStatuses(new Set());
         }}
-        deptCounts={deptCounts}
-        statusCounts={statusCounts}
       />
 
       <main className="mx-auto max-w-[1600px] px-10 py-12">

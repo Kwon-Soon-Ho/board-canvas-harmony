@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { DEPT_COLOR, type Department, type Status } from "@/lib/mockProjects";
+import { useEffect, useMemo, useState } from "react";
+import {
+  DEPT_COLOR,
+  MOCK_PROJECTS,
+  type Department,
+  type Status,
+} from "@/lib/mockProjects";
 
 const DEPARTMENTS: Array<Department | "전체"> = ["전체", "공통", "영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -13,8 +18,6 @@ interface Props {
   setSearchValue: (v: string) => void;
   onSubmitSearch: (v: string) => void;
   onClearAll: () => void;
-  deptCounts: Record<string, number>;
-  statusCounts: Record<Status, number>;
 }
 
 export function FilterBar({
@@ -26,8 +29,6 @@ export function FilterBar({
   setSearchValue,
   onSubmitSearch,
   onClearAll,
-  deptCounts,
-  statusCounts,
 }: Props) {
   const [local, setLocal] = useState(searchValue);
 
@@ -41,10 +42,33 @@ export function FilterBar({
     onClearAll();
   };
 
+  // Department counts: always against full dataset
+  const deptCounts = useMemo(() => {
+    const m: Record<string, number> = { 전체: MOCK_PROJECTS.length };
+    for (const p of MOCK_PROJECTS) m[p.department] = (m[p.department] ?? 0) + 1;
+    return m;
+  }, []);
+
+  // STATUS SYNC LOGIC (CRITICAL):
+  // Status counts are DERIVED from the selected Department.
+  // Filter mockProjects by active dept first, THEN count statuses.
+  const statusCounts = useMemo(() => {
+    const base =
+      dept === "전체"
+        ? MOCK_PROJECTS
+        : MOCK_PROJECTS.filter((p) => p.department === dept);
+
+    const m = { 진행: 0, 상시: 0, 대기: 0, 완료: 0 } as Record<Status, number>;
+    for (const p of base) {
+      m[p.status] += 1;
+    }
+    return m;
+  }, [dept]);
+
   return (
-    <div className="sticky top-16 z-40 border-b border-white/10 bg-black/75 backdrop-blur-2xl">
+    <div className="sticky top-16 z-40 border-b border-white/10 bg-black/70 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-10 gap-y-5 px-10 py-6">
-        {/* Department */}
+        {/* Department — LEFT side */}
         <div className="flex items-center gap-4">
           <span className="text-[16px] font-medium text-gray-300">부서</span>
           <div className="flex items-center gap-2">
@@ -78,7 +102,7 @@ export function FilterBar({
 
         <div className="h-9 w-px bg-white/10" />
 
-        {/* Status — visually emphasized (larger than dept chips) */}
+        {/* Status — RIGHT side, 1.2x larger than Department cards */}
         <div className="flex items-center gap-4">
           <span className="text-[18px] font-semibold text-gray-300">상태</span>
           <div className="flex items-center gap-2.5">

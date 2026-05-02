@@ -22,6 +22,16 @@ function DetailWindow() {
     id ? MOCK_PROJECTS.find((p) => p.id === id) ?? null : null,
   );
 
+  // Force Window B to fullscreen maximize on mount
+  useEffect(() => {
+    try {
+      window.moveTo(0, 0);
+      window.resizeTo(screen.availWidth, screen.availHeight);
+    } catch {
+      /* popup security restrictions — silent fallback */
+    }
+  }, []);
+
   useEffect(() => {
     const ch = getSyncChannel();
     if (!ch) return;

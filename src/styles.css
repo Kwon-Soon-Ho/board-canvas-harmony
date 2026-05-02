@@ -96,19 +96,13 @@
   }
 }
 
-/* ── Project card hover (1.3x scale, isolated — outer wrapper holds grid slot) ── */
+/* ── Project card hover (scale + shadow handled inline via React state) ── */
 .project-card {
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
               border-color 0.3s ease,
               box-shadow 0.3s ease;
-  transform-origin: center center;
+  transform-origin: center top;
   will-change: transform;
-}
-.project-card:hover {
-  transform: scale(1.3);
-  z-index: 50;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9),
-              0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 /* Subtle scrollbar */

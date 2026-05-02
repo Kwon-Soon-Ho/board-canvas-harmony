@@ -51,70 +51,89 @@ export function ProjectCard({ project, onOpen }: Props) {
   const dday = ddayLabel(project.deadline);
 
   return (
-    // Outer wrapper holds the grid slot at original size.
+    // Outer wrapper holds the grid slot at original size — aspect-video ratio.
     // Inner card is absolute → scaling it does NOT push neighbors.
-    <div className="relative aspect-[16/11]">
-      <button
+    <div className="relative aspect-video">
+      <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        onClick={() => onOpen(project.id)}
-        className="project-card group absolute inset-0 block overflow-hidden rounded-xl border border-white/10 bg-[#0A0A0A] text-left backdrop-blur-md hover:border-white/25"
+        className={`project-card group absolute inset-0 overflow-visible rounded-xl border border-white/10 bg-[#0A0A0A] text-left backdrop-blur-md transition-all duration-300 ${
+          hover
+            ? "z-50 border-white/25 shadow-[0_20px_50px_rgba(0,0,0,0.9)]"
+            : "z-0"
+        }`}
+        style={{
+          transform: hover ? "scale(1.3)" : "scale(1)",
+          transformOrigin: "center top",
+        }}
       >
-        {/* 16:9 visual area — object-contain per spec, blurred fill behind */}
-        <div className="relative aspect-video w-full overflow-hidden bg-black">
-          {seq.map((src, i) => (
-            <div
-              key={src + i}
-              className="absolute inset-0 transition-opacity duration-700 ease-out"
-              style={{ opacity: i === idx ? 1 : 0 }}
-            >
-              {/* blurred backdrop fills the frame for non-16:9 sources */}
+        {/* Clickable thumbnail area */}
+        <button
+          onClick={() => onOpen(project.id)}
+          className="block w-full text-left"
+        >
+          {/* 16:9 visual area — object-contain per spec, blurred fill behind */}
+          <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-black">
+            {seq.map((src, i) => (
               <div
-                aria-hidden
-                className="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-2xl"
-                style={{ backgroundImage: `url(${src})` }}
-              />
-              <img
-                src={src}
-                alt=""
-                loading="lazy"
-                className="relative z-[1] h-full w-full object-contain"
-              />
+                key={src + i}
+                className="absolute inset-0 transition-opacity duration-700 ease-out"
+                style={{ opacity: i === idx ? 1 : 0 }}
+              >
+                {/* blurred backdrop fills the frame for non-16:9 sources */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-2xl"
+                  style={{ backgroundImage: `url(${src})` }}
+                />
+                <img
+                  src={src}
+                  alt=""
+                  loading="lazy"
+                  className="relative z-[1] h-full w-full object-contain"
+                />
+              </div>
+            ))}
+
+            {/* gradient veil for legibility */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-[2]"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.85) 100%)",
+              }}
+            />
+
+            {/* top-left tags */}
+            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2">
+              <StatusTag status={project.status} />
+              <DeptTag dept={project.department} />
             </div>
-          ))}
-
-          {/* gradient veil for legibility */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 z-[2]"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.85) 100%)",
-            }}
-          />
-
-          {/* top-left tags */}
-          <div className="absolute left-3 top-3 z-[3] flex items-center gap-2">
-            <StatusTag status={project.status} />
-            <DeptTag dept={project.department} />
           </div>
-        </div>
 
-        {/* default content: title only */}
-        <div className="px-5 py-4">
-          <h3 className="truncate text-[20px] font-semibold leading-tight text-foreground">
-            {project.title}
-          </h3>
-        </div>
+          {/* default content: title only */}
+          <div className="bg-[#0A0A0A] px-5 py-4">
+            <h3 className="truncate text-[20px] font-semibold leading-tight text-foreground">
+              {project.title}
+            </h3>
+          </div>
+        </button>
 
-        {/* hover-revealed: appears BELOW the title area */}
-        <div className="card-hover-reveal grid grid-rows-[0fr] overflow-hidden transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]">
-          <div className="min-h-0">
-            <div className="space-y-2 border-t border-white/10 px-5 py-4">
+        {/* hover-revealed: positioned ABSOLUTELY below the card, overlapping cards below */}
+        {hover && (
+          <div
+            className="absolute left-0 right-0 z-50 rounded-b-xl border border-t-0 border-white/15 bg-[#0A0A0A]"
+            style={{
+              top: "100%",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.9)",
+            }}
+          >
+            <div className="space-y-2 px-5 py-4">
               {/* PM — bold, +2pt larger than members, subtle white-transparent border */}
               <div className="flex items-center gap-2">
                 <span
-                  className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[24px] font-bold text-foreground"
+                  className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[18px] font-bold text-foreground"
                   style={{ letterSpacing: "-0.01em" }}
                 >
                   {project.pm}
@@ -124,13 +143,13 @@ export function ProjectCard({ project, onOpen }: Props) {
                 </span>
               </div>
 
-              {/* Members — up to 2, then "+n others" */}
+              {/* Members — up to 2, then "+n명" */}
               <div className="text-[16px] text-gray-300">
                 {visibleMembers.join(", ")}
-                {rest > 0 ? ` +${rest} others` : ""}
+                {rest > 0 ? ` +${rest}명` : ""}
               </div>
 
-              {/* Deadline — highest priority */}
+              {/* Deadline — highest priority, bright red, (D-day) format */}
               <div
                 className="text-[18px] font-bold"
                 style={{ color: "#FF3B30" }}
@@ -142,8 +161,8 @@ export function ProjectCard({ project, onOpen }: Props) {
               </div>
             </div>
           </div>
-        </div>
-      </button>
+        )}
+      </div>
     </div>
   );
 }
