@@ -106,7 +106,7 @@ function ControlCenter() {
             조건에 맞는 프로젝트가 없습니다.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-10 px-2 pb-24 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-12 gap-y-16 px-2 pb-24 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
               <ProjectCard key={p.id} project={p} onOpen={handleOpen} />
             ))}

@@ -9,6 +9,13 @@ import {
 const DEPARTMENTS: Array<Department | "전체"> = ["전체", "공통", "영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
 
+const STATUS_COLOR_VAR: Record<Status, string> = {
+  진행: "var(--status-active)",
+  상시: "var(--status-ongoing)",
+  대기: "var(--status-pending)",
+  완료: "var(--status-done)",
+};
+
 interface Props {
   dept: Department | "전체";
   setDept: (d: Department | "전체") => void;
@@ -77,15 +84,21 @@ export function FilterBar({
               const count = deptCounts[d] ?? 0;
               const color = d === "전체" ? "#FFFFFF" : DEPT_COLOR[d];
               return (
-                <button
-                  key={d}
-                  onClick={() => setDept(d)}
-                  className={`group flex items-center gap-2 rounded-lg border px-5 py-2.5 text-[16px] font-medium transition-all ${
-                    active
-                      ? "border-white/30 bg-white/15 text-foreground"
-                      : "border-white/10 bg-[#1A1A1A] text-gray-300 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
-                  }`}
-                >
+                 <button
+                 key={d}
+                 onClick={() => setDept(d)}
+                 style={{
+                   background: active
+                     ? `linear-gradient(to bottom, ${color}33, ${color}11)`
+                     : undefined,
+                   borderColor: active ? `${color}66` : undefined,
+                 }}
+                 className={`group flex items-center gap-2 rounded-lg border px-5 py-2.5 text-[16px] font-medium transition-all ${
+                   active
+                     ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                     : "border-white/10 bg-[#1A1A1A] text-gray-300 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
+                 }`}
+               >
                   {d !== "전체" && (
                     <span
                       className="h-2 w-2 rounded-full"
@@ -93,7 +106,7 @@ export function FilterBar({
                     />
                   )}
                   <span>{d}</span>
-                  <span className="text-[15px] font-bold text-foreground">({count})</span>
+                  <span className={`text-[15px] font-bold ${active ? "text-foreground" : "text-gray-400"}`}>({count})</span>
                 </button>
               );
             })}
@@ -102,24 +115,37 @@ export function FilterBar({
 
         <div className="h-9 w-px bg-white/10" />
 
-        {/* Status — RIGHT side, 1.2x larger than Department cards */}
+        {/* Status — RIGHT side, same size as Department cards */}
         <div className="flex items-center gap-4">
-          <span className="text-[18px] font-semibold text-gray-300">상태</span>
-          <div className="flex items-center gap-2.5">
+          <span className="text-[16px] font-medium text-gray-300">상태</span>
+          <div className="flex items-center gap-2">
             {STATUSES.map((s) => {
               const active = statuses.has(s);
+              const colorVar = STATUS_COLOR_VAR[s];
+              // For inline styles we can use color-mix or just standard gradient if we assume oklch works or we use color-mix for opacity.
+              // Since CSS variables here are oklch, we can use them directly or with color-mix for the gradient.
               return (
                 <button
                   key={s}
                   onClick={() => toggleStatus(s)}
-                  className={`flex items-center gap-2.5 rounded-xl border px-7 py-4 text-[18px] font-semibold transition-all ${
+                  style={{
+                    background: active
+                      ? `linear-gradient(to bottom, color-mix(in srgb, ${colorVar} 20%, transparent), color-mix(in srgb, ${colorVar} 5%, transparent))`
+                      : undefined,
+                    borderColor: active ? `color-mix(in srgb, ${colorVar} 40%, transparent)` : undefined,
+                  }}
+                  className={`flex items-center gap-2 rounded-lg border px-5 py-2.5 text-[16px] font-medium transition-all ${
                     active
-                      ? "border-white/35 bg-white/15 text-foreground"
+                      ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.1)]"
                       : "border-white/10 bg-[#1A1A1A] text-gray-300 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
                   }`}
                 >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: colorVar, boxShadow: `0 0 6px ${colorVar}` }}
+                  />
                   <span>{s}</span>
-                  <span className="text-[16px] font-bold text-foreground">
+                  <span className={`text-[15px] font-bold ${active ? "text-foreground" : "text-gray-400"}`}>
                     ({statusCounts[s] ?? 0})
                   </span>
                 </button>

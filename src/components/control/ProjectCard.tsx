@@ -51,9 +51,9 @@ export function ProjectCard({ project, onOpen }: Props) {
   const dday = ddayLabel(project.deadline);
 
   return (
-    // Outer wrapper holds the grid slot at original size — aspect-video ratio.
+    // Outer wrapper holds the grid slot at original size.
     // Inner card is absolute → scaling it does NOT push neighbors.
-    <div className="relative aspect-video">
+    <div className="relative aspect-[16/11]">
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -106,9 +106,9 @@ export function ProjectCard({ project, onOpen }: Props) {
             />
 
             {/* top-left tags */}
-            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2">
-              <StatusTag status={project.status} />
+            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2 rounded-lg bg-black/60 px-2 py-1.5 backdrop-blur-md">
               <DeptTag dept={project.department} />
+              <StatusTag status={project.status} />
             </div>
           </div>
 
