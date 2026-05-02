@@ -15,8 +15,8 @@ export const Route = createFileRoute("/detail")({
 
 type ModalConfig = { type: 'task' | 'issue', mode: 'create' | 'edit', id?: string } | { type: 'thumbnails' };
 
-function SafeDndProvider({ children }: { children: React.ReactNode }) {
-  return <div className="safe-dnd-provider contents">{children}</div>;
+function DndProvider({ children }: { children: React.ReactNode }) {
+  return <div className="dnd-provider contents">{children}</div>;
 }
 
 function DetailWindow() {
@@ -27,8 +27,7 @@ function DetailWindow() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
   
-  const isInternalScroll = useRef(false);
-  const ganttContainerRef = useRef<HTMLDivElement>(null);
+  const isAutoScrolling = useRef(false);
 
   useEffect(() => {
     try { window.moveTo(0, 0); window.resizeTo(screen.availWidth, screen.availHeight); } catch {}
@@ -83,24 +82,20 @@ function DetailWindow() {
     setProject(prev => prev ? { ...prev, images: newImages } : prev);
   };
 
-  const handleFocusItem = (id: string, source: 'tracker' | 'gantt') => {
-    if (isInternalScroll.current) return;
-    isInternalScroll.current = true;
-    setActiveItemId(id);
+  const handleFocusItem = (targetId: string, source: 'tracker' | 'gantt') => {
+    if (isAutoScrolling.current) return;
+    isAutoScrolling.current = true;
+    setActiveItemId(targetId);
 
     if (source === 'tracker') {
-      const ganttEl = document.getElementById(`gantt-bar-${id}`);
-      if (ganttEl && ganttContainerRef.current) {
-        ganttContainerRef.current.scrollTo({ left: Math.max(0, ganttEl.offsetLeft - 150), behavior: 'smooth' });
-      }
+      const ganttEl = document.getElementById(`gantt-bar-${targetId}`);
+      if (ganttEl) ganttEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
     } else {
-      const trackerEl = document.getElementById(`tracker-item-${id}`);
-      if (trackerEl) {
-        trackerEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
+      const trackerEl = document.getElementById(`tracker-item-${targetId}`);
+      if (trackerEl) trackerEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
 
-    setTimeout(() => { isInternalScroll.current = false; }, 600);
+    setTimeout(() => { isAutoScrolling.current = false; }, 600);
   };
 
   const activeTask = project.tasks.find(t => t.id === activeItemId);
@@ -122,7 +117,7 @@ function DetailWindow() {
             <div className="ml-6 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
               <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
               <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
-                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 h-full transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
+                <div className="bg-gradient-to-r from-[#0d3b2f] to-[#147058] h-full transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
               </div>
             </div>
           </div>
@@ -156,7 +151,7 @@ function DetailWindow() {
                       </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]">
-                      <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isInternalScroll.current) handleFocusItem(val, 'tracker'); else if (!val && !isInternalScroll.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
+                      <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
                         <div className="space-y-3">
                           <h4 className="text-sm font-black text-white/40 tracking-widest pl-1 mb-3">상세 업무 ({project.tasks.length})</h4>
                           {[...project.tasks].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(t => (
@@ -183,7 +178,7 @@ function DetailWindow() {
             </>
           )}
           <Panel defaultSize={isFocusMode ? 100 : 40} minSize={20}>
-            <GanttChart containerRef={ganttContainerRef} tasks={project.tasks} issues={project.issues} activeId={activeItemId} setActiveId={(id) => handleFocusItem(id, 'gantt')} />
+            <GanttChart tasks={project.tasks} issues={project.issues} activeId={activeItemId} setActiveId={(id) => handleFocusItem(id, 'gantt')} />
           </Panel>
         </PanelGroup>
       </main>
@@ -238,7 +233,7 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
 function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: string[], onClose: () => void, onUpdateImages: (imgs: string[]) => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      <SafeDndProvider>
+      <DndProvider>
         <div className="w-full max-w-4xl bg-[#111] border border-white/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
            <div className="p-6 border-b border-white/10 bg-[#161616] flex justify-between items-center">
               <h2 className="text-2xl font-black text-white/90">썸네일 편집</h2>
@@ -249,22 +244,22 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: str
                 <div key={img} className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black shadow-lg">
                   <img src={img} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
-                     <button onClick={() => {
+                     <button type="button" onClick={() => {
                         const newImgs = [...images];
                         if(idx > 0) { [newImgs[idx-1], newImgs[idx]] = [newImgs[idx], newImgs[idx-1]]; onUpdateImages(newImgs); }
                      }} className="p-3 bg-black/80 hover:bg-white/20 rounded-full border border-white/20"><ArrowLeft className="w-5 h-5 text-white" /></button>
-                     <button onClick={() => {
+                     <button type="button" onClick={() => {
                         const newImgs = [...images];
                         if(idx < newImgs.length - 1) { [newImgs[idx+1], newImgs[idx]] = [newImgs[idx], newImgs[idx+1]]; onUpdateImages(newImgs); }
                      }} className="p-3 bg-black/80 hover:bg-white/20 rounded-full border border-white/20"><ArrowRight className="w-5 h-5 text-white" /></button>
-                     <button onClick={() => onUpdateImages(images.filter((_, i) => i !== idx))} className="p-3 bg-rose-500/80 hover:bg-rose-500 rounded-full border border-rose-500/50"><X className="w-5 h-5 text-white" /></button>
+                     <button type="button" onClick={() => onUpdateImages(images.filter((_, i) => i !== idx))} className="p-3 bg-rose-500/80 hover:bg-rose-500 rounded-full border border-rose-500/50"><X className="w-5 h-5 text-white" /></button>
                   </div>
                 </div>
               ))}
-              {(!images || images.length === 0) && <p className="text-white/30 font-bold col-span-3 text-center py-16 text-lg">선택된 썸네일이 없습니다.</p>}
+              {(!images || images.length === 0) && <p className="text-white/30 font-bold col-span-3 text-center py-16 text-lg">No Thumbnails (선택된 썸네일이 없습니다.)</p>}
            </div>
         </div>
-      </SafeDndProvider>
+      </DndProvider>
     </div>
   );
 }
@@ -274,10 +269,6 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
     <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-orange-500/10 ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
         <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative">
-          {/* Partial Gradient Fill Logic for Task Item Header */}
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-[#111]">
-             <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500" style={{ width: `${task.progress}%` }} />
-          </div>
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{task.startDate.slice(5)}</span>
@@ -287,7 +278,7 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
           </div>
           <div className="flex items-center gap-4 w-full relative z-10">
             <div className="flex-1 h-2 bg-black/60 rounded-full overflow-hidden border border-white/5 shadow-inner">
-              <div className="bg-gradient-to-r from-teal-500 to-emerald-500 h-full transition-all duration-500" style={{ width: `${task.progress}%` }} />
+              <div className="bg-gradient-to-r from-[#0d3b2f] to-[#147058] h-full transition-all duration-500" style={{ width: `${task.progress}%` }} />
             </div>
             <span className="text-base font-black font-mono text-white/80 w-10 text-right">{task.progress}%</span>
           </div>
@@ -312,14 +303,10 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
 }
 
 function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActive: boolean, onEdit: () => void }) {
-  const progress = issue.resolved ? 100 : 0;
   return (
     <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-orange-500/10 ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
         <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative">
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-20 bg-[#111]">
-             <div className="h-full bg-gradient-to-r from-red-500 to-rose-500" style={{ width: `${progress}%` }} />
-          </div>
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{issue.startDate.slice(5)}</span>
@@ -478,8 +465,9 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
   );
 }
 
-function GanttChart({ containerRef, tasks, issues, activeId, setActiveId }: { containerRef: any, tasks: Task[], issues: Issue[], activeId?: string, setActiveId: (id: string) => void }) {
+function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], issues: Issue[], activeId?: string, setActiveId: (id: string) => void }) {
   const [viewWeeks, setViewWeeks] = useState<4 | 8 | 12>(8);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -509,8 +497,8 @@ function GanttChart({ containerRef, tasks, issues, activeId, setActiveId }: { co
   const nowLeft = (mockNow - minDate.getTime()) / 86400000 * dayWidth;
 
   return (
-    <div className="flex h-full flex-col bg-[#0f0f0f] select-none border-t border-white/10">
-      <div className="flex items-center justify-between border-b border-white/10 px-8 py-5 shrink-0 bg-[#0a0a0a]">
+    <div className="flex h-full flex-col bg-[#0f0f0f] select-none border-t border-white/10 overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/10 px-8 py-5 shrink-0 bg-[#0a0a0a] z-30">
         <h3 className="text-xl font-black tracking-widest text-white/80">워크 플랜</h3>
         <div className="flex items-center gap-6">
           <div className="flex gap-2">
@@ -523,15 +511,15 @@ function GanttChart({ containerRef, tasks, issues, activeId, setActiveId }: { co
         </div>
       </div>
       <div className={`flex-1 overflow-x-auto overflow-y-auto relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} ref={containerRef} onMouseDown={onMouseDown} onMouseLeave={onMouseLeave} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
-        <div style={{ width: totalWidth, minHeight: "100%" }} className="relative">
+        <div style={{ width: totalWidth, minWidth: "100%", minHeight: "100%" }} className="relative">
           <div className="sticky top-0 z-20 flex h-20 border-b border-white/10 bg-[#0f0f0f]/95 backdrop-blur-md shadow-sm">
             {Array.from({ length: totalDays }).map((_, i) => {
               const d = new Date(minDate); d.setDate(d.getDate() + i);
-              const step = viewWeeks === 4 ? 3 : viewWeeks === 8 ? 5 : 7;
+              const step = viewWeeks === 4 ? 2 : viewWeeks === 8 ? 4 : 7;
               if (i % step !== 0) return null;
               return (
                 <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full" style={{ left: i * dayWidth }}>
-                  <span className="text-[20px] font-black text-white/50 mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md">{d.getMonth()+1}월 {d.getDate()}일</span>
+                  <span className="text-[20px] font-black text-white mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-fit">{d.getMonth()+1}월 {d.getDate()}일</span>
                   <div className="w-px h-full bg-white/10 absolute top-12" />
                 </div>
               );
@@ -570,13 +558,12 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
   const isTask = type === 'task';
   const durationDays = Math.max(1, Math.ceil((new Date(item.endDate).getTime() - new Date(item.startDate).getTime()) / 86400000));
   
-  // Partial Gradient Fill Logic for Gantt Bar
   const progress = isTask ? item.progress : ((item as any).resolved ? 100 : 0);
   
   let gradientClass = "";
-  if (isTask) gradientClass = "bg-gradient-to-r from-teal-500 to-emerald-500";
-  else if (progress === 100) gradientClass = "bg-white"; // Resolved
-  else gradientClass = "bg-gradient-to-r from-red-600 to-red-800"; // Unresolved Issue
+  if (isTask) gradientClass = "bg-gradient-to-r from-[#0d3b2f] to-[#147058]";
+  else if (progress === 100) gradientClass = "bg-white/90";
+  else gradientClass = "bg-gradient-to-r from-red-800 to-red-950";
 
   return (
     <div className="relative h-14 w-full group mb-5">
@@ -585,10 +572,9 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
         style={{ left, width }} 
         className={`absolute top-0 h-full rounded-2xl shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-all bg-[#1a1a1a] border border-white/5 overflow-hidden ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
       >
-        {/* Dynamic Gradient Fill */}
-        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 0.8 }} />
+        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 0.85 }} />
         
-        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-white mix-blend-difference">
+        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-white">
           {item.title}
         </span>
         <span className="relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm bg-black/80 text-white">
