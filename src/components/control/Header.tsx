@@ -1,6 +1,14 @@
+import { useMemo } from "react";
+
 const NAV = ["프로젝트", "일정 관리", "인사이트", "팀 관리"];
 
 export function Header() {
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black">
       <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-10">
@@ -28,6 +36,9 @@ export function Header() {
               </button>
             ))}
           </nav>
+        </div>
+        <div className="text-[15px] font-bold text-gray-400 bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+          {todayStr}
         </div>
       </div>
     </header>

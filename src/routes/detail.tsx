@@ -266,21 +266,15 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: str
 
 function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: boolean, onEdit: () => void }) {
   return (
-    <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-orange-500/10 ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
+    <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
-        <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative">
+        <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative z-10">
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{task.startDate.slice(5)}</span>
               <span className="text-lg font-bold truncate text-left text-white/90">{task.title}</span>
             </div>
             <span className={`text-sm font-bold px-3 py-1.5 rounded border shrink-0 ${task.status==='완료' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-white/60 border-white/10'}`}>{task.status}</span>
-          </div>
-          <div className="flex items-center gap-4 w-full relative z-10">
-            <div className="flex-1 h-2 bg-black/60 rounded-full overflow-hidden border border-white/5 shadow-inner">
-              <div className="bg-gradient-to-r from-[#0d3b2f] to-[#147058] h-full transition-all duration-500" style={{ width: `${task.progress}%` }} />
-            </div>
-            <span className="text-base font-black font-mono text-white/80 w-10 text-right">{task.progress}%</span>
           </div>
         </Accordion.Trigger>
       </Accordion.Header>
@@ -304,9 +298,9 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
 
 function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActive: boolean, onEdit: () => void }) {
   return (
-    <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-orange-500/10 ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
+    <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
-        <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative">
+        <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative z-10">
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{issue.startDate.slice(5)}</span>
@@ -493,8 +487,10 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
   const getLeft = (dateStr: string) => Math.max(0, (new Date(dateStr).getTime() - minDate.getTime()) / 86400000 * dayWidth);
   const getWidth = (start: string, end: string) => Math.max(dayWidth, ((new Date(end).getTime() - new Date(start).getTime()) / 86400000 + 1) * dayWidth);
 
-  const mockNow = new Date(2026, 3, 28).getTime(); 
-  const nowLeft = (mockNow - minDate.getTime()) / 86400000 * dayWidth;
+  // Time-Independent Now Date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const mockNow = today.getTime();
 
   return (
     <div className="flex h-full flex-col bg-[#0f0f0f] select-none border-t border-white/10 overflow-hidden">
@@ -511,31 +507,38 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
         </div>
       </div>
       <div className={`flex-1 overflow-x-auto overflow-y-auto relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} ref={containerRef} onMouseDown={onMouseDown} onMouseLeave={onMouseLeave} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
-        <div style={{ width: totalWidth, minWidth: "100%", minHeight: "100%" }} className="relative">
+        <div style={{ width: totalWidth, minWidth: "max-content", minHeight: "100%" }} className="relative">
           <div className="sticky top-0 z-20 flex h-20 border-b border-white/10 bg-[#0f0f0f]/95 backdrop-blur-md shadow-sm">
             {Array.from({ length: totalDays }).map((_, i) => {
               const d = new Date(minDate); d.setDate(d.getDate() + i);
+              const isNow = d.getTime() === mockNow;
               const step = viewWeeks === 4 ? 2 : viewWeeks === 8 ? 4 : 7;
-              if (i % step !== 0) return null;
+              if (i % step !== 0 && !isNow) return null;
+              
               return (
-                <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full" style={{ left: i * dayWidth }}>
-                  <span className="text-[20px] font-black text-white mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-fit">{d.getMonth()+1}월 {d.getDate()}일</span>
-                  <div className="w-px h-full bg-white/10 absolute top-12" />
+                <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full z-10" style={{ left: i * dayWidth }}>
+                  {isNow ? (
+                    <div className="bg-teal-500 text-white text-[14px] font-black px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-3">Now</div>
+                  ) : (
+                    <span className="text-[20px] font-black text-white mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max">
+                      {d.getMonth()+1}월 {d.getDate()}일
+                    </span>
+                  )}
+                  <div className={`w-px h-full absolute top-12 ${isNow ? 'bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'bg-white/10'}`} />
                 </div>
               );
             })}
-            {nowLeft > 0 && nowLeft < totalWidth && (
-              <div className="absolute top-0 bottom-0 z-30 pointer-events-none flex flex-col items-center -translate-x-1/2" style={{ left: nowLeft }}>
-                <div className="bg-teal-500 text-white text-[14px] font-black px-4 py-1.5 rounded shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-2">Now</div>
-                <div className="w-px flex-1 bg-teal-500/60 mt-1" />
-              </div>
-            )}
           </div>
 
           <div className="py-10 px-2 min-h-[max-content] relative">
-            {nowLeft > 0 && nowLeft < totalWidth && (
-              <div className="absolute top-0 bottom-0 w-px bg-teal-500/20 pointer-events-none -translate-x-1/2 z-0" style={{ left: nowLeft }} />
-            )}
+            {Array.from({ length: totalDays }).map((_, i) => {
+               const d = new Date(minDate); d.setDate(d.getDate() + i);
+               if(d.getTime() === mockNow) {
+                 return <div key={`nowline-${i}`} className="absolute top-0 bottom-0 w-px bg-teal-500/30 pointer-events-none -translate-x-1/2 z-0 shadow-[0_0_10px_rgba(20,184,166,0.4)]" style={{ left: i * dayWidth }} />;
+               }
+               return null;
+            })}
+
             {tasks.map((t) => (
                <div key={t.id} id={`gantt-bar-${t.id}`}>
                  <GanttBar item={t} type="task" left={getLeft(t.startDate)} width={getWidth(t.startDate, t.endDate)} isActive={activeId === t.id} onClick={() => setActiveId(t.id)} />
@@ -572,9 +575,9 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
         style={{ left, width }} 
         className={`absolute top-0 h-full rounded-2xl shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-all bg-[#1a1a1a] border border-white/5 overflow-hidden ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
       >
-        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 0.85 }} />
+        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 1 }} />
         
-        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-white">
+        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-white mix-blend-difference">
           {item.title}
         </span>
         <span className="relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm bg-black/80 text-white">
