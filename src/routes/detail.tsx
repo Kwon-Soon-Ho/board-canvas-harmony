@@ -527,6 +527,7 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
           <div className="sticky top-0 z-20 flex h-20 border-b border-white/10 bg-[#0f0f0f]/95 backdrop-blur-md shadow-sm">
             {Array.from({ length: totalDays }).map((_, i) => {
               const d = new Date(minDate); d.setDate(d.getDate() + i);
+              d.setHours(0, 0, 0, 0);
               const isNow = d.getTime() === mockNow;
               const step = viewWeeks === 4 ? 2 : viewWeeks === 8 ? 4 : 7;
               if (i % step !== 0 && !isNow) return null;
@@ -549,6 +550,7 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
           <div className="py-10 px-2 min-h-[max-content] relative">
              {Array.from({ length: totalDays }).map((_, i) => {
                const d = new Date(minDate); d.setDate(d.getDate() + i);
+               d.setHours(0, 0, 0, 0);
                if(d.getTime() === mockNow) {
                  return <div key={`nowline-${i}`} className="absolute top-0 bottom-0 w-[2px] bg-teal-500/30 pointer-events-none -translate-x-1/2 z-0 shadow-[0_0_10px_rgba(20,184,166,0.4)]" style={{ left: i * dayWidth }} />;
                }
