@@ -30,10 +30,10 @@ export const DEPT_COLOR: Record<Department, string> = {
 };
 
 const TEAM_DB: Record<Department, string[]> = {
-  공통: ["신혜영(수석/팀장)"],
-  영상: ["김태식(책임)", "최환(선임)", "박지영(선임)", "권순호(연구원)", "정두휘(연구원)", "양숙영(연구원)"],
-  편집: ["최혜은(선임)", "윤봄이(선임)", "이예진(선임)", "마희연(선임)", "정지윤(연구원)"],
-  UX: ["정은혜(책임)", "채선영(선임)", "김수현(선임)", "허유나(선임)", "김정석(연구원)"],
+  공통: ["신혜영"],
+  영상: ["김태식", "최환", "박지영", "권순호", "정두휘", "양숙영"],
+  편집: ["최혜은", "윤봄이", "이예진", "마희연", "정지윤"],
+  UX: ["정은혜", "채선영", "김수현", "허유나", "김정석"],
 };
 
 const POOLS: Record<Department, string[]> = {
@@ -96,17 +96,16 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
   const status = STATUSES[i % STATUSES.length];
   const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
 
-  // Department-based team members
   const deptMembers = TEAM_DB[dept];
   const commonLead = TEAM_DB["공통"][0];
   
-  // Assign PM (usually the first person in the dept list, or common lead for common projects)
+  // PM assignment
   const pm = isCommon ? commonLead : deptMembers[i % deptMembers.length];
   
-  // Assign 3-4 members
-  const memberPool = Array.from(new Set([...deptMembers, commonLead]));
+  // Assign 3-4 members, EXCLUDING the PM
+  const memberPool = Array.from(new Set([...deptMembers, commonLead])).filter(m => m !== pm);
   const members = Array.from({ length: 3 + (i % 2) }, (_, j) => {
-    return memberPool[(i + j + 1) % memberPool.length];
+    return memberPool[(i + j) % memberPool.length];
   });
 
   return {
@@ -117,7 +116,7 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
     progress: 20 + (i * 7) % 80,
     deadline: status === "상시" ? "상시" : deadline,
     pm,
-    members: Array.from(new Set(members)),
+    members: Array.from(new Set(members)).filter(Boolean),
     image: images[0],
     images,
     thumbnail: {

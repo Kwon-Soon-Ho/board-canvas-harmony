@@ -130,22 +130,31 @@ export function ProjectCard({ project, onOpen }: Props) {
                 <div className="group/members relative cursor-default text-[12px] text-white/40 font-medium">
                   <span className="hover:text-white/70 transition-colors">
                     {visibleMembers.join(", ")}
-                    {restCount > 0 && <span className="ml-1">외 {restCount}명</span>}
+                    {restCount > 0 && <span className="ml-1 text-white/30">외 {restCount}명</span>}
                   </span>
                   
-                  {/* Styled Tooltip */}
+                  {/* Premium Styled Tooltip */}
                   {restCount > 0 && (
-                    <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] translate-y-2 scale-95 opacity-0 transition-all duration-300 group-hover/members:translate-y-0 group-hover/members:scale-100 group-hover/members:opacity-100">
-                      <div className="rounded-lg border border-white/10 bg-black/80 p-2.5 shadow-2xl backdrop-blur-xl">
-                        <div className="mb-1.5 text-[10px] font-bold text-white/20 uppercase tracking-wider">전체 팀원</div>
-                        <div className="flex flex-wrap gap-1">
-                          {project.members.map((m) => (
-                            <span key={m} className="inline-block rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-white/80">
-                              {m}
-                            </span>
-                          ))}
+                    <div className="pointer-events-none absolute bottom-full right-0 mb-3 w-[180px] translate-y-2 scale-95 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/members:translate-y-0 group-hover/members:scale-100 group-hover/members:opacity-100">
+                      <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#161616]/90 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent" />
+                        <div className="relative z-[1]">
+                          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
+                            <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Team Members</span>
+                            <span className="text-[10px] font-bold text-white/40">{project.members.length}</span>
+                          </div>
+                          <div className="grid gap-y-2">
+                            {project.members.map((m) => (
+                              <div key={m} className="flex items-center gap-2 text-[12px] text-white/80">
+                                <div className="h-1 w-1 rounded-full bg-white/20" />
+                                <span className="font-semibold tracking-tight">{m}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
+                      {/* Tooltip Arrow */}
+                      <div className="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-white/10 bg-[#161616]/90 backdrop-blur-2xl" />
                     </div>
                   )}
                 </div>
@@ -159,7 +168,7 @@ export function ProjectCard({ project, onOpen }: Props) {
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
                   <div
-                    className="h-full rounded-full bg-white transition-all duration-1000 ease-out"
+                    className="h-full rounded-full bg-white transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(255,255,255,0.3)]"
                     style={{ width: hover ? `${progress}%` : "0%" }}
                   />
                 </div>
