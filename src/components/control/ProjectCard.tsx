@@ -172,31 +172,29 @@ export function ProjectCard({ project, onOpen }: Props) {
         {/* Card Box Tooltip - Rendered outside overflow-hidden */}
         {restCount > 0 && (
           <div 
-            className={`pointer-events-none absolute bottom-[110px] right-4 z-[60] w-[200px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+            className={`pointer-events-none absolute bottom-[110px] right-4 z-[60] w-[160px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
               showTooltip ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"
             }`}
           >
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#121212]/95 p-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent" />
+            <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#0A0A0A]/95 p-3.5 shadow-2xl backdrop-blur-xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent" />
               <div className="relative z-[1]">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-[11px] font-black text-white/30 uppercase tracking-[0.25em]">Project Team</span>
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 text-[10px] font-bold text-white/60">
-                    {project.members.length}
-                  </div>
+                <div className="mb-2.5 flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">담당자</span>
+                  <span className="text-[10px] font-bold text-white/20">{project.members.length}</span>
                 </div>
-                <div className="space-y-2.5">
+                <div className="space-y-1.5">
                   {project.members.map((m) => (
-                    <div key={m} className="flex items-center gap-3 transition-transform duration-300 hover:translate-x-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)]" />
-                      <span className="text-[13px] font-semibold text-white/90 tracking-tight">{m}</span>
+                    <div key={m} className="flex items-center gap-2.5 transition-transform duration-300 hover:translate-x-0.5">
+                      <div className="h-1 w-1 rounded-full bg-white/30" />
+                      <span className="text-[12px] font-medium text-white/80 tracking-tight">{m}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
             {/* Tooltip Arrow */}
-            <div className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#121212]/95" />
+            <div className="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-white/10 bg-[#0A0A0A]/95" />
           </div>
         )}
       </div>
