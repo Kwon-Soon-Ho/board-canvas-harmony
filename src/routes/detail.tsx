@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
 import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X } from "lucide-react";
+import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2 } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
 
 const searchSchema = z.object({ id: z.string().optional() });
@@ -68,6 +68,20 @@ function DetailWindow() {
       return { ...prev, issues: exists ? prev.issues.map(i => i.id === issue.id ? issue : i) : [...prev.issues, issue] };
     });
     setModalConfig(null);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    if (confirm("정말로 이 상세 업무를 삭제하시겠습니까?")) {
+      setProject(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== taskId) } : prev);
+      if (activeItemId === taskId) setActiveItemId(undefined);
+    }
+  };
+
+  const handleDeleteIssue = (issueId: string) => {
+    if (confirm("정말로 이 이슈를 삭제하시겠습니까?")) {
+      setProject(prev => prev ? { ...prev, issues: prev.issues.filter(i => i.id !== issueId) } : prev);
+      if (activeItemId === issueId) setActiveItemId(undefined);
+    }
   };
 
   const handleToggleStar = (imgUrl: string) => {
@@ -160,7 +174,7 @@ function DetailWindow() {
                           </div>
                           {[...project.tasks].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(t => (
                             <div key={t.id} id={`tracker-item-${t.id}`}>
-                              <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} />
+                              <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} onDelete={() => handleDeleteTask(t.id)} />
                             </div>
                           ))}
                         </div>
@@ -171,7 +185,7 @@ function DetailWindow() {
                           </div>
                           {[...project.issues].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(iss => (
                             <div key={iss.id} id={`tracker-item-${iss.id}`}>
-                              <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} />
+                              <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} onDelete={() => handleDeleteIssue(iss.id)} />
                             </div>
                           ))}
                           {project.issues.length === 0 && <p className="text-base font-bold text-white/20 pl-1">등록된 이슈 사항이 없습니다.</p>}
@@ -271,7 +285,7 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: str
   );
 }
 
-function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: boolean, onEdit: () => void }) {
+function TaskAccordionItem({ task, isActive, onEdit, onDelete }: { task: Task, isActive: boolean, onEdit: () => void, onDelete: () => void }) {
   return (
     <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
@@ -296,9 +310,14 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">담당자</span><span className="text-white/90 font-bold text-base">{task.assignee}</span></div>
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">기간</span><span className="text-white/90 font-bold font-mono text-base">{task.startDate} ~ {task.endDate}</span></div>
             </div>
-            <button onClick={onEdit} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
-              <Edit2 className="w-4 h-4" /> 수정
-            </button>
+            <div className="flex gap-3">
+              <button onClick={onDelete} className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
+                <Trash2 className="w-4 h-4" /> 삭제
+              </button>
+              <button onClick={onEdit} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
+                <Edit2 className="w-4 h-4" /> 수정
+              </button>
+            </div>
           </div>
         </div>
       </Accordion.Content>
@@ -306,7 +325,7 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
   );
 }
 
-function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActive: boolean, onEdit: () => void }) {
+function IssueAccordionItem({ issue, isActive, onEdit, onDelete }: { issue: Issue, isActive: boolean, onEdit: () => void, onDelete: () => void }) {
   const progress = issue.resolved ? 100 : 0;
   return (
     <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
@@ -340,9 +359,14 @@ function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActiv
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">담당자</span><span className="text-white/90 font-bold text-base">{issue.assignee}</span></div>
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">기간</span><span className="text-white/90 font-bold font-mono text-base">{issue.startDate} ~ {issue.endDate}</span></div>
             </div>
-            <button onClick={onEdit} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
-              <Edit2 className="w-4 h-4" /> 수정
-            </button>
+            <div className="flex gap-3">
+              <button onClick={onDelete} className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
+                <Trash2 className="w-4 h-4" /> 삭제
+              </button>
+              <button onClick={onEdit} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
+                <Edit2 className="w-4 h-4" /> 수정
+              </button>
+            </div>
           </div>
         </div>
       </Accordion.Content>
