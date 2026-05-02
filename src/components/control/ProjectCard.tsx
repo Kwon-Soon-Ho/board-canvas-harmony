@@ -24,6 +24,7 @@ export function ProjectCard({ project, onOpen }: Props) {
   const [hover, setHover] = useState(false);
   const [hasHovered, setHasHovered] = useState(false);
   const [idx, setIdx] = useState(0);
+  const [showTooltip, setShowTooltip] = useState(false);
   const timer = useRef<number | null>(null);
 
   const seq = useMemo(() => {
@@ -46,7 +47,10 @@ export function ProjectCard({ project, onOpen }: Props) {
   }, [hover, seq.length]);
 
   useEffect(() => {
-    if (!hover) setIdx(0);
+    if (!hover) {
+      setIdx(0);
+      setShowTooltip(false);
+    }
   }, [hover]);
 
   const visibleMembers = project.members.slice(0, 2);
@@ -59,7 +63,7 @@ export function ProjectCard({ project, onOpen }: Props) {
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        className={`project-card group absolute left-0 top-0 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F0F0F] text-left transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        className={`project-card group absolute left-0 top-0 w-full rounded-xl border border-white/10 bg-[#0F0F0F] text-left transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           hover
             ? "z-50 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] scale-[1.25]"
             : "z-0 shadow-none scale-100"
@@ -70,11 +74,10 @@ export function ProjectCard({ project, onOpen }: Props) {
       >
         <button
           onClick={() => onOpen(project.id)}
-          className="block w-full text-left"
+          className="block w-full text-left focus:outline-none"
         >
-          <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+          <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-neutral-900">
             {seq.map((src, i) => {
-              // Lazy loading sub-images: only render if hasHovered is true
               if (i > 0 && !hasHovered) return null;
               return (
                 <div
@@ -97,15 +100,15 @@ export function ProjectCard({ project, onOpen }: Props) {
               );
             })}
             
-            <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+            <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 pointer-events-none" />
             
-            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2">
+            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2 pointer-events-none">
               <DeptTag dept={project.department} />
               <StatusTag status={project.status} />
             </div>
           </div>
 
-          <div className="bg-[#0F0F0F] px-4 py-3">
+          <div className={`bg-[#0F0F0F] px-4 py-3 ${hover ? '' : 'rounded-b-xl'}`}>
             <h3 className="truncate text-base font-bold tracking-tight text-white/90">
               {project.title}
             </h3>
@@ -113,13 +116,13 @@ export function ProjectCard({ project, onOpen }: Props) {
         </button>
 
         <div 
-          className="grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
+          className="grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-b-xl"
           style={{ 
             gridTemplateRows: hover ? "1fr" : "0fr",
             opacity: hover ? 1 : 0 
           }}
         >
-          <div className="overflow-hidden">
+          <div className="overflow-hidden rounded-b-xl">
             <div className="space-y-4 px-4 pb-5 pt-2 border-t border-white/[0.05]">
               {/* Info Hierarchy: PM and Members */}
               <div className="flex items-center justify-between">
@@ -127,38 +130,15 @@ export function ProjectCard({ project, onOpen }: Props) {
                   <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">PM</span>
                   <span className="text-sm font-semibold text-white/80">{project.pm}</span>
                 </div>
-                <div className="group/members relative cursor-default text-[12px] text-white/40 font-medium">
+                <div 
+                  className="relative cursor-default text-[12px] text-white/40 font-medium"
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                >
                   <span className="hover:text-white transition-colors duration-300">
                     {visibleMembers.join(", ")}
                     {restCount > 0 && <span className="ml-1 text-white/20 font-bold">외 {restCount}명</span>}
                   </span>
-                  
-                  {/* Page Tone-Matched Card Box Tooltip */}
-                  {restCount > 0 && (
-                    <div className="pointer-events-none absolute bottom-full right-0 mb-4 w-[200px] translate-y-2 scale-95 opacity-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/members:translate-y-0 group-hover/members:scale-100 group-hover/members:opacity-100">
-                      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#121212]/95 p-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl">
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent" />
-                        <div className="relative z-[1]">
-                          <div className="mb-4 flex items-center justify-between">
-                            <span className="text-[11px] font-black text-white/30 uppercase tracking-[0.25em]">Project Team</span>
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 text-[10px] font-bold text-white/60">
-                              {project.members.length}
-                            </div>
-                          </div>
-                          <div className="space-y-2.5">
-                            {project.members.map((m) => (
-                              <div key={m} className="flex items-center gap-3 transition-transform duration-300 hover:translate-x-1">
-                                <div className="h-1.5 w-1.5 rounded-full bg-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)]" />
-                                <span className="text-[13px] font-semibold text-white/90 tracking-tight">{m}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      {/* Decorative elements to match page tone */}
-                      <div className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#121212]/95" />
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -188,6 +168,37 @@ export function ProjectCard({ project, onOpen }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Card Box Tooltip - Rendered outside overflow-hidden */}
+        {restCount > 0 && (
+          <div 
+            className={`pointer-events-none absolute bottom-[110px] right-4 z-[60] w-[200px] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+              showTooltip ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"
+            }`}
+          >
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#121212]/95 p-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent" />
+              <div className="relative z-[1]">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-[11px] font-black text-white/30 uppercase tracking-[0.25em]">Project Team</span>
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 text-[10px] font-bold text-white/60">
+                    {project.members.length}
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  {project.members.map((m) => (
+                    <div key={m} className="flex items-center gap-3 transition-transform duration-300 hover:translate-x-1">
+                      <div className="h-1.5 w-1.5 rounded-full bg-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)]" />
+                      <span className="text-[13px] font-semibold text-white/90 tracking-tight">{m}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#121212]/95" />
+          </div>
+        )}
       </div>
     </div>
   );

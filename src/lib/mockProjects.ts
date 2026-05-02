@@ -29,10 +29,17 @@ export const DEPT_COLOR: Record<Department, string> = {
   공통: "#FFFFFF", // Brighter white for neon
 };
 
+const RANK_VALUE: Record<string, number> = {
+  "수석": 4,
+  "책임": 3,
+  "선임": 2,
+  "연구원": 1
+};
+
 const TEAM_DATA: Record<Department, { name: string; rank: string }[]> = {
   공통: [{ name: "신혜영", rank: "수석" }],
   영상: [
-    { name: "김태식", rank: "책임" }, { name: "최환", rank: "선임" }, { name: "박지영", rank: "선임" },
+    { name: "김태식", rank: "책임" }, { name: "최영환", rank: "선임" }, { name: "박지영", rank: "선임" },
     { name: "권순호", rank: "연구원" }, { name: "정두휘", rank: "연구원" }, { name: "양숙영", rank: "연구원" }
   ],
   편집: [
@@ -116,15 +123,22 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
     : deptCandidates[i % deptCandidates.length];
   
   const pm = pmInfo.name;
+  const pmRankValue = RANK_VALUE[pmInfo.rank];
 
-  // Assign 3-4 members, EXCLUDING the PM
-  const memberPool = ALL_MEMBERS.filter(m => m.name !== pm);
-  const deptMemberPool = TEAM_DATA[dept].filter(m => m.name !== pm);
+  // Assign 3-4 members, EXCLUDING the PM AND members with rank > PM
+  const isEligibleMember = (m: {name: string, rank: string}) => m.name !== pm && RANK_VALUE[m.rank] <= pmRankValue;
   
-  // For Common projects, or as fallback, use the whole pool. Ensure at least 3 members.
+  const memberPool = ALL_MEMBERS.filter(isEligibleMember);
+  const deptMemberPool = TEAM_DATA[dept].filter(isEligibleMember);
+  
+  // For Common projects, or as fallback, use the whole eligible pool. Ensure at least 3 members.
   const sourcePool = (isCommon || deptMemberPool.length < 3) ? memberPool : deptMemberPool;
+  
+  // Safety check if sourcePool is empty
+  const safeSourcePool = sourcePool.length > 0 ? sourcePool : memberPool;
+
   const members = Array.from({ length: 3 + (i % 2) }, (_, j) => {
-    return sourcePool[(i + j) % sourcePool.length].name;
+    return safeSourcePool[(i + j) % safeSourcePool.length].name;
   });
 
   return {
