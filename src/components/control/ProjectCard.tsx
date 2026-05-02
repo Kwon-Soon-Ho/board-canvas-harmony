@@ -22,6 +22,7 @@ function ddayLabel(deadline: string): string {
 
 export function ProjectCard({ project, onOpen }: Props) {
   const [hover, setHover] = useState(false);
+  const [hasHovered, setHasHovered] = useState(false);
   const [idx, setIdx] = useState(0);
   const timer = useRef<number | null>(null);
 
@@ -29,6 +30,10 @@ export function ProjectCard({ project, onOpen }: Props) {
     const order = project.thumbnail?.sequence ?? project.images.map((_, i) => i);
     return order.map((i) => project.images[i]).filter(Boolean);
   }, [project]);
+
+  useEffect(() => {
+    if (hover) setHasHovered(true);
+  }, [hover]);
 
   useEffect(() => {
     if (!hover || seq.length < 2) return;
@@ -47,20 +52,19 @@ export function ProjectCard({ project, onOpen }: Props) {
   const visibleMembers = project.members.slice(0, 2);
   const rest = project.members.length - visibleMembers.length;
   const dday = ddayLabel(project.deadline);
-  const progress = (project as any).progress ?? Math.min(100, Math.max(10, project.title.length * 5 + 20));
+  const progress = project.progress;
 
   return (
-    <div className="relative aspect-[16/11]">
+    <div className="relative aspect-[16/10]">
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        className={`project-card group absolute left-0 top-0 w-full overflow-hidden rounded-xl border border-white/15 bg-[#0A0A0A] text-left transition-all duration-300 ${
+        className={`project-card group absolute left-0 top-0 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F0F0F] text-left transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           hover
-            ? "z-50 shadow-[0_30px_60px_rgba(0,0,0,0.8)]"
-            : "z-0 shadow-none"
+            ? "z-50 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] scale-[1.25]"
+            : "z-0 shadow-none scale-100"
         }`}
         style={{
-          transform: hover ? "scale(1.3)" : "scale(1)",
           transformOrigin: "center top",
         }}
       >
@@ -68,90 +72,89 @@ export function ProjectCard({ project, onOpen }: Props) {
           onClick={() => onOpen(project.id)}
           className="block w-full text-left"
         >
-          <div className="relative aspect-video w-full overflow-hidden bg-black">
-            {seq.map((src, i) => (
-              <div
-                key={src + i}
-                className="absolute inset-0 transition-opacity duration-700 ease-out"
-                style={{ opacity: i === idx ? 1 : 0 }}
-              >
+          <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+            {seq.map((src, i) => {
+              // Lazy loading sub-images: only render if hasHovered is true
+              if (i > 0 && !hasHovered) return null;
+              return (
                 <div
-                  aria-hidden
-                  className="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-2xl"
-                  style={{ backgroundImage: `url(${src})` }}
-                />
-                <img
-                  src={src}
-                  alt=""
-                  loading="lazy"
-                  className="relative z-[1] h-full w-full object-contain"
-                />
-              </div>
-            ))}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 z-[2]"
-              style={{
-                background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.8) 100%)",
-              }}
-            />
+                  key={src + i}
+                  className="absolute inset-0 transition-opacity duration-800 ease-in-out"
+                  style={{ opacity: i === idx ? 1 : 0 }}
+                >
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 scale-110 bg-cover bg-center opacity-40 blur-3xl"
+                    style={{ backgroundImage: `url(${src})` }}
+                  />
+                  <img
+                    src={src}
+                    alt=""
+                    loading={i === 0 ? "eager" : "lazy"}
+                    className="relative z-[1] h-full w-full object-cover"
+                  />
+                </div>
+              );
+            })}
+            
+            <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+            
             <div className="absolute left-3 top-3 z-[3] flex items-center gap-2">
               <DeptTag dept={project.department} />
               <StatusTag status={project.status} />
             </div>
           </div>
 
-          <div className="bg-[#0A0A0A] px-5 py-4">
-            <h3 className="truncate text-[19px] font-semibold leading-tight text-foreground">
+          <div className="bg-[#0F0F0F] px-4 py-3">
+            <h3 className="truncate text-base font-bold tracking-tight text-white/90">
               {project.title}
             </h3>
           </div>
         </button>
 
         <div 
-          className="grid transition-[grid-template-rows] duration-300 ease-out"
-          style={{ gridTemplateRows: hover ? "1fr" : "0fr" }}
+          className="grid transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
+          style={{ 
+            gridTemplateRows: hover ? "1fr" : "0fr",
+            opacity: hover ? 1 : 0 
+          }}
         >
           <div className="overflow-hidden">
-            <div className="space-y-4 px-5 pb-5 pt-1 border-t border-white/[0.08]">
+            <div className="space-y-4 px-4 pb-5 pt-2 border-t border-white/[0.05]">
+              {/* Info Hierarchy: PM and Members */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[13px] font-medium text-foreground">
-                    <span className="text-[10px] text-gray-500 font-bold">PM</span>
-                    {project.pm}
-                  </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">PM</span>
+                  <span className="text-sm font-semibold text-white/80">{project.pm}</span>
                 </div>
-                <div className="text-[12px] text-gray-400" title={project.members.join(", ")}>
+                <div className="text-[12px] text-white/40 font-medium">
                   {visibleMembers.join(", ")}
-                  {rest > 0 && (
-                    <span className="ml-1 cursor-help underline decoration-white/20 underline-offset-2">
-                      +{rest}명
-                    </span>
-                  )}
+                  {rest > 0 && <span className="ml-1">+{rest}</span>}
                 </div>
               </div>
 
+              {/* Progress Section */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[12px]">
-                  <span className="text-gray-500 font-medium">진행률</span>
-                  <span className="font-bold text-foreground">{progress}%</span>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-white/40 font-bold uppercase tracking-tighter">Progress</span>
+                  <span className="font-black text-white/90">{progress}%</span>
                 </div>
-                <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+                <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
                   <div
-                    className="h-full rounded-full bg-foreground transition-all duration-700 ease-out"
+                    className="h-full rounded-full bg-white transition-all duration-1000 ease-out"
                     style={{ width: hover ? `${progress}%` : "0%" }}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <span className="flex items-center gap-1.5 rounded-md bg-red-950/30 px-2 py-1 text-[12px] font-bold text-red-500 ring-1 ring-inset ring-red-500/20">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  {dday}
-                </span>
-                <span className="text-[13px] text-gray-400 font-medium">{project.deadline}</span>
+              {/* Deadline & D-Day */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded bg-red-500/10 px-1.5 py-0.5 text-[11px] font-black text-red-500 ring-1 ring-inset ring-red-500/20">
+                    {dday}
+                  </span>
+                  <span className="text-[11px] text-white/40 font-medium">{project.deadline}</span>
+                </div>
               </div>
             </div>
           </div>
