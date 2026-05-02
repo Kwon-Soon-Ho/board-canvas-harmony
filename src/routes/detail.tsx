@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
 import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Maximize2, Minimize2, ArrowLeft, ChevronLeft, ChevronRight, Edit2, Plus, Star, X } from "lucide-react";
+import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
 
 const searchSchema = z.object({ id: z.string().optional() });
