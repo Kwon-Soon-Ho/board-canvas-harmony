@@ -309,13 +309,14 @@ function TaskAccordionItem({ task, isActive, onEdit, onDelete }: { task: Task, i
             <div className="flex gap-8">
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">담당자</span><span className="text-white/90 font-bold text-base">{task.assignee}</span></div>
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">기간</span><span className="text-white/90 font-bold font-mono text-base">{task.startDate} ~ {task.endDate}</span></div>
+              <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">진행률</span><span className="text-white/90 font-bold font-mono text-base">{task.progress}%</span></div>
             </div>
             <div className="flex gap-3">
-              <button onClick={onDelete} className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
-                <Trash2 className="w-4 h-4" /> 삭제
-              </button>
               <button onClick={onEdit} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
                 <Edit2 className="w-4 h-4" /> 수정
+              </button>
+              <button onClick={onDelete} className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
+                <Trash2 className="w-4 h-4" /> 삭제
               </button>
             </div>
           </div>
@@ -360,11 +361,11 @@ function IssueAccordionItem({ issue, isActive, onEdit, onDelete }: { issue: Issu
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">기간</span><span className="text-white/90 font-bold font-mono text-base">{issue.startDate} ~ {issue.endDate}</span></div>
             </div>
             <div className="flex gap-3">
-              <button onClick={onDelete} className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
-                <Trash2 className="w-4 h-4" /> 삭제
-              </button>
               <button onClick={onEdit} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
                 <Edit2 className="w-4 h-4" /> 수정
+              </button>
+              <button onClick={onDelete} className="flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 px-5 py-2.5 rounded-lg text-sm font-bold transition">
+                <Trash2 className="w-4 h-4" /> 삭제
               </button>
             </div>
           </div>
