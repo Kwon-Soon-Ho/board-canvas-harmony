@@ -1,4 +1,4 @@
-export type Department = "영상" | "편집" | "UX";
+export type Department = "영상" | "편집" | "UX" | "공통";
 export type Status = "진행" | "상시" | "대기" | "완료";
 
 export interface ThumbnailConfig {
@@ -26,6 +26,7 @@ export const DEPT_COLOR: Record<Department, string> = {
   영상: "#FF5C00",
   편집: "#007BFF",
   UX: "#FF007F",
+  공통: "#8E8E8E",
 };
 
 const POOLS: Record<Department, string[]> = {
@@ -47,6 +48,12 @@ const POOLS: Record<Department, string[]> = {
     "1551650975-87deedd944c3", "1522542550221-31fd19b45641", "1555066931-4365d14bab8c",
     "1551434678-e076c223a692", "1531403009184-a8a4a56057a6", "1508921912186-1d13951df3c1"
   ],
+  공통: [
+    "1497215842964-21159fb464bb", "1552664730-030f201dd49a", "1557800634-7ef3c7d85304",
+    "1551434678-e076c223a692", "1522071823910-b2161af8fd3b", "1552664688-cf4120293a0e",
+    "1517245386807-bb43f82c33c4", "1523240795612-d1244a50d282", "1558403191-147c524b6303",
+    "1431540015161-1eeb024df03f"
+  ],
 };
 
 const img = (id: string) => `https://images.unsplash.com/photo-${id}?q=80&w=1200&auto=format&fit=crop`;
@@ -58,15 +65,19 @@ const MEMBERS = ["이서아", "박민준", "최유나", "정하늘", "오세진"
 
 const TITLES: Record<Department, string[]> = {
   영상: ["시네마틱 4K 프로모션", "모션 그래픽 오프닝", "브랜드 필름 에디팅", "유튜브 시리즈 편집", "CF 광고 영상 제작", "인터뷰 다큐멘터리", "3D 제품 렌더링", "뮤직비디오 컬러그레이딩", "티저 트레일러", "이벤트 현장 스케치", "숏폼 챌린지 시리즈", "기업 홍보 영상", "디지털 사이니지 모션", "캠페인 히어로 비디오", "SNS 프로모션 영상", "드론 항공 촬영본"],
-  편집: ["브랜드 가이드북 디자인", "매거진 레이아웃 시스템", "타이포그래피 포스터", "패키지 그래픽 시스템", "전시 아이덴티티", "애뉴얼 리포트", "로고 리뉴얼 가이드", "룩북 에디토리얼", "커스텀 서체 개발", "오프라인 팝업 그래픽", "명함 및 스테이셔너리", "인포그래픽 리포트", "일러스트레이션 패키지", "북 디자인 프로젝트", "메뉴얼 시스템 구축", "굿즈 비주얼 가이드"],
+  편집: ["브랜드 가이드북 디자인", "매거진 레이아웃 시스템", "타이포그래피 포스터", "패키지 그래픽 시스템", "전시 아이덴티티", "애뉴얼 리포트", "로고 리뉴얼 가이드", "룩북 에디토리얼", "커스텀 서체 개발", "오프라인 팝업 그래픽", "명함 및 스테이셔너리", "인포그래픽 리포트", "일러스트레이션 패키", "북 디자인 프로젝트", "메뉴얼 시스템 구축", "굿즈 비주얼 가이드"],
   UX: ["모바일 뱅킹 앱 개편", "디자인 시스템 고도화", "구독 플랫폼 웹 대시보드", "이커머스 결제 흐름 개선", "신규 온보딩 프로세스", "스마트 홈 인터페이스", "CRM 툴 리디자인", "여행 예약 앱 프로토타입", "반응형 랜딩 페이지", "관리자 페이지 UI 시스템", "콘텐츠 플랫폼 UX 스터디", "AI 어시스턴트 GUI", "건강 관리 앱 인터랙션", "피트니스 워치 UI", "커뮤니티 웹 리뉴얼", "B2B SaaS 프로덕트 디자인"],
+  공통: ["전사 디자인 가이드라인", "브랜드 통합 경험 시스템", "글로벌 비주얼 아이덴티티", "연간 디자인 성과 리포트", "디자인 팀 통합 워크숍", "크리에이티브 에셋 라이브러리", "팀 간 협업 프로세스 혁신", "전사 폰트 시스템 구축"],
 };
 
 export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
-  const dept = DEPTS[i % DEPTS.length];
+  const isCommon = i < 5;
+  const dept = isCommon ? "공통" : DEPTS[(i - 5) % DEPTS.length];
   const pool = POOLS[dept];
   const titleList = TITLES[dept];
-  const title = titleList[Math.floor(i / DEPTS.length)] || `${dept} 프로젝트 ${i}`;
+  const title = isCommon 
+    ? (titleList[i] || `공통 프로젝트 ${i + 1}`)
+    : (titleList[Math.floor((i - 5) / DEPTS.length)] || `${dept} 프로젝트 ${i}`);
   
   // Ensure at least 3 images per project, rotated from the pool
   const imgCount = 3;
