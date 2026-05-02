@@ -30,26 +30,26 @@ export const DEPT_COLOR: Record<Department, string> = {
 
 const POOLS: Record<Department, string[]> = {
   영상: [
-    "1710409625297-2ca61f4ea5b1", "1710409625173-8cd4c4ff7930", "1710409625185-b1cda7747ffa",
-    "1710409625141-adf6a282dcc0", "1710409625261-d69d21a270e3", "1710409625204-72b8e9ed98c0",
-    "1710409625132-26155f6a0fc6", "1710409625078-68e34d64694e", "1710409625145-f33714bdf870",
-    "1710409625261-81f5a81cd96f"
+    "1536240478770-bbf43356df13", "1492691523567-6119e289df3a", "1515634928517-2a4eaa194fb1",
+    "1485846234645-a62644f84728", "1550745127-d0d01d58d4f0", "1535016120720-40c646be44d0",
+    "1574717024653-61fd2cf4d44d", "1506157786151-b8491531f063", "1524985069026-dd778a51c967",
+    "1478720566765-e137c1645317", "1598897340027-e67b67232230", "1501446529957-6226bd447c46"
   ],
   편집: [
-    "1661313635217-d8d87c14fb66", "1664868840007-c0644c70796b", "1673758902772-f6dd74fce69a",
-    "1726843238168-2c5225bb36a1", "1664379768593-96b0266e792c", "1664372951915-d71e99876f29",
-    "1664372951662-8515082121e7", "1664372951717-380252b472e3", "1664372951556-9be89758f192",
-    "1661313634591-18d22dfb2b52"
+    "1558655140-709c46e8762e", "1626785774625-ddcddc245eab", "1509343256512-d77a5fd3221d",
+    "1561070791-2526d30994b5", "1544716278-ca5e3f4abd8c", "1586075010472-9859ff70bbd1",
+    "1516321318423-f06f85e504b3", "1515378960530-7c0da6231fb1", "1550684848-fac1c5b4e853",
+    "1542744094-24638eff58bb", "1534670007418-fbb7f6cf32c3", "1519389950473-47ba0277781c"
   ],
   UX: [
-    "1661589354357-f56ddf86a0b4", "1661412938808-a0f7be3c8cf1", "1661326248013-3107a4b2bd91",
-    "1733306548826-95daff988ae6", "1661217454238-d67b2d56d11f", "1661217454271-e01362e4999a",
-    "1661217454170-4e78a6316279", "1661217454202-b2d49996d396", "1661217454133-7221379f8c14",
-    "1674488347101-73812891d4e0"
+    "1581291518633-83b4b2435433", "1586717791821-3f44a563df4c", "1512941937669-90a1b58e7e9c",
+    "1507238691740-187a5b1d37b8", "1460925895917-afdab827c52f", "1499951360447-b19be8fe80f5",
+    "1551650975-87deedd944c3", "1522542550221-31fd19b45641", "1555066931-4365d14bab8c",
+    "1551434678-e076c223a692", "1531403009184-a8a4a56057a6", "1508921912186-1d13951df3c1"
   ],
 };
 
-const img = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=800`;
+const img = (id: string) => `https://images.unsplash.com/photo-${id}?q=80&w=1200&auto=format&fit=crop`;
 
 const DEPTS: Department[] = ["영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -68,8 +68,12 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
   const titleList = TITLES[dept];
   const title = titleList[Math.floor(i / DEPTS.length)] || `${dept} 프로젝트 ${i}`;
   
-  const imgIndices = [(i * 3) % pool.length, (i * 3 + 1) % pool.length, (i * 3 + 2) % pool.length];
-  const images = imgIndices.map(idx => img(pool[idx]));
+  // Ensure at least 3 images per project, rotated from the pool
+  const imgCount = 3;
+  const images = Array.from({ length: imgCount }, (_, j) => {
+    const idx = (i * imgCount + j) % pool.length;
+    return img(pool[idx]);
+  });
   
   const status = STATUSES[i % STATUSES.length];
   const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
@@ -89,7 +93,7 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
       coverIndex: 0,
       focal: { x: 0.5, y: 0.5 },
       zoom: 1,
-      sequence: [0, 1, 2],
+      sequence: Array.from({ length: images.length }, (_, j) => j),
     },
   };
 });
