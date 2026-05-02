@@ -20,7 +20,7 @@ export function Header() {
                 key={item}
                 className={`rounded-md px-4 py-2 text-[16px] transition-colors ${
                   i === 0
-                    ? "bg-gradient-to-b from-[#1e3a8a] to-[#0f172a] text-foreground font-medium shadow-lg shadow-blue-900/20"
+                    ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-foreground font-medium shadow-lg shadow-teal-900/20"
                     : "bg-[#1A1A1A] text-gray-400 hover:bg-[#222] hover:text-foreground"
                 }`}
               >
