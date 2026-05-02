@@ -29,14 +29,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "DESIGN/OPS — Control Center" },
+      { name: "description", content: "디자인 팀 운영 플랫폼 — 프로젝트, 일정, 인사이트를 한 화면에서." },
+      { name: "author", content: "DESIGN/OPS" },
+      { property: "og:title", content: "DESIGN/OPS — Control Center" },
+      { property: "og:description", content: "디자인 팀 운영 플랫폼 — 프로젝트, 일정, 인사이트를 한 화면에서." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "DESIGN/OPS — Control Center" },
+      { name: "twitter:description", content: "디자인 팀 운영 플랫폼 — 프로젝트, 일정, 인사이트를 한 화면에서." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9cf8e2b0-b5fe-4169-ac95-312c5bc13cb9/id-preview-ccb4fd4e--7ea75dfa-5380-4044-afbf-d1cb09121fde.lovable.app-1777662294210.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9cf8e2b0-b5fe-4169-ac95-312c5bc13cb9/id-preview-ccb4fd4e--7ea75dfa-5380-4044-afbf-d1cb09121fde.lovable.app-1777662294210.png" },
     ],
     links: [
       {
