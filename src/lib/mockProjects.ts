@@ -8,6 +8,24 @@ export interface ThumbnailConfig {
   sequence: number[];
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  progress: number;
+  startDate: string;
+  endDate: string;
+  assignee: string;
+}
+
+export interface Issue {
+  id: string;
+  title: string;
+  startDate: string;
+  resolved: boolean;
+  memo?: string;
+  timestamp?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -20,6 +38,8 @@ export interface Project {
   image: string; 
   images: string[]; 
   thumbnail: ThumbnailConfig;
+  tasks: Task[];
+  issues: Issue[];
 }
 
 export const DEPT_COLOR: Record<Department, string> = {
@@ -141,15 +161,51 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
     return safeSourcePool[(i + j) % safeSourcePool.length].name;
   });
 
+  const membersList = Array.from(new Set(members)).filter(Boolean);
+
+  // Generate Tasks
+  const taskCount = 3 + (i % 4); // 3 to 6 tasks
+  const tasks: Task[] = Array.from({ length: taskCount }, (_, t) => {
+    const tStart = new Date(2026, 3 + (t % 2), 10 + (t * 2));
+    const tEnd = new Date(tStart);
+    tEnd.setDate(tEnd.getDate() + 7 + (t * 3));
+    return {
+      id: `t-${i}-${t}`,
+      title: `${title} - 단계 ${t + 1}`,
+      progress: Math.floor(Math.random() * 10) * 10,
+      startDate: tStart.toISOString().slice(0, 10),
+      endDate: tEnd.toISOString().slice(0, 10),
+      assignee: membersList[t % membersList.length] || pm,
+    };
+  });
+
+  const totalProgress = tasks.length > 0 
+    ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
+    : 0;
+
+  // Generate Issues
+  const issueCount = i % 3; // 0 to 2 issues
+  const issues: Issue[] = Array.from({ length: issueCount }, (_, is) => {
+    const isResolved = is % 2 === 0;
+    return {
+      id: `iss-${i}-${is}`,
+      title: `디자인 검토 이슈 #${is + 1}`,
+      startDate: new Date(2026, 4, 15 + is).toISOString().slice(0, 10),
+      resolved: isResolved,
+      memo: isResolved ? "피드백 반영 완료" : undefined,
+      timestamp: isResolved ? new Date().toISOString() : undefined,
+    };
+  });
+
   return {
     id: `p-${String(i + 1).padStart(3, "0")}`,
     title,
     department: dept,
     status,
-    progress: 20 + (i * 7) % 80,
+    progress: totalProgress,
     deadline: status === "상시" ? "상시" : deadline,
     pm,
-    members: Array.from(new Set(members)).filter(Boolean),
+    members: membersList,
     image: images[0],
     images,
     thumbnail: {
@@ -158,5 +214,7 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
       zoom: 1,
       sequence: Array.from({ length: images.length }, (_, j) => j),
     },
+    tasks,
+    issues,
   };
 });
