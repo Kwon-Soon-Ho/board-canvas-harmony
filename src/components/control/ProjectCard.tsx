@@ -128,33 +128,35 @@ export function ProjectCard({ project, onOpen }: Props) {
                   <span className="text-sm font-semibold text-white/80">{project.pm}</span>
                 </div>
                 <div className="group/members relative cursor-default text-[12px] text-white/40 font-medium">
-                  <span className="hover:text-white/70 transition-colors">
+                  <span className="hover:text-white transition-colors duration-300">
                     {visibleMembers.join(", ")}
-                    {restCount > 0 && <span className="ml-1 text-white/30">외 {restCount}명</span>}
+                    {restCount > 0 && <span className="ml-1 text-white/20 font-bold">외 {restCount}명</span>}
                   </span>
                   
-                  {/* Premium Styled Tooltip */}
+                  {/* Page Tone-Matched Card Box Tooltip */}
                   {restCount > 0 && (
-                    <div className="pointer-events-none absolute bottom-full right-0 mb-3 w-[180px] translate-y-2 scale-95 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/members:translate-y-0 group-hover/members:scale-100 group-hover/members:opacity-100">
-                      <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#161616]/90 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent" />
+                    <div className="pointer-events-none absolute bottom-full right-0 mb-4 w-[200px] translate-y-2 scale-95 opacity-0 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover/members:translate-y-0 group-hover/members:scale-100 group-hover/members:opacity-100">
+                      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#121212]/95 p-5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-3xl">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent" />
                         <div className="relative z-[1]">
-                          <div className="mb-3 flex items-center justify-between border-b border-white/5 pb-2">
-                            <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Team Members</span>
-                            <span className="text-[10px] font-bold text-white/40">{project.members.length}</span>
+                          <div className="mb-4 flex items-center justify-between">
+                            <span className="text-[11px] font-black text-white/30 uppercase tracking-[0.25em]">Project Team</span>
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/5 text-[10px] font-bold text-white/60">
+                              {project.members.length}
+                            </div>
                           </div>
-                          <div className="grid gap-y-2">
+                          <div className="space-y-2.5">
                             {project.members.map((m) => (
-                              <div key={m} className="flex items-center gap-2 text-[12px] text-white/80">
-                                <div className="h-1 w-1 rounded-full bg-white/20" />
-                                <span className="font-semibold tracking-tight">{m}</span>
+                              <div key={m} className="flex items-center gap-3 transition-transform duration-300 hover:translate-x-1">
+                                <div className="h-1.5 w-1.5 rounded-full bg-white/20 shadow-[0_0_8px_rgba(255,255,255,0.1)]" />
+                                <span className="text-[13px] font-semibold text-white/90 tracking-tight">{m}</span>
                               </div>
                             ))}
                           </div>
                         </div>
                       </div>
-                      {/* Tooltip Arrow */}
-                      <div className="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-white/10 bg-[#161616]/90 backdrop-blur-2xl" />
+                      {/* Decorative elements to match page tone */}
+                      <div className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-white/10 bg-[#121212]/95" />
                     </div>
                   )}
                 </div>
@@ -163,12 +165,12 @@ export function ProjectCard({ project, onOpen }: Props) {
               {/* Progress Section */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-white/40 font-bold uppercase tracking-tighter">Progress</span>
-                  <span className="font-black text-white/90">{progress}%</span>
+                  <span className="text-white/40 font-bold uppercase tracking-widest">Efficiency</span>
+                  <span className="font-black text-white/90 tracking-tighter">{progress}%</span>
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
                   <div
-                    className="h-full rounded-full bg-white transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                    className="h-full rounded-full bg-white transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_15px_rgba(255,255,255,0.4)]"
                     style={{ width: hover ? `${progress}%` : "0%" }}
                   />
                 </div>

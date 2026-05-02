@@ -29,12 +29,24 @@ export const DEPT_COLOR: Record<Department, string> = {
   공통: "#FFFFFF", // Brighter white for neon
 };
 
-const TEAM_DB: Record<Department, string[]> = {
-  공통: ["신혜영"],
-  영상: ["김태식", "최환", "박지영", "권순호", "정두휘", "양숙영"],
-  편집: ["최혜은", "윤봄이", "이예진", "마희연", "정지윤"],
-  UX: ["정은혜", "채선영", "김수현", "허유나", "김정석"],
+const TEAM_DATA: Record<Department, { name: string; rank: string }[]> = {
+  공통: [{ name: "신혜영", rank: "수석" }],
+  영상: [
+    { name: "김태식", rank: "책임" }, { name: "최환", rank: "선임" }, { name: "박지영", rank: "선임" },
+    { name: "권순호", rank: "연구원" }, { name: "정두휘", rank: "연구원" }, { name: "양숙영", rank: "연구원" }
+  ],
+  편집: [
+    { name: "최혜은", rank: "선임" }, { name: "윤봄이", rank: "선임" }, { name: "이예진", rank: "선임" },
+    { name: "마희연", rank: "선임" }, { name: "정지윤", rank: "연구원" }
+  ],
+  UX: [
+    { name: "정은혜", rank: "책임" }, { name: "채선영", rank: "선임" }, { name: "김수현", rank: "선임" },
+    { name: "허유나", rank: "선임" }, { name: "김정석", rank: "연구원" }
+  ],
 };
+
+const ALL_MEMBERS = Object.values(TEAM_DATA).flat();
+const PM_CANDIDATES = ALL_MEMBERS.filter(m => ["수석", "책임", "선임"].includes(m.rank));
 
 const POOLS: Record<Department, string[]> = {
   영상: [
@@ -96,16 +108,23 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
   const status = STATUSES[i % STATUSES.length];
   const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
 
-  const deptMembers = TEAM_DB[dept];
-  const commonLead = TEAM_DB["공통"][0];
+  // PM assignment: Must be Senior or higher
+  const deptCandidates = TEAM_DATA[dept].filter(m => ["수석", "책임", "선임"].includes(m.rank));
+  const fallbackCandidates = PM_CANDIDATES;
+  const pmInfo = (isCommon || deptCandidates.length === 0) 
+    ? fallbackCandidates[i % fallbackCandidates.length]
+    : deptCandidates[i % deptCandidates.length];
   
-  // PM assignment
-  const pm = isCommon ? commonLead : deptMembers[i % deptMembers.length];
-  
+  const pm = pmInfo.name;
+
   // Assign 3-4 members, EXCLUDING the PM
-  const memberPool = Array.from(new Set([...deptMembers, commonLead])).filter(m => m !== pm);
+  const memberPool = ALL_MEMBERS.filter(m => m.name !== pm);
+  const deptMemberPool = TEAM_DATA[dept].filter(m => m.name !== pm);
+  
+  // For Common projects, or as fallback, use the whole pool. Ensure at least 3 members.
+  const sourcePool = (isCommon || deptMemberPool.length < 3) ? memberPool : deptMemberPool;
   const members = Array.from({ length: 3 + (i % 2) }, (_, j) => {
-    return memberPool[(i + j) % memberPool.length];
+    return sourcePool[(i + j) % sourcePool.length].name;
   });
 
   return {
