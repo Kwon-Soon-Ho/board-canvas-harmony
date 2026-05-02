@@ -87,15 +87,16 @@ function DetailWindow() {
     isAutoScrolling.current = true;
     setActiveItemId(targetId);
 
-    if (source === 'tracker') {
-      const ganttEl = document.getElementById(`gantt-bar-${targetId}`);
-      if (ganttEl) ganttEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
-    } else {
-      const trackerEl = document.getElementById(`tracker-item-${targetId}`);
-      if (trackerEl) trackerEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-
-    setTimeout(() => { isAutoScrolling.current = false; }, 600);
+    setTimeout(() => {
+      if (source === 'tracker') {
+        const ganttEl = document.querySelector(`[data-gantt-id="${targetId}"]`);
+        if (ganttEl) ganttEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+      } else {
+        const trackerEl = document.getElementById(`tracker-item-${targetId}`);
+        if (trackerEl) trackerEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      setTimeout(() => { isAutoScrolling.current = false; }, 600);
+    }, 50);
   };
 
   const activeTask = project.tasks.find(t => t.id === activeItemId);
@@ -153,7 +154,10 @@ function DetailWindow() {
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]">
                       <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
                         <div className="space-y-3">
-                          <h4 className="text-sm font-black text-white/40 tracking-widest pl-1 mb-3">상세 업무 ({project.tasks.length})</h4>
+                          <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                             <h4 className="text-sm font-black text-white/40 tracking-widest">상세 업무</h4>
+                             <span className="text-sm font-bold text-white/40">({project.tasks.length})</span>
+                          </div>
                           {[...project.tasks].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(t => (
                             <div key={t.id} id={`tracker-item-${t.id}`}>
                               <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} />
@@ -161,7 +165,10 @@ function DetailWindow() {
                           ))}
                         </div>
                         <div className="space-y-3 pt-8 border-t border-white/10">
-                          <h4 className="text-sm font-black text-rose-500/50 tracking-widest pl-1 mb-3">이슈 사항 ({project.issues.length})</h4>
+                          <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                             <h4 className="text-sm font-black text-rose-500/50 tracking-widest">이슈 사항</h4>
+                             <span className="text-sm font-bold text-rose-500/50">({project.issues.length})</span>
+                          </div>
                           {[...project.issues].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(iss => (
                             <div key={iss.id} id={`tracker-item-${iss.id}`}>
                               <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} />
@@ -256,7 +263,7 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: str
                   </div>
                 </div>
               ))}
-              {(!images || images.length === 0) && <p className="text-white/30 font-bold col-span-3 text-center py-16 text-lg">No Thumbnails (선택된 썸네일이 없습니다.)</p>}
+              {(!images || images.length === 0) && <p className="text-white/30 font-bold col-span-3 text-center py-16 text-lg">선택된 썸네일이 없습니다.</p>}
            </div>
         </div>
       </DndProvider>
@@ -268,13 +275,16 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
   return (
     <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
-        <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative z-10">
+        <Accordion.Trigger className="flex w-full flex-col p-5 pb-6 focus:outline-none gap-3 relative z-10 bg-transparent">
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{task.startDate.slice(5)}</span>
               <span className="text-lg font-bold truncate text-left text-white/90">{task.title}</span>
             </div>
             <span className={`text-sm font-bold px-3 py-1.5 rounded border shrink-0 ${task.status==='완료' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-white/60 border-white/10'}`}>{task.status}</span>
+          </div>
+          <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#E0E0E0]/10 overflow-hidden">
+             <div className="h-full bg-gradient-to-r from-[#0d3b2f] to-[#147058] transition-all duration-500" style={{ width: `${task.progress}%` }} />
           </div>
         </Accordion.Trigger>
       </Accordion.Header>
@@ -297,10 +307,11 @@ function TaskAccordionItem({ task, isActive, onEdit }: { task: Task, isActive: b
 }
 
 function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActive: boolean, onEdit: () => void }) {
+  const progress = issue.resolved ? 100 : 0;
   return (
     <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
-        <Accordion.Trigger className="flex w-full flex-col p-5 focus:outline-none gap-3 relative z-10">
+        <Accordion.Trigger className="flex w-full flex-col p-5 pb-6 focus:outline-none gap-3 relative z-10 bg-transparent">
           <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
               <span className={`text-sm font-mono font-bold shrink-0 ${isActive ? 'text-orange-400' : 'text-white/40'}`}>{issue.startDate.slice(5)}</span>
@@ -309,6 +320,9 @@ function IssueAccordionItem({ issue, isActive, onEdit }: { issue: Issue, isActiv
             <span className={`text-sm font-bold px-3 py-1.5 rounded border shrink-0 ${issue.resolved ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
               {issue.status === "Issue" ? "이슈 발생" : "해결됨"}
             </span>
+          </div>
+          <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#E0E0E0]/10 overflow-hidden">
+             <div className="h-full bg-gradient-to-r from-red-800 to-red-950 transition-all duration-500" style={{ width: `${progress}%` }} />
           </div>
         </Accordion.Trigger>
       </Accordion.Header>
@@ -518,9 +532,9 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
               return (
                 <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full z-10" style={{ left: i * dayWidth }}>
                   {isNow ? (
-                    <div className="bg-teal-500 text-white text-[14px] font-black px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-3">Now</div>
+                    <div className="bg-teal-500 text-[#FFFFFF] text-[14px] font-black px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-3">Now</div>
                   ) : (
-                    <span className="text-[20px] font-black text-white mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max">
+                    <span className="text-[20px] font-black text-[#FFFFFF] mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max">
                       {d.getMonth()+1}월 {d.getDate()}일
                     </span>
                   )}
@@ -540,13 +554,13 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
             })}
 
             {tasks.map((t) => (
-               <div key={t.id} id={`gantt-bar-${t.id}`}>
+               <div key={t.id} data-gantt-id={t.id}>
                  <GanttBar item={t} type="task" left={getLeft(t.startDate)} width={getWidth(t.startDate, t.endDate)} isActive={activeId === t.id} onClick={() => setActiveId(t.id)} />
                </div>
             ))}
             <div className="h-8" />
             {issues.map((iss) => (
-               <div key={iss.id} id={`gantt-bar-${iss.id}`}>
+               <div key={iss.id} data-gantt-id={iss.id}>
                  <GanttBar item={iss as unknown as Task} type="issue" left={getLeft(iss.startDate)} width={getWidth(iss.startDate, iss.endDate)} isActive={activeId === iss.id} onClick={() => setActiveId(iss.id)} />
                </div>
             ))}
@@ -577,10 +591,10 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
       >
         <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 1 }} />
         
-        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-white mix-blend-difference">
+        <span className="relative z-10 text-lg font-black truncate pr-4 drop-shadow-md text-[#FFFFFF]">
           {item.title}
         </span>
-        <span className="relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm bg-black/80 text-white">
+        <span className="relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm bg-black/80 text-[#FFFFFF]">
           {durationDays} days
         </span>
       </div>
