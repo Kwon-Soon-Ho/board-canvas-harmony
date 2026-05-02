@@ -24,7 +24,7 @@ function DetailWindow() {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(() => id ? MOCK_PROJECTS.find((p) => p.id === id) ?? null : null);
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
-  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isImageViewerFull, setIsImageViewerFull] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
   
   const isAutoScrolling = useRef(false);
@@ -137,21 +137,21 @@ function DetailWindow() {
             </div>
           </div>
         </div>
-        <button onClick={() => setIsFocusMode(!isFocusMode)} className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-5 py-2 text-base font-bold hover:bg-white/20 transition">
-          {isFocusMode ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-          {isFocusMode ? "기본 화면" : "타임라인 확대"}
+        <button onClick={() => setIsImageViewerFull(!isImageViewerFull)} className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-5 py-2 text-base font-bold hover:bg-white/20 transition">
+          {isImageViewerFull ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          {isImageViewerFull ? "기본 화면" : "시안 확대"}
         </button>
       </header>
 
       <main className="flex-1 overflow-hidden">
         <PanelGroup direction="vertical">
-          {!isFocusMode && (
-            <>
-              <Panel order={1} defaultSize={60} minSize={30}>
-                <PanelGroup direction="horizontal">
-                  <Panel order={1} defaultSize={70} minSize={30}>
-                    <ImageViewer images={imagesToShow} projectImages={project.images} onToggleStar={handleToggleStar} onEditThumbnails={() => setModalConfig({ type: 'thumbnails' })} />
-                  </Panel>
+          <Panel order={1} defaultSize={isImageViewerFull ? 100 : 60} minSize={30}>
+            <PanelGroup direction="horizontal">
+              <Panel order={1} defaultSize={isImageViewerFull ? 100 : 70} minSize={30}>
+                <ImageViewer images={imagesToShow} projectImages={project.images} onToggleStar={handleToggleStar} onEditThumbnails={() => setModalConfig({ type: 'thumbnails' })} />
+              </Panel>
+              {!isImageViewerFull && (
+                <>
                   <ResizeHandleVertical />
                   <Panel order={2} defaultSize={30} minSize={25} className="bg-[#0a0a0a] flex flex-col border-l border-white/10">
                     <div className="p-5 border-b border-white/10 bg-[#0d0d0d] flex items-center justify-between shrink-0">
@@ -193,14 +193,18 @@ function DetailWindow() {
                       </Accordion.Root>
                     </div>
                   </Panel>
-                </PanelGroup>
-              </Panel>
+                </>
+              )}
+            </PanelGroup>
+          </Panel>
+          {!isImageViewerFull && (
+            <>
               <ResizeHandleHorizontal />
+              <Panel order={2} defaultSize={40} minSize={20}>
+                <GanttChart tasks={project.tasks} issues={project.issues} activeId={activeItemId} setActiveId={(id) => handleFocusItem(id, 'gantt')} />
+              </Panel>
             </>
           )}
-          <Panel order={2} defaultSize={isFocusMode ? 100 : 40} minSize={20}>
-            <GanttChart tasks={project.tasks} issues={project.issues} activeId={activeItemId} setActiveId={(id) => handleFocusItem(id, 'gantt')} />
-          </Panel>
         </PanelGroup>
       </main>
 
