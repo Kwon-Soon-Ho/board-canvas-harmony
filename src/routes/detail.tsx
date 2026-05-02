@@ -534,23 +534,23 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
               return (
                 <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full z-10" style={{ left: i * dayWidth }}>
                   {isNow ? (
-                    <div className="bg-teal-500 text-[#FFFFFF] text-[14px] font-black px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-3">Now</div>
+                    <div className="bg-teal-500 text-[#FFFFFF] text-[14px] font-black px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-3">현재({d.getMonth()+1}월 {d.getDate()}일)</div>
                   ) : (
                     <span className="text-[20px] font-black text-[#FFFFFF] mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max">
                       {d.getMonth()+1}월 {d.getDate()}일
                     </span>
                   )}
-                  <div className={`w-px h-full absolute top-12 ${isNow ? 'bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'bg-white/10'}`} />
+                  <div className={`h-full absolute top-12 ${isNow ? 'w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'w-px bg-white/10'}`} />
                 </div>
               );
             })}
           </div>
 
           <div className="py-10 px-2 min-h-[max-content] relative">
-            {Array.from({ length: totalDays }).map((_, i) => {
+             {Array.from({ length: totalDays }).map((_, i) => {
                const d = new Date(minDate); d.setDate(d.getDate() + i);
                if(d.getTime() === mockNow) {
-                 return <div key={`nowline-${i}`} className="absolute top-0 bottom-0 w-px bg-teal-500/30 pointer-events-none -translate-x-1/2 z-0 shadow-[0_0_10px_rgba(20,184,166,0.4)]" style={{ left: i * dayWidth }} />;
+                 return <div key={`nowline-${i}`} className="absolute top-0 bottom-0 w-[2px] bg-teal-500/30 pointer-events-none -translate-x-1/2 z-0 shadow-[0_0_10px_rgba(20,184,166,0.4)]" style={{ left: i * dayWidth }} />;
                }
                return null;
             })}
