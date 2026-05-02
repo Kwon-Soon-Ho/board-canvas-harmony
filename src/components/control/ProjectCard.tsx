@@ -26,7 +26,7 @@ export function ProjectCard({ project, onOpen }: Props) {
   const [idx, setIdx] = useState(0);
   const timer = useRef<number | null>(null);
 
-  // Sequence-aware images (hook into thumbnail config for future custom ordering)
+  // Sequence-aware images
   const seq = useMemo(() => {
     const order = project.thumbnail?.sequence ?? project.images.map((_, i) => i);
     return order.map((i) => project.images[i]).filter(Boolean);
@@ -50,14 +50,16 @@ export function ProjectCard({ project, onOpen }: Props) {
   const rest = project.members.length - visibleMembers.length;
   const dday = ddayLabel(project.deadline);
 
+  // Fallback if no progress exists in mock, just use a random looking number based on title length
+  const progress = (project as any).progress ?? Math.min(100, Math.max(10, project.title.length * 5 + 20));
+
   return (
     // Outer wrapper holds the grid slot at original size.
-    // Inner card is absolute → scaling it does NOT push neighbors.
     <div className="relative aspect-[16/11]">
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        className={`project-card group absolute inset-0 overflow-visible rounded-xl border border-white/10 bg-[#0A0A0A] text-left backdrop-blur-md transition-all duration-300 ${
+        className={`project-card group absolute left-0 top-0 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0A0A0A] text-left backdrop-blur-md transition-all duration-300 ${
           hover
             ? "z-50 border-white/25 shadow-[0_20px_50px_rgba(0,0,0,0.9)]"
             : "z-0"
@@ -72,8 +74,8 @@ export function ProjectCard({ project, onOpen }: Props) {
           onClick={() => onOpen(project.id)}
           className="block w-full text-left"
         >
-          {/* 16:9 visual area — object-contain per spec, blurred fill behind */}
-          <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-black">
+          {/* 16:9 visual area */}
+          <div className="relative aspect-video w-full overflow-hidden bg-black">
             {seq.map((src, i) => (
               <div
                 key={src + i}
@@ -105,8 +107,8 @@ export function ProjectCard({ project, onOpen }: Props) {
               }}
             />
 
-            {/* top-left tags */}
-            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2 rounded-lg bg-black/60 px-2 py-1.5 backdrop-blur-md">
+            {/* top-left tags — individual shadow/opacity applied inside tags */}
+            <div className="absolute left-3 top-3 z-[3] flex items-center gap-2">
               <DeptTag dept={project.department} />
               <StatusTag status={project.status} />
             </div>
@@ -120,48 +122,59 @@ export function ProjectCard({ project, onOpen }: Props) {
           </div>
         </button>
 
-        {/* hover-revealed: positioned ABSOLUTELY below the card, overlapping cards below */}
-        {hover && (
-          <div
-            className="absolute left-0 right-0 z-50 rounded-b-xl border border-t-0 border-white/15 bg-[#0A0A0A]"
-            style={{
-              top: "100%",
-              boxShadow: "0 20px 50px rgba(0,0,0,0.9)",
-            }}
-          >
-            <div className="space-y-2 px-5 py-4">
-              {/* PM — bold, +2pt larger than members, subtle white-transparent border */}
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/[0.06] px-2.5 py-1 text-[18px] font-bold text-foreground"
-                  style={{ letterSpacing: "-0.01em" }}
-                >
-                  {project.pm}
-                </span>
-                <span className="text-[13px] uppercase tracking-wider text-gray-300">
-                  PM
-                </span>
+        {/* hover-revealed details: natively pushes height of wrapper so border is continuous */}
+        <div 
+          className="grid transition-[grid-template-rows] duration-300 ease-out"
+          style={{ gridTemplateRows: hover ? "1fr" : "0fr" }}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-4 px-5 pb-5 pt-1 border-t border-white/[0.05]">
+              {/* PM and Members on ONE horizontal line */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[14px] font-medium text-foreground">
+                    <span className="text-[11px] text-gray-500">PM</span>
+                    {project.pm}
+                  </span>
+                </div>
+                
+                <div className="text-[13px] text-gray-400" title={project.members.join(", ")}>
+                  {visibleMembers.join(", ")}
+                  {rest > 0 && (
+                    <span className="ml-1 cursor-help underline decoration-white/20 underline-offset-2">
+                      +{rest}명
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* Members — up to 2, then "+n명" */}
-              <div className="text-[16px] text-gray-300">
-                {visibleMembers.join(", ")}
-                {rest > 0 ? ` +${rest}명` : ""}
+              {/* Progress Bar */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-gray-400">진행률</span>
+                  <span className="font-medium text-foreground">{progress}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-foreground transition-all duration-500 ease-out"
+                    style={{ width: hover ? `${progress}%` : "0%" }}
+                  />
+                </div>
               </div>
 
-              {/* Deadline — highest priority, bright red, (D-day) format */}
-              <div
-                className="text-[18px] font-bold"
-                style={{ color: "#FF3B30" }}
-              >
-                마감 · {project.deadline}
-                {project.deadline !== "상시" && (
-                  <span className="ml-2">({dday})</span>
-                )}
+              {/* Deadline — Sleek styling */}
+              <div className="flex items-center gap-2 pt-1">
+                <span className="flex items-center gap-1.5 rounded-md bg-red-500/10 px-2 py-1 text-[13px] font-medium text-red-400 ring-1 ring-inset ring-red-500/20">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  {dday}
+                </span>
+                <span className="text-[14px] text-gray-400">{project.deadline}</span>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
