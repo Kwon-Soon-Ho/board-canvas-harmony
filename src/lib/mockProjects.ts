@@ -8,19 +8,30 @@ export interface ThumbnailConfig {
   sequence: number[];
 }
 
+export type TaskStatus = "대기" | "진행" | "검토중" | "승인됨" | "보류" | "취소" | "완료";
+export type IssueStatus = "Issue" | "Resolved";
+
 export interface Task {
   id: string;
   title: string;
+  content: string;
+  status: TaskStatus;
   progress: number;
   startDate: string;
   endDate: string;
   assignee: string;
+  imageUrls: string[];
 }
 
 export interface Issue {
   id: string;
   title: string;
+  content: string;
+  status: IssueStatus;
   startDate: string;
+  endDate: string;
+  assignee: string;
+  imageUrls: string[];
   resolved: boolean;
   memo?: string;
   timestamp?: string;
@@ -165,17 +176,24 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
 
   // Generate Tasks
   const taskCount = 3 + (i % 4); // 3 to 6 tasks
+  const taskStatuses: TaskStatus[] = ["대기", "진행", "검토중", "승인됨", "보류", "취소", "완료"];
   const tasks: Task[] = Array.from({ length: taskCount }, (_, t) => {
     const tStart = new Date(2026, 3 + (t % 2), 10 + (t * 2));
     const tEnd = new Date(tStart);
     tEnd.setDate(tEnd.getDate() + 7 + (t * 3));
+    const rawProgress = Math.floor(Math.random() * 10) * 10;
+    const taskStatus = rawProgress === 100 ? "완료" : (rawProgress > 0 ? "진행" : "대기");
+    
     return {
       id: `t-${i}-${t}`,
       title: `${title} - 단계 ${t + 1}`,
-      progress: Math.floor(Math.random() * 10) * 10,
+      content: `이 작업은 ${title}의 주요 마일스톤 중 하나로, 프로젝트 성공에 필수적인 단계입니다. 담당자는 정해진 기한 내에 산출물을 제출해야 합니다.`,
+      status: taskStatus,
+      progress: rawProgress,
       startDate: tStart.toISOString().slice(0, 10),
       endDate: tEnd.toISOString().slice(0, 10),
       assignee: membersList[t % membersList.length] || pm,
+      imageUrls: [images[t % images.length]],
     };
   });
 
@@ -187,12 +205,20 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
   const issueCount = i % 3; // 0 to 2 issues
   const issues: Issue[] = Array.from({ length: issueCount }, (_, is) => {
     const isResolved = is % 2 === 0;
+    const iStart = new Date(2026, 4, 15 + is);
+    const iEnd = new Date(iStart);
+    iEnd.setDate(iEnd.getDate() + 3);
     return {
       id: `iss-${i}-${is}`,
       title: `디자인 검토 이슈 #${is + 1}`,
-      startDate: new Date(2026, 4, 15 + is).toISOString().slice(0, 10),
+      content: `이슈 설명: 현재 디자인 시안의 톤앤매너가 브랜드 가이드라인과 일부 불일치합니다. 수정이 필요합니다.`,
+      status: isResolved ? "Resolved" : "Issue",
+      startDate: iStart.toISOString().slice(0, 10),
+      endDate: iEnd.toISOString().slice(0, 10),
+      assignee: membersList[is % membersList.length] || pm,
+      imageUrls: [images[(is + 1) % images.length]],
       resolved: isResolved,
-      memo: isResolved ? "피드백 반영 완료" : undefined,
+      memo: isResolved ? "피드백 반영 완료: 색상 대비 및 타이포그래피 여백 수정 확인됨." : undefined,
       timestamp: isResolved ? new Date().toISOString() : undefined,
     };
   });
