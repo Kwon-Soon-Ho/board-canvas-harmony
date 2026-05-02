@@ -4,14 +4,14 @@ const MAP: Record<Status, string> = {
   진행: "text-[color:var(--status-active)] border-[color:var(--status-active)]/30",
   상시: "text-[color:var(--status-ongoing)] border-[color:var(--status-ongoing)]/30",
   대기: "text-[color:var(--status-pending)] border-[color:var(--status-pending)]/30",
-  완료: "text-muted-foreground border-white/10",
+  완료: "text-white border-white/40 shadow-[0_0_10px_rgba(255,255,255,0.2)]",
 };
 
 const DOT_MAP: Record<Status, string> = {
   진행: "bg-[color:var(--status-active)]",
   상시: "bg-[color:var(--status-ongoing)]",
   대기: "bg-[color:var(--status-pending)]",
-  완료: "bg-muted-foreground",
+  완료: "bg-white shadow-[0_0_8px_white]",
 };
 
 export function StatusTag({ status }: { status: Status }) {

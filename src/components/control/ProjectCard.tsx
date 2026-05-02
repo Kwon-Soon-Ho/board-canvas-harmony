@@ -50,7 +50,7 @@ export function ProjectCard({ project, onOpen }: Props) {
   }, [hover]);
 
   const visibleMembers = project.members.slice(0, 2);
-  const rest = project.members.length - visibleMembers.length;
+  const restCount = project.members.length - visibleMembers.length;
   const dday = ddayLabel(project.deadline);
   const progress = project.progress;
 
@@ -127,9 +127,27 @@ export function ProjectCard({ project, onOpen }: Props) {
                   <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">PM</span>
                   <span className="text-sm font-semibold text-white/80">{project.pm}</span>
                 </div>
-                <div className="text-[12px] text-white/40 font-medium">
-                  {visibleMembers.join(", ")}
-                  {rest > 0 && <span className="ml-1">+{rest}</span>}
+                <div className="group/members relative cursor-default text-[12px] text-white/40 font-medium">
+                  <span className="hover:text-white/70 transition-colors">
+                    {visibleMembers.join(", ")}
+                    {restCount > 0 && <span className="ml-1">외 {restCount}명</span>}
+                  </span>
+                  
+                  {/* Styled Tooltip */}
+                  {restCount > 0 && (
+                    <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] translate-y-2 scale-95 opacity-0 transition-all duration-300 group-hover/members:translate-y-0 group-hover/members:scale-100 group-hover/members:opacity-100">
+                      <div className="rounded-lg border border-white/10 bg-black/80 p-2.5 shadow-2xl backdrop-blur-xl">
+                        <div className="mb-1.5 text-[10px] font-bold text-white/20 uppercase tracking-wider">전체 팀원</div>
+                        <div className="flex flex-wrap gap-1">
+                          {project.members.map((m) => (
+                            <span key={m} className="inline-block rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-white/80">
+                              {m}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
