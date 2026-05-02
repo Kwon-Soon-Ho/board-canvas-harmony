@@ -89,8 +89,8 @@ function DetailWindow() {
 
     setTimeout(() => {
       if (source === 'tracker') {
-        const ganttEl = document.querySelector(`[data-gantt-id="${targetId}"]`);
-        if (ganttEl) ganttEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+        const ganttEl = document.querySelector(`[data-gantt-target="${targetId}"]`);
+        if (ganttEl) ganttEl.scrollIntoView({ block: 'center', inline: 'start', behavior: 'smooth' });
       } else {
         const trackerEl = document.getElementById(`tracker-item-${targetId}`);
         if (trackerEl) trackerEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -592,9 +592,10 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
   return (
     <div className="relative h-14 w-full group mb-5">
       <div 
+        data-gantt-target={item.id}
         onClick={onClick} 
         style={{ left, width }} 
-        className={`absolute top-0 h-full rounded-2xl shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-all bg-[#1a1a1a] border border-white/5 overflow-hidden ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
+        className={`absolute top-0 h-full rounded-2xl scroll-ml-[100px] shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-all bg-[#1a1a1a] border border-white/5 overflow-hidden ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
       >
         <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 1 }} />
         
