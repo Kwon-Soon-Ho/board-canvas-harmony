@@ -147,13 +147,13 @@ function DetailWindow() {
         <PanelGroup direction="vertical">
           {!isFocusMode && (
             <>
-              <Panel defaultSize={60} minSize={30}>
+              <Panel order={1} defaultSize={60} minSize={30}>
                 <PanelGroup direction="horizontal">
-                  <Panel defaultSize={70} minSize={30}>
+                  <Panel order={1} defaultSize={70} minSize={30}>
                     <ImageViewer images={imagesToShow} projectImages={project.images} onToggleStar={handleToggleStar} onEditThumbnails={() => setModalConfig({ type: 'thumbnails' })} />
                   </Panel>
                   <ResizeHandleVertical />
-                  <Panel defaultSize={30} minSize={25} className="bg-[#0a0a0a] flex flex-col border-l border-white/10">
+                  <Panel order={2} defaultSize={30} minSize={25} className="bg-[#0a0a0a] flex flex-col border-l border-white/10">
                     <div className="p-5 border-b border-white/10 bg-[#0d0d0d] flex items-center justify-between shrink-0">
                       <h2 className="font-black text-xl tracking-wider text-white/90">업무 내역</h2>
                       <div className="flex gap-2">
@@ -198,7 +198,7 @@ function DetailWindow() {
               <ResizeHandleHorizontal />
             </>
           )}
-          <Panel defaultSize={isFocusMode ? 100 : 40} minSize={20}>
+          <Panel order={2} defaultSize={isFocusMode ? 100 : 40} minSize={20}>
             <GanttChart tasks={project.tasks} issues={project.issues} activeId={activeItemId} setActiveId={(id) => handleFocusItem(id, 'gantt')} />
           </Panel>
         </PanelGroup>
