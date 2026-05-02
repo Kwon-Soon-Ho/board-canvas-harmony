@@ -34,44 +34,50 @@ export const DEPT_COLOR: Record<Department, string> = {
   UX: "#FF007F",
 };
 
-// Curated Unsplash IDs grouped by theme — high-res, design/tech.
+/**
+ * FRESH VERIFIED UNSPLASH POOL
+ * High-resolution design/studio oriented images.
+ */
 const POOL: Record<Department, string[]> = {
   영상: [
-    "1492551557933-34265f7af79e",
-    "1536440136628-849c177e76a1",
-    "1574717024653-61fd2cf4d44d",
-    "1485846234645-a62644f84728",
-    "1500051638674-ff996a0ec29e",
-    "1574717025058-2f8737d2e2b7",
-    "1518930259200-3e5a3b3ba2e5",
-    "1485846234645-a62644f84728",
+    "1492551557933-34265f7af79e", // Video gear
+    "1536440136628-849c177e76a1", // Cinema
+    "1550745165-9bc0b252726f", // Tech setup
+    "1485846234645-a62644f84728", // Movie clapper
+    "1522860335839-aa0086395e0e", // Camera lens
+    "1516035069371-29a1b244cc32", // Photography
+    "1574717024653-61fd2cf4d44d", // Editing
+    "1500051638674-ff996a0ec29e", // Drone/Video
   ],
   편집: [
-    "1574717024453-354441fa2c44",
-    "1611162617213-7d7a39e9b1d7",
-    "1542204165-65bf26472b9b",
-    "1620207418302-439b387441b0",
-    "1626785774573-4b799315345d",
-    "1626785774625-0b1c2c4eab67",
+    "1542204165-65bf26472b9b", // Books/Graphic
+    "1562613531-d2bf327b82f0", // Magazine
+    "1586717791821-3f44a563fa4c", // Print layout
+    "1626785774573-4b799315345d", // Graphic design
+    "1506452305024-9d3f02d1c9b3", // Sketchbook
+    "1543004218-ee141104e7f3", // Typography
+    "1611162617213-7d7a39e9b1d7", // Packaging
+    "1517694712202-14dd9538aa97", // Laptop code/design
   ],
   UX: [
-    "1558655146-9f40138edfeb",
-    "1545235617-9465d2a55698",
-    "1551650975-87deedd944c3",
-    "1517292987719-0369a794ec0f",
-    "1559028012-481c04fa702d",
-    "1581291518857-4e27b48ff24e",
-    "1542744173-8e7e53415bb0",
-    "1586717791821-3f44a563fa4c",
+    "1558655146-9f40138edfeb", // App interface
+    "1581291518857-4e27b48ff24e", // Prototyping
+    "1545235617-9465d2a55698", // UI design
+    "1551650975-87deedd944c3", // Mobile UX
+    "1559028012-481c04fa702d", // Modern interface
+    "1586717791821-3f44a563fa4c", // Design system
+    "1542744173-8e7e53415bb0", // Tech office
+    "1517292987719-0369a794ec0f", // Web design
   ],
   공통: [
-    "1561070791-2526d30994b8",
-    "1586953208448-b95a79798f07",
-    "1620712943543-bcc4688e7485",
-    "1497032628192-86f99bcd76bc",
-    "1499951360447-b19be8fe80f5",
-    "1531403009284-440f080d1e12",
-    "1542435503-956c469947f6",
+    "1497032628192-86f99bcd76bc", // Clean office
+    "1499951360447-b19be8fe80f5", // Studio space
+    "1522071823991-b1ae5fe23042", // Team meeting
+    "1531403009284-440f080d1e12", // Collaboration
+    "1552664730-d307ca884978", // Workshop
+    "1561070791-2526d30994b8", // Minimalist workspace
+    "1586953208448-b95a79798f07", // Abstract design
+    "1620712943543-bcc4688e7485", // Creative tools
   ],
 };
 
@@ -81,11 +87,12 @@ const img = (id: string) =>
 function pickImages(dept: Department, seed: number): string[] {
   const ids = POOL[dept];
   const out: string[] = [];
-  for (let i = 0; i < 3; i++) out.push(img(ids[(seed + i * 3) % ids.length]));
-  // add a 4th for richer carousel
-  out.push(img(ids[(seed * 2 + 1) % ids.length]));
-  // dedupe while preserving order
-  return Array.from(new Set(out)).slice(0, Math.max(3, 3));
+  // Ensure we get 4 unique high-res images
+  for (let i = 0; i < 4; i++) {
+    const id = ids[(seed + i * 2) % ids.length];
+    out.push(img(id));
+  }
+  return Array.from(new Set(out)).slice(0, 4);
 }
 
 const DEPTS: Department[] = ["공통", "영상", "편집", "UX"];
@@ -134,6 +141,8 @@ const TITLES = [
   "프로모션 LP 일러스트",
   "데이터 비주얼라이제이션",
   "팀 채용 브랜드 페이지",
+  "UI 컴포넌트 라이브러리 고도화",
+  "스토리보드 시각화 워크샵",
 ];
 
 function makeMembers(seed: number): string[] {
@@ -151,7 +160,7 @@ function makeDeadline(seed: number, status: Status): string {
   return d.toISOString().slice(0, 10);
 }
 
-export const MOCK_PROJECTS: Project[] = Array.from({ length: 30 }, (_, i) => {
+export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
   const department = DEPTS[i % DEPTS.length];
   const status =
     i % 9 === 0 ? "완료" : i % 5 === 0 ? "대기" : i % 4 === 0 ? "상시" : "진행";
