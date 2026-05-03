@@ -550,7 +550,9 @@ function TaskAccordionItem({ task, isActive, onEdit, onDelete }: { task: Task, i
       </Accordion.Header>
       <Accordion.Content className="overflow-hidden data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown relative z-10">
         <div className="p-5 pt-3 border-t border-white/10 bg-black/40 backdrop-blur-md">
-          <p className="text-base text-white/70 leading-relaxed whitespace-normal break-words font-medium">{task.content || "내용이 없습니다."}</p>
+          <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+            <p className="text-base text-white/70 leading-relaxed whitespace-pre-wrap font-medium">{task.content || "내용이 없습니다."}</p>
+          </div>
           <div className="flex items-center justify-between mt-6">
             <div className="flex gap-8">
               <div><span className="text-white/30 block text-xs font-bold uppercase mb-1.5">담당자</span><span className="text-white/90 font-bold text-base">{task.assignee}</span></div>
@@ -594,7 +596,9 @@ function IssueAccordionItem({ issue, isActive, onEdit, onDelete }: { issue: Issu
       </Accordion.Header>
       <Accordion.Content className="overflow-hidden data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown relative z-10">
         <div className="p-5 pt-3 border-t border-white/10 bg-black/40 backdrop-blur-md">
-          <p className="text-base text-white/70 leading-relaxed whitespace-normal break-words font-medium">{issue.content || "내용이 없습니다."}</p>
+          <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+            <p className="text-base text-white/70 leading-relaxed whitespace-pre-wrap font-medium">{issue.content || "내용이 없습니다."}</p>
+          </div>
           {issue.resolved && issue.memo && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mt-4">
               <span className="block text-sm font-black text-emerald-400 mb-2">해결 메모</span>
@@ -1179,19 +1183,21 @@ function DesignHubModal({ project, onClose }: { project: Project, onClose: () =>
                    </div>
                    <h3 className="text-white font-black text-3xl tracking-tight leading-tight">프로젝트 전체 시안 모음</h3>
                    {currentImg.memo && (
-                     <p className="text-lg font-bold text-white/70 bg-white/5 border-l-4 border-emerald-500 px-4 py-2 rounded-r-lg italic">
-                       "{currentImg.memo}"
-                     </p>
+                     <div className="max-h-[150px] overflow-y-auto custom-scrollbar pr-2 mt-4">
+                       <p className="text-lg font-bold text-white/70 bg-white/5 border-l-4 border-emerald-500 px-4 py-3 rounded-r-lg italic whitespace-pre-wrap">
+                         "{currentImg.memo}"
+                       </p>
+                     </div>
                    )}
                 </div>
                 {associatedItems.length > 0 && (
-                   <div className="bg-white/5 border border-white/10 px-8 py-6 rounded-[2rem] backdrop-blur-xl shadow-2xl">
+                   <div className="bg-white/5 border border-white/10 px-8 py-6 rounded-[2rem] backdrop-blur-xl shadow-2xl max-w-md">
                       <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">연결된 워크플로우</span>
-                      <div className="space-y-3">
+                      <div className="space-y-3 max-h-[150px] overflow-y-auto custom-scrollbar pr-2">
                         {associatedItems.map((item, i) => (
                            <div key={i} className="flex items-center gap-3">
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black tracking-tighter ${item.type === 'Task' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-rose-500/20 text-rose-400 border border-rose-500/20'}`}>{item.type}</span>
-                              <span className="text-base font-bold text-white/90">{item.title}</span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black tracking-tighter shrink-0 ${item.type === 'Task' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-rose-500/20 text-rose-400 border border-rose-500/20'}`}>{item.type}</span>
+                              <span className="text-base font-bold text-white/90 truncate">{item.title}</span>
                            </div>
                         ))}
                       </div>
