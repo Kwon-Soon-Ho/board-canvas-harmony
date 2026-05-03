@@ -2,9 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
-import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen } from "lucide-react";
+import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen, Image, ChevronUp, ChevronDown } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
 
 const searchSchema = z.object({ id: z.string().optional() });
@@ -130,12 +130,17 @@ function DetailWindow() {
   const handleToggleStar = (imgUrl: string) => {
     setProject(prev => {
       if(!prev) return prev;
-      const isStarred = prev.images?.includes(imgUrl);
-      return { ...prev, images: isStarred ? prev.images.filter(u => u !== imgUrl) : [...(prev.images||[]), imgUrl] };
+      const isStarred = prev.images?.some(img => img.url === imgUrl);
+      return { 
+        ...prev, 
+        images: isStarred 
+          ? prev.images.filter(img => img.url !== imgUrl) 
+          : [...(prev.images||[]), { url: imgUrl, memo: "" }] 
+      };
     });
   };
 
-  const handleUpdateProjectImages = (newImages: string[]) => {
+  const handleUpdateProjectImages = (newImages: ProjectImage[]) => {
     setProject(prev => prev ? { ...prev, images: newImages } : prev);
   };
 
@@ -198,7 +203,7 @@ function DetailWindow() {
             {/* Expanded Info */}
             <div className="ml-4 flex items-center gap-4 bg-white/5 px-4 py-1.5 rounded-full border border-white/10 text-sm">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-orange-400 uppercase tracking-tighter opacity-70">DEADLINE</span>
+                <span className="text-[10px] font-black text-orange-400 uppercase tracking-tighter opacity-70">마감일</span>
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-white/80" />
                   <span className="font-mono text-white/80">{project.deadline}</span>
@@ -215,6 +220,14 @@ function DetailWindow() {
               <div className="w-px h-3 bg-white/20" />
               <span className="font-bold text-teal-400">{project.status}</span>
             </div>
+
+            <button 
+              onClick={() => setModalConfig({ type: 'design-hub' })}
+              className="ml-4 flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-sm font-bold transition shadow-lg shadow-emerald-500/5 group"
+            >
+              <FolderOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              전체 시안
+            </button>
 
             <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
               <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
@@ -253,23 +266,7 @@ function DetailWindow() {
                       </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]/50 backdrop-blur-xl relative z-10">
-                      <div className="mb-8 p-1">
-                        <button 
-                          onClick={() => setModalConfig({ type: 'design-hub' })}
-                          className="w-full flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-emerald-500/50 transition-all group shadow-lg"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                              <FolderOpen className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
-                            </div>
-                            <div className="text-left">
-                              <h3 className="font-black text-white/90 text-lg">디자인 허브</h3>
-                              <p className="text-sm text-white/40 mt-0.5 font-medium">프로젝트 전체 시안 ({project.images.length}장)</p>
-                            </div>
-                          </div>
-                          <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-emerald-400 transition-colors" />
-                        </button>
-                      </div>
+
 
                       <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
                         <div className="space-y-3">
@@ -338,7 +335,7 @@ function DetailWindow() {
   );
 }
 
-function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: { images: string[], projectImages: string[], onToggleStar: (url: string) => void, onEditThumbnails: () => void }) {
+function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: { images: ProjectImage[], projectImages: ProjectImage[], onToggleStar: (url: string) => void, onEditThumbnails: () => void }) {
   const [idx, setIdx] = useState(0);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -390,21 +387,18 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
   if (!images || images.length === 0) return <div className="h-full w-full bg-[#050505] flex items-center justify-center text-white/20 font-bold text-xl">No Images</div>;
 
   const currentImg = images[idx];
-  const isStarred = projectImages?.includes(currentImg) ?? false;
+  const isStarred = projectImages?.some(img => img.url === currentImg.url) ?? false;
 
   return (
     <div className="relative h-full w-full bg-[#050505] group flex flex-col" ref={containerRef}>
       <div className="absolute top-5 right-5 z-10 flex gap-3">
-         <button onClick={() => onToggleStar(currentImg)} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm">
+         <button onClick={() => onToggleStar(currentImg.url)} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm">
            <Star className={`w-6 h-6 ${isStarred ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'text-white/50'}`} />
          </button>
          <button onClick={onEditThumbnails} className="px-5 py-2.5 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition text-base font-bold text-white/90 shadow-lg backdrop-blur-sm">
            썸네일 편집
          </button>
          <button onClick={handleFit} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm" title="Fit to Screen">
-            <Maximize2 className="w-6 h-6 text-white/80" />
-         </button>
-         <button onClick={() => { setScale(1); setPosition({x:0, y:0}); }} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm" title="Reset Zoom (1:1)">
             <Minimize2 className="w-6 h-6 text-white/80" />
          </button>
       </div>
@@ -418,7 +412,7 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
       >
         <img 
           ref={imgRef}
-          src={currentImg} 
+          src={currentImg.url} 
           alt="" 
           onLoad={handleFit}
           style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})` }}
@@ -444,7 +438,7 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
   );
 }
 
-function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: string[], onClose: () => void, onUpdateImages: (imgs: string[]) => void }) {
+function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: ProjectImage[], onClose: () => void, onUpdateImages: (imgs: ProjectImage[]) => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
       <DndProvider>
@@ -454,9 +448,9 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: str
               <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition"><X className="w-8 h-8 text-white/50" /></button>
            </div>
            <div className="p-8 grid grid-cols-3 gap-6 overflow-y-auto max-h-[60vh]">
-              {images?.map((imgUrl, idx) => (
-                <div key={imgUrl} className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black shadow-lg">
-                  <img src={getOptimizedUrl(imgUrl, 'thumb')} className="w-full h-full object-cover" />
+              {images?.map((img, idx) => (
+                <div key={img.url} className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black shadow-lg">
+                  <img src={getOptimizedUrl(img.url, 'thumb')} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
                      <button type="button" onClick={() => {
                         const newImgs = [...images];
@@ -669,17 +663,98 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
               <textarea required value={form.memo || ""} onChange={e => setForm({...form, memo: e.target.value})} className="w-full bg-black border border-emerald-500/50 rounded-xl p-4 text-white text-lg focus:border-emerald-500 focus:outline-none min-h-[100px]" placeholder="해결 방안을 작성해주세요" />
             </div>
           )}
-          <div className="space-y-4">
-            <label className="text-base font-bold text-white/60">이미지 첨부 (URLs)</label>
-            {form.imageUrls.map((url: string, idx: number) => (
-              <div key={idx} className="flex gap-3">
-                <input value={url} onChange={e => { const newUrls = [...form.imageUrls]; newUrls[idx] = e.target.value; setForm({...form, imageUrls: newUrls}); }} className="flex-1 bg-black border border-white/20 rounded-xl p-4 text-white font-mono text-base focus:border-orange-500 focus:outline-none" placeholder="https://..." />
-                <button type="button" onClick={() => setForm({...form, imageUrls: form.imageUrls.filter((_:any, i:number) => i !== idx)})} className="p-4 text-rose-500 hover:bg-rose-500/20 rounded-xl border border-rose-500/30 transition font-bold"><X className="w-6 h-6"/></button>
+          {/* Image Management Section */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <label className="text-lg font-black text-white/90 flex items-center gap-3">
+                <FolderOpen className="w-6 h-6 text-emerald-400" /> 시안 및 이미지 관리
+              </label>
+              <button 
+                type="button"
+                onClick={() => {
+                  const url = window.prompt("추가할 이미지 URL을 입력하세요:");
+                  if (url) setForm({ ...form, imageUrls: [...form.imageUrls, { url, memo: "" }] });
+                }}
+                className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-lg font-bold hover:bg-white/90 transition-all text-sm shadow-lg"
+              >
+                <Plus className="w-4 h-4" /> URL 추가
+              </button>
+            </div>
+            
+            {form.imageUrls.length === 0 ? (
+              <div className="border-2 border-dashed border-white/5 rounded-3xl p-12 text-center bg-white/[0.01]">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <Image className="w-8 h-8 text-white/20" />
+                </div>
+                <p className="text-base font-bold text-white/20 italic">등록된 시안이 없습니다. 이미지를 추가하여 디자인 히스토리를 관리하세요.</p>
               </div>
-            ))}
-            <button type="button" onClick={() => setForm({...form, imageUrls: [...form.imageUrls, ""]})} className="w-full py-4 border border-dashed border-white/30 text-white/60 hover:text-white hover:border-white/60 hover:bg-white/5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-base">
-              <Plus className="w-5 h-5" /> 이미지 URL 추가
-            </button>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {form.imageUrls.map((img: ProjectImage, i: number) => (
+                  <div key={i} className="group flex gap-5 p-5 bg-[#111] border border-white/5 rounded-[2rem] hover:border-emerald-500/30 transition-all duration-300 relative">
+                    <div className="w-40 h-24 rounded-2xl overflow-hidden bg-black shrink-0 border border-white/10 shadow-2xl relative">
+                      <img src={getOptimizedUrl(img.url, 'thumb')} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] font-black text-white/60">#{i + 1}</div>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div className="flex items-start justify-between gap-6">
+                        <textarea 
+                          value={img.memo || ""} 
+                          onChange={e => {
+                            const next = [...form.imageUrls];
+                            next[i] = { ...next[i], memo: e.target.value };
+                            setForm({ ...form, imageUrls: next });
+                          }}
+                          className="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-2 text-sm font-bold text-white/90 placeholder:text-white/20 focus:ring-1 focus:ring-emerald-500/50 focus:bg-white/10 transition-all resize-none h-16" 
+                          placeholder="이 시안에 대한 피드백이나 수정 사항 메모..." 
+                        />
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            type="button"
+                            disabled={i === 0}
+                            onClick={() => {
+                              const next = [...form.imageUrls];
+                              [next[i-1], next[i]] = [next[i], next[i-1]];
+                              setForm({ ...form, imageUrls: next });
+                            }}
+                            className="p-2 hover:bg-white/10 rounded-xl text-white/30 hover:text-white disabled:opacity-0 transition"
+                            title="위로 이동"
+                          >
+                            <ChevronUp className="w-5 h-5" />
+                          </button>
+                          <button 
+                            type="button"
+                            disabled={i === form.imageUrls.length - 1}
+                            onClick={() => {
+                              const next = [...form.imageUrls];
+                              [next[i+1], next[i]] = [next[i], next[i+1]];
+                              setForm({ ...form, imageUrls: next });
+                            }}
+                            className="p-2 hover:bg-white/10 rounded-xl text-white/30 hover:text-white disabled:opacity-0 transition"
+                            title="아래로 이동"
+                          >
+                            <ChevronDown className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="text-[10px] font-mono text-white/20 truncate max-w-[200px] hover:text-white/40 transition-colors cursor-help" title={img.url}>{img.url}</div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const next = form.imageUrls.filter((_: any, idx: number) => idx !== i);
+                            setForm({ ...form, imageUrls: next });
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> 시안 삭제
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="pt-6 border-t border-white/10 flex justify-end gap-4">
             <button type="button" onClick={onClose} className="px-8 py-4 rounded-xl border border-white/20 hover:bg-white/10 font-bold transition text-white text-lg">취소</button>
@@ -944,53 +1019,99 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
 
 function DesignHubModal({ project, onClose }: { project: Project, onClose: () => void }) {
   const [idx, setIdx] = useState(0);
-  const images = project.images;
-  const currentImg = images[idx];
+
+  // Collect all images from everywhere
+  const allImages = useMemo(() => {
+    const map = new Map<string, ProjectImage>();
+    
+    // 1. Base project images
+    project.images.forEach(img => {
+      if (!map.has(img.url)) map.set(img.url, img);
+    });
+
+    // 2. Task images
+    project.tasks.forEach(t => {
+      t.imageUrls.forEach(img => {
+        if (!map.has(img.url)) map.set(img.url, img);
+        else {
+           // If it exists, merge memo if current one is empty
+           const existing = map.get(img.url)!;
+           if (!existing.memo && img.memo) map.set(img.url, img);
+        }
+      });
+    });
+
+    // 3. Issue images
+    project.issues.forEach(iss => {
+      iss.imageUrls.forEach(img => {
+        if (!map.has(img.url)) map.set(img.url, img);
+        else {
+           const existing = map.get(img.url)!;
+           if (!existing.memo && img.memo) map.set(img.url, img);
+        }
+      });
+    });
+
+    return Array.from(map.values());
+  }, [project]);
+
+  const currentImg = allImages[idx];
 
   // Traceability logic
   const associatedItems = useMemo(() => {
+    if (!currentImg) return [];
     const found: { type: 'Task' | 'Issue', title: string }[] = [];
     project.tasks.forEach(t => {
-      if (t.image === currentImg || t.imageUrls?.includes(currentImg)) {
+      if (t.imageUrls.some(i => i.url === currentImg.url)) {
         found.push({ type: 'Task', title: t.title });
       }
     });
     project.issues.forEach(i => {
-      if (i.imageUrls?.includes(currentImg)) {
+      if (i.imageUrls.some(i => i.url === currentImg.url)) {
         found.push({ type: 'Issue', title: i.title });
       }
     });
     return found;
   }, [currentImg, project]);
 
+  if (allImages.length === 0) return null;
+
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 md:p-12 animate-in fade-in duration-300">
-      <button onClick={onClose} className="absolute top-6 right-6 z-20 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white/70 hover:text-white">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-4 md:p-12 animate-in fade-in duration-300">
+      <button onClick={onClose} className="absolute top-6 right-6 z-20 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white/70 hover:text-white shadow-2xl border border-white/10">
         <X className="w-8 h-8" />
       </button>
 
       <div className="w-full h-full max-w-7xl flex flex-col gap-8">
         {/* Main Preview Area */}
-        <div className="flex-1 min-h-0 bg-black/40 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col shadow-2xl">
+        <div className="flex-1 min-h-0 bg-black/40 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.5)]">
           <div className="absolute inset-0 flex items-center justify-center p-8">
-             <img src={currentImg} alt="" className="max-w-full max-h-full object-contain drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] rounded-lg" />
+             <img src={currentImg.url} alt="" className="max-w-full max-h-full object-contain drop-shadow-[0_0_80px_rgba(255,255,255,0.05)] rounded-lg transition-all duration-500" />
           </div>
           
           {/* Metadata Overlay */}
-          <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black/80 to-transparent">
-             <div className="flex items-end justify-between gap-8">
-                <div className="space-y-2">
-                   <h2 className="text-white/40 text-xs font-black uppercase tracking-[0.2em]">Current Draft No.{idx + 1}</h2>
-                   <h3 className="text-white font-black text-2xl tracking-tight">프로젝트 메인 시안 및 레퍼런스</h3>
+          <div className="absolute bottom-0 left-0 w-full p-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+             <div className="flex items-end justify-between gap-12">
+                <div className="space-y-4 max-w-2xl">
+                   <div className="flex items-center gap-3">
+                     <span className="bg-emerald-500 text-black text-[10px] font-black px-2 py-0.5 rounded tracking-tighter uppercase">Total Collection</span>
+                     <h2 className="text-white/40 text-[11px] font-black uppercase tracking-[0.3em]">Design No.{idx + 1} / {allImages.length}</h2>
+                   </div>
+                   <h3 className="text-white font-black text-3xl tracking-tight leading-tight">프로젝트 전체 시안 모음</h3>
+                   {currentImg.memo && (
+                     <p className="text-lg font-bold text-white/70 bg-white/5 border-l-4 border-emerald-500 px-4 py-2 rounded-r-lg italic">
+                       "{currentImg.memo}"
+                     </p>
+                   )}
                 </div>
                 {associatedItems.length > 0 && (
-                   <div className="bg-emerald-500/10 border border-emerald-500/20 px-6 py-4 rounded-2xl backdrop-blur-md">
-                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-2 opacity-70">Associated Workflow</span>
-                      <div className="space-y-1.5">
+                   <div className="bg-white/5 border border-white/10 px-8 py-6 rounded-[2rem] backdrop-blur-xl shadow-2xl">
+                      <span className="text-[10px] font-black text-white/30 uppercase tracking-widest block mb-4">연결된 워크플로우</span>
+                      <div className="space-y-3">
                         {associatedItems.map((item, i) => (
-                           <div key={i} className="flex items-center gap-2">
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-black ${item.type === 'Task' ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>{item.type}</span>
-                              <span className="text-sm font-bold text-white/90">{item.title}</span>
+                           <div key={i} className="flex items-center gap-3">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black tracking-tighter ${item.type === 'Task' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-rose-500/20 text-rose-400 border border-rose-500/20'}`}>{item.type}</span>
+                              <span className="text-base font-bold text-white/90">{item.title}</span>
                            </div>
                         ))}
                       </div>
@@ -1001,14 +1122,15 @@ function DesignHubModal({ project, onClose }: { project: Project, onClose: () =>
         </div>
 
         {/* Thumbnail Strip */}
-        <div className="h-32 shrink-0 flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide px-2">
-           {images.map((img, i) => (
+        <div className="h-32 shrink-0 flex items-center gap-4 overflow-x-auto pb-4 scrollbar-hide px-4">
+           {allImages.map((img, i) => (
               <button 
                 key={i} 
                 onClick={() => setIdx(i)}
-                className={`relative w-32 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${idx === i ? 'border-emerald-500 scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'border-white/10 opacity-40 hover:opacity-100 hover:border-white/30'}`}
+                className={`relative w-32 h-20 rounded-2xl overflow-hidden border-2 transition-all shrink-0 group ${idx === i ? 'border-emerald-500 scale-110 shadow-[0_0_30px_rgba(16,185,129,0.4)]' : 'border-white/10 opacity-30 hover:opacity-100 hover:border-white/40'}`}
               >
-                 <img src={getOptimizedUrl(img, 'thumb')} alt="" className="w-full h-full object-cover" />
+                 <img src={getOptimizedUrl(img.url, 'thumb')} alt="" className="w-full h-full object-cover" />
+                 <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
                  {idx === i && <div className="absolute inset-0 bg-emerald-500/10" />}
               </button>
            ))}

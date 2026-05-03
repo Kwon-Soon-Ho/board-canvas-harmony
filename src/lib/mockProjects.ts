@@ -1,5 +1,9 @@
 export type Department = "영상" | "편집" | "UX" | "공통";
 export type Status = "진행" | "상시" | "대기" | "완료";
+export interface ProjectImage {
+  url: string;
+  memo?: string;
+}
 
 export interface ThumbnailConfig {
   coverIndex: number;
@@ -20,7 +24,7 @@ export interface Task {
   startDate: string;
   endDate: string;
   assignee: string;
-  imageUrls: string[];
+  imageUrls: ProjectImage[];
 }
 
 export interface Issue {
@@ -31,7 +35,7 @@ export interface Issue {
   startDate: string;
   endDate: string;
   assignee: string;
-  imageUrls: string[];
+  imageUrls: ProjectImage[];
   resolved: boolean;
   memo?: string;
   timestamp?: string;
@@ -47,7 +51,7 @@ export interface Project {
   pm: string;
   members: string[];
   image: string; 
-  images: string[]; 
+  images: ProjectImage[]; 
   thumbnail: ThumbnailConfig;
   tasks: Task[];
   issues: Issue[];
@@ -254,7 +258,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
 
     const imgCount = 3;
     const images = Array.from({ length: imgCount }, (_, j) => {
-      return img(i * imgCount + j);
+      return { url: img(i * imgCount + j), memo: "" };
     });
     
     const status = STATUSES[i % STATUSES.length];
@@ -307,7 +311,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
         startDate: tStart.toISOString().slice(0, 10),
         endDate: tEnd.toISOString().slice(0, 10),
         assignee: membersList[t % membersList.length] || pm,
-        imageUrls: [images[t % images.length]],
+        imageUrls: [{ url: images[t % images.length].url, memo: "" }],
       };
     });
 
@@ -330,7 +334,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
         startDate: iStart.toISOString().slice(0, 10),
         endDate: iEnd.toISOString().slice(0, 10),
         assignee: membersList[is % membersList.length] || pm,
-        imageUrls: [images[(is + 1) % images.length]],
+        imageUrls: [{ url: images[(is + 1) % images.length].url, memo: "" }],
         resolved: isResolved,
         memo: isResolved ? "피드백 반영 완료: 색상 대비 및 타이포그래피 여백 수정 확인됨." : undefined,
         timestamp: isResolved ? new Date().toISOString() : undefined,
@@ -346,7 +350,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
       deadline: status === "상시" ? "상시" : deadline,
       pm,
       members: membersList,
-      image: images[0],
+      image: images[0].url,
       images,
       thumbnail: {
         coverIndex: 0,

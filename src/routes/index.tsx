@@ -145,7 +145,7 @@ function ControlCenter() {
           <div className="flex items-center gap-4">
             <div className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md">
               <button onClick={() => { setSortBy("recent"); setSortDesc(true); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}>최신순</button>
-              <button onClick={() => { setSortBy("progress"); setSortDesc(true); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}><CheckCircle2 className="w-4 h-4"/> 진척도순</button>
+              <button onClick={() => { setSortBy("progress"); setSortDesc(true); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}><CheckCircle2 className="w-4 h-4"/> 진행률순</button>
               <button onClick={() => { setSortBy("deadline"); setSortDesc(false); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}><Clock className="w-4 h-4"/> 마감임박순</button>
             </div>
             <button 
