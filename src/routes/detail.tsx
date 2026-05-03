@@ -440,10 +440,10 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
       {/* Memo Overlay - Positioned to avoid sidebar conflict */}
       {showMemo && currentImg.memo && (
         <div className="absolute top-24 right-20 z-[60] w-80 animate-in slide-in-from-right-5 fade-in duration-300">
-           <div className="bg-black/90 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+           <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.6)]">
               <div className="flex items-center gap-2 mb-4">
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Designer Note</span>
+                 <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">메모</span>
               </div>
               <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
                 <p className="text-white/90 font-bold leading-relaxed whitespace-pre-wrap italic">
@@ -478,18 +478,18 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
       {images.length > 1 && (
         <>
           <button 
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-[400px] w-16 bg-white/10 hover:bg-white/20 border-y border-r border-white/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md z-[70] flex items-center justify-center text-white/40 hover:text-white rounded-r-2xl" 
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-32 w-14 bg-white/10 hover:bg-white/20 border-y border-r border-white/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md z-[70] flex items-center justify-center text-white/50 hover:text-white rounded-r-3xl shadow-[5px_0_15px_rgba(0,0,0,0.3)]" 
             onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
             title="이전 시안"
           >
-            <ChevronLeft className="w-10 h-10" />
+            <ChevronLeft className="w-8 h-8" />
           </button>
           <button 
-            className="absolute right-0 top-1/2 -translate-y-1/2 h-[400px] w-16 bg-white/10 hover:bg-white/20 border-y border-l border-white/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md z-[70] flex items-center justify-center text-white/40 hover:text-white rounded-l-2xl" 
+            className="absolute right-0 top-1/2 -translate-y-1/2 h-32 w-14 bg-white/10 hover:bg-white/20 border-y border-l border-white/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md z-[70] flex items-center justify-center text-white/50 hover:text-white rounded-l-3xl shadow-[-5px_0_15px_rgba(0,0,0,0.3)]" 
             onClick={() => setIdx(i => (i + 1) % images.length)}
             title="다음 시안"
           >
-            <ChevronRight className="w-10 h-10" />
+            <ChevronRight className="w-8 h-8" />
           </button>
         </>
       )}
@@ -997,12 +997,12 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
         <div 
           className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-none`} 
           style={{ 
-            width: `${progress}%`, 
+            width: !isTask ? '100%' : `${progress}%`, 
             opacity: 1, 
             borderTopLeftRadius: '1rem', 
             borderBottomLeftRadius: '1rem',
-            borderTopRightRadius: progress === 100 ? '1rem' : '0',
-            borderBottomRightRadius: progress === 100 ? '1rem' : '0'
+            borderTopRightRadius: (progress === 100 || !isTask) ? '1rem' : '0',
+            borderBottomRightRadius: (progress === 100 || !isTask) ? '1rem' : '0'
           }} 
         />
         
