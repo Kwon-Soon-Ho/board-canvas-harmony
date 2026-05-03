@@ -478,14 +478,14 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
       {images.length > 1 && (
         <>
           <button 
-            className="absolute left-0 top-0 bottom-0 w-16 bg-white/5 hover:bg-white/10 border-r border-white/5 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm z-[70] flex items-center justify-center text-white/40 hover:text-white" 
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-[400px] w-16 bg-white/10 hover:bg-white/20 border-y border-r border-white/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md z-[70] flex items-center justify-center text-white/40 hover:text-white rounded-r-2xl" 
             onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
             title="이전 시안"
           >
             <ChevronLeft className="w-10 h-10" />
           </button>
           <button 
-            className="absolute right-0 top-0 bottom-0 w-16 bg-white/5 hover:bg-white/10 border-l border-white/5 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm z-[70] flex items-center justify-center text-white/40 hover:text-white" 
+            className="absolute right-0 top-1/2 -translate-y-1/2 h-[400px] w-16 bg-white/10 hover:bg-white/20 border-y border-l border-white/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-md z-[70] flex items-center justify-center text-white/40 hover:text-white rounded-l-2xl" 
             onClick={() => setIdx(i => (i + 1) % images.length)}
             title="다음 시안"
           >
@@ -946,7 +946,7 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
   let gradientClass = "";
   if (isTask) gradientClass = "bg-gradient-to-r from-[#0d3b2f] to-[#147058]";
   else if (progress === 100) gradientClass = "bg-white";
-  else gradientClass = "bg-gradient-to-r from-red-600 via-red-800 to-red-950 shadow-[0_0_15px_rgba(220,38,38,0.3)]"; // Strong deep red with glow
+  else gradientClass = "bg-gradient-to-r from-[#800020] via-[#a52a2a] to-[#800020] border border-red-500/40 shadow-[0_0_20px_rgba(128,0,32,0.4)]"; // Definitive Burgundy red
 
   const textColor = isResolvedIssue ? "text-black" : "text-[#FFFFFF]";
 
