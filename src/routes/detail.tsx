@@ -437,9 +437,9 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
          </button>
       </div>
 
-      {/* Memo Overlay - Moved to top to avoid blocking navigation */}
+      {/* Memo Overlay - Positioned to avoid sidebar conflict */}
       {showMemo && currentImg.memo && (
-        <div className="absolute top-24 right-8 z-[60] w-80 animate-in slide-in-from-top-5 fade-in duration-300">
+        <div className="absolute top-24 right-20 z-[60] w-80 animate-in slide-in-from-right-5 fade-in duration-300">
            <div className="bg-black/90 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.6)]">
               <div className="flex items-center gap-2 mb-4">
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -478,14 +478,16 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
       {images.length > 1 && (
         <>
           <button 
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-5 bg-black/60 border border-white/10 hover:bg-white hover:text-black rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-xl z-[70] shadow-2xl" 
+            className="absolute left-0 top-0 bottom-0 w-16 bg-white/5 hover:bg-white/10 border-r border-white/5 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm z-[70] flex items-center justify-center text-white/40 hover:text-white" 
             onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
+            title="이전 시안"
           >
             <ChevronLeft className="w-10 h-10" />
           </button>
           <button 
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-5 bg-black/60 border border-white/10 hover:bg-white hover:text-black rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-xl z-[70] shadow-2xl" 
+            className="absolute right-0 top-0 bottom-0 w-16 bg-white/5 hover:bg-white/10 border-l border-white/5 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm z-[70] flex items-center justify-center text-white/40 hover:text-white" 
             onClick={() => setIdx(i => (i + 1) % images.length)}
+            title="다음 시안"
           >
             <ChevronRight className="w-10 h-10" />
           </button>
@@ -944,7 +946,7 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
   let gradientClass = "";
   if (isTask) gradientClass = "bg-gradient-to-r from-[#0d3b2f] to-[#147058]";
   else if (progress === 100) gradientClass = "bg-white";
-  else gradientClass = "bg-gradient-to-r from-rose-700 via-red-900 to-red-950"; // More vibrant deep red for visibility
+  else gradientClass = "bg-gradient-to-r from-red-600 via-red-800 to-red-950 shadow-[0_0_15px_rgba(220,38,38,0.3)]"; // Strong deep red with glow
 
   const textColor = isResolvedIssue ? "text-black" : "text-[#FFFFFF]";
 
