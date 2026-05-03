@@ -81,7 +81,8 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
           className="block w-full text-left focus:outline-none"
         >
           <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-neutral-900">
-            {seq.map((src, i) => {
+            {seq.map((img, i) => {
+              const src = typeof img === 'string' ? img : img.url;
               if (i > 0 && !hasHovered) return null;
               return (
                 <div

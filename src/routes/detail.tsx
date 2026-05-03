@@ -28,9 +28,23 @@ function DetailWindow() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const found = parsed.find((p: Project) => p.id === id);
-        if (found) return found;
-      } catch {}
+        const raw = parsed.find((x: any) => x.id === id);
+        if (raw) {
+          // Migration: Convert string images to ProjectImage objects
+          const migrate = (imgs: any[]): ProjectImage[] => 
+            (imgs || []).map(img => typeof img === 'string' ? { url: img, memo: "" } : img);
+
+          const project: Project = {
+            ...raw,
+            images: migrate(raw.images),
+            tasks: (raw.tasks || []).map((t: any) => ({ ...t, imageUrls: migrate(t.imageUrls) })),
+            issues: (raw.issues || []).map((i: any) => ({ ...i, imageUrls: migrate(i.imageUrls) })),
+          };
+          return project;
+        }
+      } catch (err) {
+        console.error("Migration failed", err);
+      }
     }
     return MOCK_PROJECTS.find((p) => p.id === id) ?? null;
   });
@@ -221,26 +235,32 @@ function DetailWindow() {
               <span className="font-bold text-teal-400">{project.status}</span>
             </div>
 
-            <button 
-              onClick={() => setModalConfig({ type: 'design-hub' })}
-              className="ml-4 flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-full text-sm font-bold transition shadow-lg shadow-emerald-500/5 group"
-            >
-              <FolderOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              전체 시안
-            </button>
-
             <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
               <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
               <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
-                <div className="bg-gradient-to-r from-[#0d3b2f] to-[#147058] h-full transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
+                <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
               </div>
             </div>
           </div>
         </div>
-        <button onClick={() => setIsImageViewerFull(!isImageViewerFull)} className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-5 py-2 text-base font-bold hover:bg-white/20 transition">
-          {isImageViewerFull ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
-          {isImageViewerFull ? "기본 화면" : "시안 확대"}
-        </button>
+
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setModalConfig({ type: 'design-hub' })}
+            className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-5 py-2.5 rounded-xl text-sm font-black transition group"
+          >
+            <FolderOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            전체 시안
+          </button>
+          
+          <button 
+            onClick={() => setIsImageViewerFull(!isImageViewerFull)} 
+            className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-black hover:bg-white/10 transition text-white/70"
+          >
+            {isImageViewerFull ? <Minimize2 className="h-4.5 w-4.5" /> : <Maximize2 className="h-4.5 w-4.5" />}
+            {isImageViewerFull ? "기본 화면" : "시안 확대"}
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 overflow-hidden">
@@ -388,10 +408,24 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
 
   const currentImg = images[idx];
   const isStarred = projectImages?.some(img => img.url === currentImg.url) ?? false;
+  const [showMemo, setShowMemo] = useState(false);
+
+  useEffect(() => {
+    setShowMemo(false); // Hide memo when image changes
+  }, [idx]);
 
   return (
     <div className="relative h-full w-full bg-[#050505] group flex flex-col" ref={containerRef}>
       <div className="absolute top-5 right-5 z-10 flex gap-3">
+         {currentImg.memo && (
+           <button 
+             onClick={() => setShowMemo(!showMemo)} 
+             className={`p-3 rounded-lg border transition shadow-lg backdrop-blur-sm flex items-center gap-2 ${showMemo ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-black/60 text-white/50 border-white/10 hover:bg-white/10'}`}
+           >
+             <Image className="w-6 h-6" />
+             <span className="text-sm font-black uppercase tracking-tighter">Memo</span>
+           </button>
+         )}
          <button onClick={() => onToggleStar(currentImg.url)} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm">
            <Star className={`w-6 h-6 ${isStarred ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'text-white/50'}`} />
          </button>
@@ -402,6 +436,21 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
             <Minimize2 className="w-6 h-6 text-white/80" />
          </button>
       </div>
+
+      {/* Memo Overlay */}
+      {showMemo && currentImg.memo && (
+        <div className="absolute bottom-24 right-8 z-20 w-80 animate-in slide-in-from-bottom-5 fade-in duration-300">
+           <div className="bg-black/80 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+              <div className="flex items-center gap-2 mb-4">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Designer Note</span>
+              </div>
+              <p className="text-white/90 font-bold leading-relaxed whitespace-pre-wrap italic">
+                "{currentImg.memo}"
+              </p>
+           </div>
+        </div>
+      )}
       <div 
         className={`flex-1 relative overflow-hidden flex items-center justify-center ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
         onMouseDown={handlePanStart}

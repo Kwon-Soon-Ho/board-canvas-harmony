@@ -13,7 +13,27 @@ export const Route = createFileRoute("/")({
 });
 
 function ControlCenter() {
-  const [projects, setProjects] = useState(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem('design-projects-store');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Migration: Convert string images to ProjectImage objects
+        const migrate = (imgs: any[]): any[] => 
+          (imgs || []).map(img => typeof img === 'string' ? { url: img, memo: "" } : img);
+
+        return parsed.map((p: any) => ({
+          ...p,
+          images: migrate(p.images),
+          tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrate(t.imageUrls) })),
+          issues: (p.issues || []).map((i: any) => ({ ...i, imageUrls: migrate(i.imageUrls) })),
+        }));
+      } catch (err) {
+        console.error("Dashboard Migration failed", err);
+      }
+    }
+    return MOCK_PROJECTS;
+  });
   const [dept, setDeptRaw] = useState<Department | "전체">("전체");
   const [statuses, setStatuses] = useState<Set<Status>>(new Set());
   const [searchValue, setSearchValue] = useState("");
