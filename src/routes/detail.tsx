@@ -422,8 +422,8 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
              onClick={() => setShowMemo(!showMemo)} 
              className={`p-3 rounded-lg border transition shadow-lg backdrop-blur-sm flex items-center gap-2 ${showMemo ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-black/60 text-white/50 border-white/10 hover:bg-white/10'}`}
            >
-             <Image className="w-6 h-6" />
-             <span className="text-sm font-black uppercase tracking-tighter">Memo</span>
+             <Image className="w-5 h-5 stroke-[2.5]" />
+             <span className="text-sm font-black uppercase tracking-tighter">메모</span>
            </button>
          )}
          <button onClick={() => onToggleStar(currentImg.url)} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm">
@@ -437,17 +437,19 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
          </button>
       </div>
 
-      {/* Memo Overlay */}
+      {/* Memo Overlay - Moved to top to avoid blocking navigation */}
       {showMemo && currentImg.memo && (
-        <div className="absolute bottom-24 right-8 z-20 w-80 animate-in slide-in-from-bottom-5 fade-in duration-300">
-           <div className="bg-black/80 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <div className="absolute top-24 right-8 z-[60] w-80 animate-in slide-in-from-top-5 fade-in duration-300">
+           <div className="bg-black/90 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.6)]">
               <div className="flex items-center gap-2 mb-4">
                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Designer Note</span>
               </div>
-              <p className="text-white/90 font-bold leading-relaxed whitespace-pre-wrap italic">
-                "{currentImg.memo}"
-              </p>
+              <div className="max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                <p className="text-white/90 font-bold leading-relaxed whitespace-pre-wrap italic">
+                  "{currentImg.memo}"
+                </p>
+              </div>
            </div>
         </div>
       )}
@@ -859,9 +861,18 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
             <button onClick={() => containerRef.current?.scrollBy({ left: -300, behavior: 'smooth'})} className="p-2.5 border border-white/20 hover:bg-white/10 rounded-lg transition"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
             <button onClick={() => containerRef.current?.scrollBy({ left: 300, behavior: 'smooth'})} className="p-2.5 border border-white/20 hover:bg-white/10 rounded-lg transition"><ChevronRight className="w-5 h-5 text-white/80" /></button>
           </div>
-          <select value={viewWeeks} onChange={(e) => setViewWeeks(Number(e.target.value) as any)} className="rounded-lg border border-white/20 bg-black px-5 py-2.5 text-base font-bold text-white focus:outline-none focus:border-orange-500">
-            <option value={4}>4주 보기</option><option value={8}>8주 보기</option><option value={12}>12주 보기</option>
-          </select>
+          <div className="relative group">
+            <select 
+              value={viewWeeks} 
+              onChange={(e) => setViewWeeks(Number(e.target.value) as any)} 
+              className="appearance-none rounded-xl border border-white/10 bg-white/5 pl-6 pr-12 py-3 text-sm font-black text-white focus:outline-none focus:border-emerald-500/50 transition-all cursor-pointer hover:bg-white/10"
+            >
+              <option value={4} className="bg-[#111]">4주 단위 보기</option>
+              <option value={8} className="bg-[#111]">8주 단위 보기</option>
+              <option value={12} className="bg-[#111]">12주 단위 보기</option>
+            </select>
+            <ChevronDown className="w-4 h-4 text-white/40 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-white/70 transition-colors" />
+          </div>
         </div>
       </div>
       <div className={`flex-1 overflow-x-auto overflow-y-auto relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} ref={containerRef} onMouseDown={onMouseDown} onMouseLeave={onMouseLeave} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
@@ -926,8 +937,8 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
   
   let gradientClass = "";
   if (isTask) gradientClass = "bg-gradient-to-r from-[#0d3b2f] to-[#147058]";
-  else if (progress === 100) gradientClass = "bg-white/90";
-  else gradientClass = "bg-gradient-to-r from-red-800 to-red-950";
+  else if (progress === 100) gradientClass = "bg-white";
+  else gradientClass = "bg-gradient-to-r from-[#5a0a0a] to-[#2a0505]"; // Dark deep red for issues
 
   const textColor = isResolvedIssue ? "text-black" : "text-[#FFFFFF]";
 
@@ -975,7 +986,17 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
         style={{ left, width: activeWidth }} 
         className={`absolute top-0 h-full rounded-2xl scroll-ml-[100px] shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-none bg-[#1a1a1a] border border-white/5 overflow-visible ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
       >
-        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-none`} style={{ width: `${progress}%`, opacity: 1, borderTopLeftRadius: '1rem', borderBottomLeftRadius: '1rem' }} />
+        <div 
+          className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-none`} 
+          style={{ 
+            width: `${progress}%`, 
+            opacity: 1, 
+            borderTopLeftRadius: '1rem', 
+            borderBottomLeftRadius: '1rem',
+            borderTopRightRadius: progress === 100 ? '1rem' : '0',
+            borderBottomRightRadius: progress === 100 ? '1rem' : '0'
+          }} 
+        />
         
         <span className={`relative z-10 text-lg font-black truncate pr-4 drop-shadow-md ${textColor}`}>
           {item.title}
