@@ -214,25 +214,25 @@ function DetailWindow() {
               <Edit2 className="w-4 h-4" />
             </button>
 
-            {/* Expanded Info */}
-            <div className="ml-4 flex items-center gap-4 bg-white/5 px-4 py-1.5 rounded-full border border-white/10 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-orange-400 uppercase tracking-tighter opacity-70">마감일</span>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-white/80" />
-                  <span className="font-mono text-white/80">{project.deadline}</span>
+            {/* Expanded Info - Enlarged for better visibility */}
+            <div className="ml-4 flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-base">
+              <div className="flex items-center gap-2.5">
+                <span className="text-[11px] font-black text-orange-400 uppercase tracking-widest opacity-80">마감일</span>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4.5 h-4.5 text-white/90" />
+                  <span className="font-mono text-white/90 font-bold">{project.deadline}</span>
                 </div>
               </div>
-              <div className="w-px h-3 bg-white/20" />
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter opacity-70">PM</span>
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-white/80" />
-                  <span className="font-bold text-white/80">{project.pm}</span>
+              <div className="w-px h-4 bg-white/20" />
+              <div className="flex items-center gap-2.5">
+                <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest opacity-80">PM</span>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4.5 h-4.5 text-white/90" />
+                  <span className="font-black text-white/90">{project.pm}</span>
                 </div>
               </div>
-              <div className="w-px h-3 bg-white/20" />
-              <span className="font-bold text-teal-400">{project.status}</span>
+              <div className="w-px h-4 bg-white/20" />
+              <span className="font-black text-teal-400 text-lg">{project.status}</span>
             </div>
 
             <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
@@ -477,11 +477,17 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
       </div>
       {images.length > 1 && (
         <>
-          <button className="absolute left-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 border border-white/10 hover:bg-white/20 rounded-full transition opacity-0 group-hover:opacity-100 backdrop-blur-sm" onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}>
-            <ChevronLeft className="w-8 h-8" />
+          <button 
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-5 bg-black/60 border border-white/10 hover:bg-white hover:text-black rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-xl z-[70] shadow-2xl" 
+            onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
+          >
+            <ChevronLeft className="w-10 h-10" />
           </button>
-          <button className="absolute right-6 top-1/2 -translate-y-1/2 p-4 bg-black/50 border border-white/10 hover:bg-white/20 rounded-full transition opacity-0 group-hover:opacity-100 backdrop-blur-sm" onClick={() => setIdx(i => (i + 1) % images.length)}>
-            <ChevronRight className="w-8 h-8" />
+          <button 
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-5 bg-black/60 border border-white/10 hover:bg-white hover:text-black rounded-full transition-all opacity-0 group-hover:opacity-100 backdrop-blur-xl z-[70] shadow-2xl" 
+            onClick={() => setIdx(i => (i + 1) % images.length)}
+          >
+            <ChevronRight className="w-10 h-10" />
           </button>
         </>
       )}
@@ -938,7 +944,7 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
   let gradientClass = "";
   if (isTask) gradientClass = "bg-gradient-to-r from-[#0d3b2f] to-[#147058]";
   else if (progress === 100) gradientClass = "bg-white";
-  else gradientClass = "bg-gradient-to-r from-[#5a0a0a] to-[#2a0505]"; // Dark deep red for issues
+  else gradientClass = "bg-gradient-to-r from-rose-700 via-red-900 to-red-950"; // More vibrant deep red for visibility
 
   const textColor = isResolvedIssue ? "text-black" : "text-[#FFFFFF]";
 
@@ -998,12 +1004,14 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
           }} 
         />
         
-        <span className={`relative z-10 text-lg font-black truncate pr-4 drop-shadow-md ${textColor}`}>
+        <span className={`relative z-10 text-lg font-black truncate pr-4 drop-shadow-md flex-1 min-w-0 ${textColor}`}>
           {item.title}
         </span>
-        <span className={`relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm ${isResolvedIssue ? 'bg-black/10' : 'bg-black/80'} ${textColor}`}>
-          {displayDays} days
-        </span>
+        {activeWidth > 150 && (
+          <span className={`relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm ${isResolvedIssue ? 'bg-black/10' : 'bg-black/80'} ${textColor}`}>
+            {displayDays} days
+          </span>
+        )}
 
         {/* Resize Handle */}
         <div 
