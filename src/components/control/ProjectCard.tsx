@@ -4,9 +4,12 @@ import { getOptimizedUrl } from "@/lib/mockProjects";
 import { DeptTag } from "./DeptTag";
 import { StatusTag } from "./StatusTag";
 
+import { Trash2 } from "lucide-react";
+
 interface Props {
   project: Project;
   onOpen: (id: string) => void;
+  onDelete?: () => void;
 }
 
 function ddayLabel(deadline: string): string {
@@ -21,7 +24,7 @@ function ddayLabel(deadline: string): string {
   return `D+${Math.abs(diff)}`;
 }
 
-export function ProjectCard({ project, onOpen }: Props) {
+export function ProjectCard({ project, onOpen, onDelete }: Props) {
   const [hover, setHover] = useState(false);
   const [hasHovered, setHasHovered] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -165,6 +168,15 @@ export function ProjectCard({ project, onOpen }: Props) {
                   </span>
                   <span className="text-[11px] text-white/40 font-medium">{project.deadline}</span>
                 </div>
+                {onDelete && (
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
+                    className="p-1.5 rounded-md hover:bg-rose-500/20 hover:text-rose-400 text-white/30 transition-colors pointer-events-auto"
+                    title="프로젝트 삭제"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>

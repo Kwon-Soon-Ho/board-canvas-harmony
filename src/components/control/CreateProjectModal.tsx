@@ -129,12 +129,12 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
           </div>
 
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-white/70 flex items-center gap-2"><Calendar className="w-4 h-4" /> 마감일</label>
+            <label className="block text-sm font-semibold text-white/90 flex items-center gap-2"><Calendar className="w-4 h-4 text-orange-400" /> 마감일</label>
             <input 
               type="date" 
               value={deadline} 
               onChange={e => setDeadline(e.target.value)} 
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition color-scheme-dark"
+              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-orange-500 transition color-scheme-dark"
               disabled={status === "상시"}
             />
           </div>

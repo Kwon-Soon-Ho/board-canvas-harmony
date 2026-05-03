@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   DEPT_COLOR,
-  MOCK_PROJECTS,
   type Department,
   type Status,
+  type Project,
 } from "@/lib/mockProjects";
 
 const DEPARTMENTS: Array<Department | "전체"> = ["전체", "공통", "영상", "편집", "UX"];
@@ -17,6 +17,7 @@ const STATUS_COLOR_VAR: Record<Status, string> = {
 };
 
 interface Props {
+  projects: Project[];
   dept: Department | "전체";
   setDept: (d: Department | "전체") => void;
   statuses: Set<Status>;
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function FilterBar({
+  projects,
   dept,
   setDept,
   statuses,
@@ -50,16 +52,16 @@ export function FilterBar({
   };
 
   const deptCounts = useMemo(() => {
-    const m: Record<string, number> = { 전체: MOCK_PROJECTS.length };
-    for (const p of MOCK_PROJECTS) m[p.department] = (m[p.department] ?? 0) + 1;
+    const m: Record<string, number> = { 전체: projects.length };
+    for (const p of projects) m[p.department] = (m[p.department] ?? 0) + 1;
     return m;
-  }, []);
+  }, [projects]);
 
   const statusCounts = useMemo(() => {
     const base =
       dept === "전체"
-        ? MOCK_PROJECTS
-        : MOCK_PROJECTS.filter((p) => p.department === dept);
+        ? projects
+        : projects.filter((p) => p.department === dept);
 
     const m = { 진행: 0, 상시: 0, 대기: 0, 완료: 0 } as Record<Status, number>;
     for (const p of base) {

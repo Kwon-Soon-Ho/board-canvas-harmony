@@ -2,9 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
-import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, getOptimizedUrl } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2 } from "lucide-react";
+import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
 
 const searchSchema = z.object({ id: z.string().optional() });
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/detail")({
   component: DetailWindow,
 });
 
-type ModalConfig = { type: 'task' | 'issue', mode: 'create' | 'edit', id?: string } | { type: 'thumbnails' };
+type ModalConfig = { type: 'task' | 'issue', mode: 'create' | 'edit', id?: string } | { type: 'thumbnails' } | { type: 'project' };
 
 function DndProvider({ children }: { children: React.ReactNode }) {
   return <div className="dnd-provider contents">{children}</div>;
@@ -53,6 +53,8 @@ function DetailWindow() {
         setProject(msg.project as Project);
         setActiveItemId(undefined);
         setModalConfig(null);
+      } else if (msg?.type === "PROJECT_DELETED" && msg.projectId === project?.id) {
+        window.close();
       }
     };
     ch.postMessage({ type: "REQUEST_PROJECT" });
@@ -189,7 +191,26 @@ function DetailWindow() {
             <span className="text-base font-bold tracking-widest uppercase text-white/40">{project.department}</span>
             <span className="text-white/20 text-xl">/</span>
             <span className="text-2xl font-black tracking-tight">{project.title}</span>
-            <div className="ml-6 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
+            <button onClick={() => setModalConfig({ type: 'project' })} className="p-1.5 ml-2 text-white/30 hover:text-white/80 hover:bg-white/10 rounded-md transition" title="프로젝트 정보 수정">
+              <Edit2 className="w-4 h-4" />
+            </button>
+
+            {/* Expanded Info */}
+            <div className="ml-4 flex items-center gap-4 bg-white/5 px-4 py-1.5 rounded-full border border-white/10 text-sm">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-orange-400" />
+                <span className="font-mono text-white/80">{project.deadline}</span>
+              </div>
+              <div className="w-px h-3 bg-white/20" />
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-blue-400" />
+                <span className="font-bold text-white/80">{project.pm}</span>
+              </div>
+              <div className="w-px h-3 bg-white/20" />
+              <span className="font-bold text-teal-400">{project.status}</span>
+            </div>
+
+            <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
               <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
               <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
                 <div className="bg-gradient-to-r from-[#0d3b2f] to-[#147058] h-full transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
@@ -274,12 +295,16 @@ function DetailWindow() {
         </PanelGroup>
       </main>
 
-      {modalConfig && modalConfig.type !== 'thumbnails' && (
+      {modalConfig && modalConfig.type !== 'thumbnails' && modalConfig.type !== 'project' && (
         <CrudModal config={modalConfig} project={project} onClose={() => setModalConfig(null)} onSaveTask={handleSaveTask} onSaveIssue={handleSaveIssue} />
       )}
       
       {modalConfig?.type === 'thumbnails' && (
         <ThumbnailEditorModal images={project.images} onClose={() => setModalConfig(null)} onUpdateImages={handleUpdateProjectImages} />
+      )}
+
+      {modalConfig?.type === 'project' && (
+        <ProjectEditModal project={project} onClose={() => setModalConfig(null)} onSave={(updates) => setProject(prev => prev ? { ...prev, ...updates } : prev)} />
       )}
     </div>
   );
@@ -646,7 +671,7 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
   const totalWidth = totalDays * dayWidth;
 
   const getLeft = (dateStr: string) => Math.max(0, (new Date(dateStr).getTime() - minDate.getTime()) / 86400000 * dayWidth);
-  const getWidth = (start: string, end: string) => Math.max(dayWidth, ((new Date(end).getTime() - new Date(start).getTime()) / 86400000 + 1) * dayWidth);
+  const getWidth = (start: string, end: string) => Math.max(dayWidth, ((new Date(end).getTime() - new Date(start).getTime()) / 86400000) * dayWidth);
 
   // Time-Independent Now Date
   const today = new Date();
@@ -722,7 +747,7 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
 
 function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpdateEnd }: { item: Task, type: 'task'|'issue', left: number, width: number, dayWidth: number, isActive: boolean, onClick: () => void, onUpdateEnd: (days: number) => void }) {
   const isTask = type === 'task';
-  const durationDays = Math.max(1, Math.ceil((new Date(item.endDate).getTime() - new Date(item.startDate).getTime()) / 86400000));
+  const durationDays = Math.max(1, Math.round((new Date(item.endDate).getTime() - new Date(item.startDate).getTime()) / 86400000));
   
   const progress = isTask ? item.progress : ((item as any).resolved ? 100 : 0);
   const isResolvedIssue = !isTask && progress === 100;
@@ -761,7 +786,14 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
   };
 
   const activeWidth = dragWidth !== null ? dragWidth : width;
-  const displayDays = dragWidth !== null ? Math.max(1, Math.ceil(dragWidth / dayWidth)) : durationDays;
+  const displayDays = dragWidth !== null ? Math.max(1, Math.round(dragWidth / dayWidth)) : durationDays;
+  
+  let previewDateStr = "";
+  if (dragWidth !== null) {
+    const d = new Date(item.startDate);
+    d.setDate(d.getDate() + displayDays);
+    previewDateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
+  }
 
   return (
     <div className="relative h-14 w-full group mb-5">
@@ -783,10 +815,13 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
         {/* Resize Handle */}
         <div 
           onMouseDown={handleResizeStart}
-          className="absolute right-0 top-0 bottom-0 w-4 cursor-e-resize flex items-center justify-center opacity-0 group-hover:opacity-100 bg-white/10 hover:bg-white/20 transition-all rounded-r-2xl"
-        >
-          <div className="w-1 h-4 border-l border-r border-white/40" />
-        </div>
+          className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize opacity-0 group-hover:opacity-100 bg-white/20 hover:bg-white/40 transition-colors"
+        />
+        {dragWidth !== null && (
+          <div className="absolute -top-10 right-0 transform translate-x-1/2 bg-white text-black font-bold text-xs px-3 py-1.5 rounded-lg shadow-[0_0_15px_rgba(255,255,255,0.5)] whitespace-nowrap z-[100] pointer-events-none">
+            {previewDateStr}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -805,5 +840,56 @@ function ResizeHandleHorizontal() {
     <PanelResizeHandle className="h-1.5 bg-[#050505] hover:bg-orange-500/50 transition-colors cursor-row-resize relative group">
       <div className="absolute inset-x-1/2 -translate-x-1/2 flex gap-1.5 items-center justify-center h-full opacity-0 group-hover:opacity-100"><div className="h-0.5 w-3 bg-white/80 rounded-full" /><div className="h-0.5 w-3 bg-white/80 rounded-full" /></div>
     </PanelResizeHandle>
+  );
+}
+
+function ProjectEditModal({ project, onClose, onSave }: { project: Project, onClose: () => void, onSave: (p: Partial<Project>) => void }) {
+  const [deadline, setDeadline] = useState(project.deadline);
+  const [pm, setPm] = useState(project.pm);
+  const [status, setStatus] = useState<any>(project.status);
+
+  // We need to fetch ALL_MEMBERS and TEAM_DATA directly or assume they are exported.
+  // Actually, we can import them at the top of detail.tsx
+  const availableMembers = useMemo(() => {
+    return project.department === "공통" ? ALL_MEMBERS : TEAM_DATA[project.department] || ALL_MEMBERS;
+  }, [project.department]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-center backdrop-blur-md">
+          <h2 className="text-xl font-black text-white/90">프로젝트 정보 수정</h2>
+          <button type="button" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition"><X className="w-5 h-5 text-white/50" /></button>
+        </div>
+        
+        <div className="p-8 space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-white/70">마감일</label>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-orange-500 transition color-scheme-dark" disabled={status === "상시"} />
+          </div>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-white/70">PM (담당 책임자)</label>
+            <select value={pm} onChange={e => setPm(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition appearance-none">
+              {availableMembers.map(m => (
+                <option key={m.name} value={m.name} className="bg-neutral-900">{m.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-white/70">상태</label>
+            <div className="flex gap-2">
+              {STATUSES.map(s => (
+                <button key={s} type="button" onClick={() => setStatus(s)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${status === s ? "bg-white/20 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"}`}>{s}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/10 transition">취소</button>
+          <button type="button" onClick={() => { onSave({ deadline, pm, status }); onClose(); }} className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white text-black hover:bg-white/90 transition">저장</button>
+        </div>
+      </div>
+    </div>
   );
 }

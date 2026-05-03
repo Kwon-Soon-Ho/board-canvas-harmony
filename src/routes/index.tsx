@@ -100,10 +100,25 @@ function ControlCenter() {
     await openDetailWindow(id);
   };
 
+  const handleDeleteProject = (id: string) => {
+    if (window.confirm("정말로 이 프로젝트를 영구 삭제하시겠습니까?")) {
+      setProjects((prev) => {
+        const next = prev.filter((p) => p.id !== id);
+        localStorage.setItem("design-projects-store", JSON.stringify(next));
+        return next;
+      });
+      // Optionally notify Window B to close if open
+      const ch = getSyncChannel();
+      ch?.postMessage({ type: "PROJECT_DELETED", projectId: id });
+      ch?.close();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <FilterBar
+        projects={projects}
         dept={dept}
         setDept={setDept}
         statuses={statuses}
@@ -154,7 +169,7 @@ function ControlCenter() {
         ) : (
           <div className="grid grid-cols-1 gap-x-12 gap-y-16 px-2 pb-24 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
-              <ProjectCard key={p.id} project={p} onOpen={handleOpen} />
+              <ProjectCard key={p.id} project={p} onOpen={handleOpen} onDelete={() => handleDeleteProject(p.id)} />
             ))}
           </div>
         )}
