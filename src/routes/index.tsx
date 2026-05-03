@@ -43,7 +43,7 @@ function ControlCenter() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return projects.filter((p) => {
+    const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
       if (statuses.size > 0 && !statuses.has(p.status)) return false;
       if (q) {

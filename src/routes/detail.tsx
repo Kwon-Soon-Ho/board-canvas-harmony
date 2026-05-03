@@ -718,7 +718,6 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
       </div>
     </div>
   );
-  );
 }
 
 function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpdateEnd }: { item: Task, type: 'task'|'issue', left: number, width: number, dayWidth: number, isActive: boolean, onClick: () => void, onUpdateEnd: (days: number) => void }) {
