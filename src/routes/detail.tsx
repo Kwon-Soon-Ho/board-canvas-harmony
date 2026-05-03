@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
 import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users } from "lucide-react";
+import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
 
 const searchSchema = z.object({ id: z.string().optional() });
@@ -248,6 +248,38 @@ function DetailWindow() {
                     </div>
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]/50 backdrop-blur-xl relative z-10">
                       <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
+                        <div className="space-y-3 mb-8">
+                          <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
+                             <h4 className="text-[15px] font-black text-emerald-500/80 tracking-widest">프로젝트 공통</h4>
+                          </div>
+                          <Accordion.Item value="project-reference" className="border border-white/10 bg-white/5 rounded-xl overflow-hidden transition-all data-[state=open]:border-emerald-500/50 data-[state=open]:shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                            <Accordion.Header>
+                              <Accordion.Trigger className="flex w-full items-center justify-between p-5 hover:bg-white/5 transition text-left group">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                                    <FolderOpen className="w-5 h-5 text-emerald-400" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-white/90 text-lg group-hover:text-white transition-colors">공통 레퍼런스 / 시안</h3>
+                                    <p className="text-sm text-white/40 mt-1">최초 생성 시 등록된 이미지 ({project.images.length}장)</p>
+                                  </div>
+                                </div>
+                              </Accordion.Trigger>
+                            </Accordion.Header>
+                            <Accordion.Content className="overflow-hidden data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown">
+                               <div className="p-5 pt-0 border-t border-white/10 bg-black/40">
+                                 <p className="text-sm text-white/60 mb-4 mt-4">프로젝트 기본 정보 및 참고 시안이 모두 이곳에 보관됩니다.</p>
+                                 <div className="flex flex-wrap gap-2">
+                                   {project.images.map((img, idx) => (
+                                      <div key={idx} className="w-16 h-16 rounded-md overflow-hidden border border-white/10 shrink-0">
+                                        <img src={getOptimizedUrl(img, 'thumb')} alt="" className="w-full h-full object-cover" />
+                                      </div>
+                                   ))}
+                                 </div>
+                               </div>
+                            </Accordion.Content>
+                          </Accordion.Item>
+                        </div>
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
                              <h4 className="text-[15px] font-black text-white/40 tracking-widest">상세 업무</h4>

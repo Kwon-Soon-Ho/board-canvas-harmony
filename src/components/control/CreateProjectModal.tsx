@@ -129,7 +129,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
           </div>
 
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-white/90 flex items-center gap-2"><Calendar className="w-4 h-4 text-orange-400" /> 마감일</label>
+            <label className="block text-sm font-semibold text-white/90 flex items-center gap-2"><Calendar className="w-4 h-4 text-white/80 drop-shadow-md" /> 마감일</label>
             <input 
               type="date" 
               value={deadline} 
