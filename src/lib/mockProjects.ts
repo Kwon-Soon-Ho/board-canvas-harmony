@@ -86,37 +86,138 @@ const TEAM_DATA: Record<Department, { name: string; rank: string }[]> = {
 const ALL_MEMBERS = Object.values(TEAM_DATA).flat();
 const PM_CANDIDATES = ALL_MEMBERS.filter(m => ["수석", "책임", "선임"].includes(m.rank));
 
-const POOLS: Record<Department, string[]> = {
-  영상: [
-    "1536240478770-bbf43356df13", "1492691523567-6119e289df3a", "1515634928517-2a4eaa194fb1",
-    "1485846234645-a62644f84728", "1550745127-d0d01d58d4f0", "1535016120720-40c646be44d0",
-    "1574717024653-61fd2cf4d44d", "1506157786151-b8491531f063", "1524985069026-dd778a51c967",
-    "1478720566765-e137c1645317", "1598897340027-e67b67232230", "1501446529957-6226bd447c46",
-    "1518709268802-62145a8b7d4a", "1493711662002-2211d74222f7", "1516035063541-25713293e646"
-  ],
-  편집: [
-    "1558655140-709c46e8762e", "1626785774625-ddcddc245eab", "1509343256512-d77a5fd3221d",
-    "1561070791-2526d30994b5", "1544716278-ca5e3f4abd8c", "1586075010472-9859ff70bbd1",
-    "1516321318423-f06f85e504b3", "1515378960530-7c0da6231fb1", "1550684848-fac1c5b4e853",
-    "1542744094-24638eff58bb", "1534670007418-fbb7f6cf32c3", "1519389950473-47ba0277781c",
-    "1554415707-c8374121fad0", "1492538190560-1d22384ba67a", "1483058713233-bc01c8c2e9a3"
-  ],
-  UX: [
-    "1581291518633-83b4b2435433", "1586717791821-3f44a563df4c", "1512941937669-90a1b58e7e9c",
-    "1507238691740-187a5b1d37b8", "1460925895917-afdab827c52f", "1499951360447-b19be8fe80f5",
-    "1551650975-87deedd944c3", "1522542550221-31fd19b45641", "1555066931-4365d14bab8c",
-    "1551434678-e076c223a692", "1531403009184-a8a4a56057a6", "1508921912186-1d13951df3c1",
-    "1541462608144-839f470c648d", "1559028112-ef301ca164c0", "1511649111440-b964fa647417"
-  ],
-  공통: [
-    "1497215842964-21159fb464bb", "1552664730-030f201dd49a", "1557800634-7ef3c7d85304",
-    "1551434678-e076c223a692", "1522071823910-b2161af8fd3b", "1552664688-cf4120293a0e",
-    "1517245386807-bb43f82c33c4", "1523240795612-d1244a50d282", "1558403191-147c524b6303",
-    "1431540015161-1eeb024df03f", "1497367412944-629a84d1d6a3", "1454160517307-57b2b42a2757"
-  ],
-};
+const ALL_IMAGES = [
+  "https://images.unsplash.com/photo-1769736540771-3fdda750175b",
+  "https://images.unsplash.com/photo-1775735478842-c3bbcf5d2618",
+  "https://images.unsplash.com/photo-1770026741532-8d8f8a5a5e20",
+  "https://images.unsplash.com/photo-1587440871875-191322ee64b0",
+  "https://images.unsplash.com/photo-1509343256512-d77a5cb3791b",
+  "https://images.unsplash.com/photo-1558655146-d09347e92766",
+  "https://images.unsplash.com/photo-1576153192396-180ecef2a715",
+  "https://images.unsplash.com/photo-1476357471311-43c0db9fb2b4",
+  "https://images.unsplash.com/photo-1498075702571-ecb018f3752d",
+  "https://images.unsplash.com/photo-1499428665502-503f6c608263",
+  "https://images.unsplash.com/photo-1561070791-36c11767b26a",
+  "https://images.unsplash.com/photo-1506097425191-7ad538b29cef",
+  "https://images.unsplash.com/photo-1470790376778-a9fbc86d70e2",
+  "https://images.unsplash.com/photo-1541506618330-7c369fc759b5",
+  "https://images.unsplash.com/photo-1586717791821-3f44a563fa4c",
+  "https://images.unsplash.com/photo-1497091071254-cc9b2ba7c48a",
+  "https://images.unsplash.com/photo-1572044162444-ad60f128bdea",
+  "https://images.unsplash.com/photo-1581079289196-67865ea83118",
+  "https://images.unsplash.com/photo-1537498425277-c283d32ef9db",
+  "https://images.unsplash.com/photo-1652449823136-b279fbe5dfd3",
+  "https://images.unsplash.com/photo-1535957998253-26ae1ef29506",
+  "https://images.unsplash.com/photo-1541462608143-67571c6738dd",
+  "https://images.unsplash.com/photo-1531403009284-440f080d1e12",
+  "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634",
+  "https://images.unsplash.com/photo-1559028012-481c04fa702d",
+  "https://images.unsplash.com/photo-1510511336377-1a9caa095849",
+  "https://images.unsplash.com/photo-1525498128493-380d1990a112",
+  "https://images.unsplash.com/photo-1650954934741-3a648866a897",
+  "https://images.unsplash.com/photo-1611262588019-db6cc2032da3",
+  "https://images.unsplash.com/photo-1606636660488-16a8646f012c",
+  "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d",
+  "https://images.unsplash.com/photo-1629752187687-3d3c7ea3a21b",
+  "https://images.unsplash.com/photo-1516383740770-fbcc5ccbece0",
+  "https://images.unsplash.com/photo-1552250575-e508473b090f",
+  "https://images.unsplash.com/photo-1516131206008-dd041a9764fd",
+  "https://images.unsplash.com/photo-1545235617-9465d2a55698",
+  "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e",
+  "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15",
+  "https://images.unsplash.com/photo-1655474396177-e727349f44dc",
+  "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5",
+  "https://images.unsplash.com/photo-1525909002-1b05e0c869d8",
+  "https://images.unsplash.com/photo-1688750997529-88a14e49d15c",
+  "https://images.unsplash.com/photo-1472289065668-ce650ac443d2",
+  "https://images.unsplash.com/photo-1655834648155-f7a98ff3c49d",
+  "https://images.unsplash.com/photo-1611241893603-3c359704e0ee",
+  "https://images.unsplash.com/photo-1416339134316-0e91dc9ded92",
+  "https://images.unsplash.com/photo-1463438690606-f6778b8c1d10",
+  "https://images.unsplash.com/photo-1581079288371-ea1d68ec6105",
+  "https://images.unsplash.com/photo-1600697395543-ef3ee6e9af7b",
+  "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4",
+  "https://images.unsplash.com/photo-1630852722069-7062272a0f8a",
+  "https://images.unsplash.com/photo-1549716679-95380658d5cd",
+  "https://images.unsplash.com/photo-1510070009289-b5bc34383727",
+  "https://images.unsplash.com/photo-1581548133861-ad7a282a1d62",
+  "https://images.unsplash.com/photo-1502691876148-a84978e59af8",
+  "https://images.unsplash.com/photo-1502014822147-1aedfb0676e0",
+  "https://images.unsplash.com/photo-1491895200222-0fc4a4c35e18",
+  "https://images.unsplash.com/photo-1461958508236-9a742665a0d5",
+  "https://images.unsplash.com/photo-1613909207039-6b173b755cc1",
+  "https://images.unsplash.com/photo-1494253109108-2e30c049369b",
+  "https://images.unsplash.com/photo-1487700160041-babef9c3cb55",
+  "https://images.unsplash.com/photo-1690228254548-31ef53e40cd1",
+  "https://images.unsplash.com/photo-1532017737543-8743f2938776",
+  "https://images.unsplash.com/photo-1515573998019-c132a6782768",
+  "https://images.unsplash.com/photo-1609921212029-bb5a28e60960",
+  "https://images.unsplash.com/photo-1503551723145-6c040742065b-v2",
+  "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7",
+  "https://images.unsplash.com/photo-1475669698648-2f144fcaaeb1",
+  "https://images.unsplash.com/photo-1483058712412-4245e9b90334",
+  "https://images.unsplash.com/photo-1705453168890-6c244eb82942",
+  "https://images.unsplash.com/photo-1504805572947-34fad45aed93",
+  "https://images.unsplash.com/photo-1464639351491-a172c2aa2911",
+  "https://images.unsplash.com/photo-1630852722172-a1943ca8a55f",
+  "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e",
+  "https://images.unsplash.com/photo-1651813338290-2f869def49b0",
+  "https://images.unsplash.com/photo-1541359927273-d76820fc43f9",
+  "https://images.unsplash.com/photo-1517191434949-5e90cd67d2b6",
+  "https://images.unsplash.com/photo-1650954933593-6c9342ba0331",
+  "https://images.unsplash.com/photo-1434030216411-0b793f4b4173",
+  "https://images.unsplash.com/photo-1542435503-956c469947f6",
+  "https://images.unsplash.com/photo-1518842013791-b874be246c34",
+  "https://images.unsplash.com/photo-1710799885122-428e63eff691",
+  "https://images.unsplash.com/photo-1573867639040-6dd25fa5f597",
+  "https://images.unsplash.com/reserve/LJIZlzHgQ7WPSh5KVTCB_Typewriter.jpg",
+  "https://images.unsplash.com/photo-1548761013-f4c9d4f524ae",
+  "https://images.unsplash.com/photo-1555212697-194d092e3b8f",
+  "https://images.unsplash.com/photo-1599420186985-5c3d1a038e84",
+  "https://images.unsplash.com/photo-1506729623306-b5a934d88b53",
+  "https://images.unsplash.com/photo-1495045197504-5128e3c8469f",
+  "https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead",
+  "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+  "https://images.unsplash.com/photo-1467232004584-a241de8bcf5d",
+  "https://images.unsplash.com/photo-1531346878377-a5be20888e57",
+  "https://images.unsplash.com/photo-1492760864391-753aaae87234",
+  "https://images.unsplash.com/photo-1540242908484-50aa09aea5a7",
+  "https://images.unsplash.com/photo-1650615567023-0721bceeecb6",
+  "https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf",
+  "https://images.unsplash.com/photo-1558655146-9f40138edfeb",
+  "https://images.unsplash.com/photo-1658487476847-a180f98870d0",
+  "https://images.unsplash.com/photo-1674515513957-bc5b9c5ee367",
+  "https://images.unsplash.com/photo-1547658719-da2b51169166",
+  "https://images.unsplash.com/photo-1519408469771-2586093c3f14",
+  "https://images.unsplash.com/photo-1533350356005-fd52b3b524fb",
+  "https://images.unsplash.com/photo-1497864149936-d3163f0c0f4b",
+  "https://images.unsplash.com/photo-1617050318658-a9a3175e34cb",
+  "https://images.unsplash.com/photo-1738028449238-fa5ae8c33bce",
+  "https://images.unsplash.com/photo-1600132806608-231446b2e7af",
+  "https://images.unsplash.com/photo-1558655146-605d86ed31b3",
+  "https://images.unsplash.com/photo-1557672172-298e090bd0f1",
+  "https://images.unsplash.com/photo-1532323544230-7191fd51bc1b",
+  "https://images.unsplash.com/photo-1658246944389-9e9ac0a85dda",
+  "https://images.unsplash.com/photo-1581079288675-16bf8157bc10",
+  "https://images.unsplash.com/photo-1506792006437-256b665541e2",
+  "https://images.unsplash.com/photo-1617695744007-68ef55752789",
+  "https://images.unsplash.com/photo-1553714155-2ee64b8575e6",
+  "https://images.unsplash.com/photo-1648260296289-ab882814a005",
+  "https://images.unsplash.com/photo-1567016376408-0226e4d0c1ea",
+  "https://images.unsplash.com/photo-1512314889357-e157c22f938d",
+  "https://images.unsplash.com/photo-1586023492125-27b2c045efd7",
+  "https://images.unsplash.com/photo-1581291519195-ef11498d1cf2",
+  "https://images.unsplash.com/photo-1609189184127-04652523de91",
+  "https://images.unsplash.com/photo-1522932753915-9ee97e43e3d9",
+  "https://images.unsplash.com/photo-1568219557405-376e23e4f7cf",
+  "https://images.unsplash.com/photo-1532680678473-a16f2cda8e43",
+  "https://images.unsplash.com/photo-1587955415524-bb264e518428",
+  "https://images.unsplash.com/3/doctype-hi-res.jpg",
+  "https://images.unsplash.com/photo-1654250910768-0162e080ef86",
+  "https://images.unsplash.com/photo-1540932239986-30128078f3c5",
+];
 
-const img = (id: string) => `https://images.unsplash.com/photo-${id}?q=80&w=1200&auto=format&fit=crop`;
+const img = (index: number) => `${ALL_IMAGES[index % ALL_IMAGES.length]}?q=80&w=1200&auto=format&fit=crop`;
 
 const DEPTS: Department[] = ["영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -131,16 +232,14 @@ const TITLES: Record<Department, string[]> = {
 export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
   const isCommon = i < 5;
   const dept = isCommon ? "공통" : DEPTS[(i - 5) % DEPTS.length];
-  const pool = POOLS[dept];
   const titleList = TITLES[dept];
   const title = isCommon 
     ? (titleList[i] || `공통 프로젝트 ${i + 1}`)
     : (titleList[Math.floor((i - 5) / DEPTS.length)] || `${dept} 프로젝트 ${i}`);
-  
+
   const imgCount = 3;
   const images = Array.from({ length: imgCount }, (_, j) => {
-    const idx = (i * imgCount + j) % pool.length;
-    return img(pool[idx]);
+    return img(i * imgCount + j);
   });
   
   const status = STATUSES[i % STATUSES.length];

@@ -11,6 +11,7 @@ export const Route = createFileRoute("/")({
 });
 
 function ControlCenter() {
+  const [projects, setProjects] = useState(MOCK_PROJECTS);
   const [dept, setDeptRaw] = useState<Department | "전체">("전체");
   const [statuses, setStatuses] = useState<Set<Status>>(new Set());
   const [searchValue, setSearchValue] = useState("");
@@ -37,7 +38,7 @@ function ControlCenter() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MOCK_PROJECTS.filter((p) => {
+    return projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
       if (statuses.size > 0 && !statuses.has(p.status)) return false;
       if (q) {
@@ -57,16 +58,19 @@ function ControlCenter() {
     ch.onmessage = (e) => {
       const msg = e.data;
       if (msg?.type === "REQUEST_PROJECT" && lastOpenedId) {
-        const p = MOCK_PROJECTS.find((x) => x.id === lastOpenedId);
+        const p = projects.find((x) => x.id === lastOpenedId);
         if (p) ch.postMessage({ type: "OPEN_PROJECT", projectId: p.id, project: p });
+      }
+      if (msg?.type === "PROJECT_UPDATE" && msg.project) {
+        setProjects(prev => prev.map(p => p.id === msg.project.id ? msg.project : p));
       }
     };
     return () => ch.close();
-  }, [lastOpenedId]);
+  }, [lastOpenedId, projects]);
 
   const handleOpen = async (id: string) => {
     setLastOpenedId(id);
-    const project = MOCK_PROJECTS.find((p) => p.id === id);
+    const project = projects.find((p) => p.id === id);
     const ch = getSyncChannel();
     ch?.postMessage({ type: "OPEN_PROJECT", projectId: id, project });
     ch?.close();
@@ -96,7 +100,7 @@ function ControlCenter() {
           <div>
             <h1 className="text-[24px] font-semibold tracking-tight">프로젝트</h1>
             <p className="mt-1 text-[16px] text-muted-foreground">
-              총 {filtered.length}개 / 전체 {MOCK_PROJECTS.length}개
+              총 {filtered.length}개 / 전체 {projects.length}개
             </p>
           </div>
         </div>

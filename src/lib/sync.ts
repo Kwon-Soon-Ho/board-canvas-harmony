@@ -7,7 +7,8 @@ export type SyncMessage =
   | { type: "REQUEST_PROJECT" }
   | { type: "FILTER_CHANGE"; payload: unknown }
   | { type: "PING" }
-  | { type: "PONG" };
+  | { type: "PONG" }
+  | { type: "PROJECT_UPDATE"; project: Project };
 
 export const SYNC_CHANNEL = "design-sync";
 

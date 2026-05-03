@@ -48,6 +48,22 @@ function DetailWindow() {
     return () => ch.close();
   }, []);
 
+  // Broadcast changes to other windows (Window A)
+  useEffect(() => {
+    if (!project) return;
+    
+    // Update the in-memory MOCK_PROJECTS array so it persists during the session
+    const idx = MOCK_PROJECTS.findIndex(p => p.id === project.id);
+    if (idx !== -1) {
+      MOCK_PROJECTS[idx] = project;
+    }
+
+    const ch = getSyncChannel();
+    if (!ch) return;
+    ch.postMessage({ type: "PROJECT_UPDATE", project });
+    return () => ch.close();
+  }, [project]);
+
   if (!project) return <div className="flex h-screen w-screen items-center justify-center bg-[#050505] text-white/50 text-2xl font-bold tracking-widest">LOADING...</div>;
 
   const derivedProgress = project.tasks.length > 0 ? Math.round(project.tasks.reduce((acc, t) => acc + t.progress, 0) / project.tasks.length) : 0;
