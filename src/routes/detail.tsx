@@ -13,7 +13,7 @@ export const Route = createFileRoute("/detail")({
   component: DetailWindow,
 });
 
-type ModalConfig = { type: 'task' | 'issue', mode: 'create' | 'edit', id?: string } | { type: 'thumbnails' } | { type: 'project' };
+type ModalConfig = { type: 'task' | 'issue', mode: 'create' | 'edit', id?: string } | { type: 'thumbnails' } | { type: 'project' } | { type: 'design-hub' };
 
 function DndProvider({ children }: { children: React.ReactNode }) {
   return <div className="dnd-provider contents">{children}</div>;
@@ -197,14 +197,20 @@ function DetailWindow() {
 
             {/* Expanded Info */}
             <div className="ml-4 flex items-center gap-4 bg-white/5 px-4 py-1.5 rounded-full border border-white/10 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-orange-400" />
-                <span className="font-mono text-white/80">{project.deadline}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-orange-400 uppercase tracking-tighter opacity-70">DEADLINE</span>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-white/80" />
+                  <span className="font-mono text-white/80">{project.deadline}</span>
+                </div>
               </div>
               <div className="w-px h-3 bg-white/20" />
-              <div className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-blue-400" />
-                <span className="font-bold text-white/80">{project.pm}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter opacity-70">PM</span>
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-white/80" />
+                  <span className="font-bold text-white/80">{project.pm}</span>
+                </div>
               </div>
               <div className="w-px h-3 bg-white/20" />
               <span className="font-bold text-teal-400">{project.status}</span>
@@ -234,56 +240,42 @@ function DetailWindow() {
               {!isImageViewerFull && (
                 <>
                   <ResizeHandleVertical />
-                  <Panel order={2} defaultSize={30} minSize={25} className="bg-[#0a0a0a] flex flex-col border-l border-white/10">
-                    <div className="p-5 border-b border-white/10 bg-[#0d0d0d] flex items-center justify-between shrink-0">
+                  <Panel order={2} defaultSize={30} minSize={25} className="bg-[#0a0a0a] flex flex-col border-l border-white/10 relative z-10 shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+                    <div className="min-h-[80px] p-5 border-b border-white/10 bg-[#0d0d0d] flex items-center justify-between shrink-0 sticky top-0 z-[20] shadow-sm">
                       <h2 className="font-black text-xl tracking-wider text-white/90">업무 내역</h2>
                       <div className="flex gap-2">
-                        <button onClick={() => setModalConfig({ type: 'task', mode: 'create' })} className="flex items-center gap-1 text-[13px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md text-white transition border border-white/20">
+                        <button onClick={() => setModalConfig({ type: 'task', mode: 'create' })} className="flex items-center gap-1 text-[13px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md text-white transition border border-white/20 whitespace-nowrap">
                           <Plus className="w-4 h-4" /> 업무 추가
                         </button>
-                        <button onClick={() => setModalConfig({ type: 'issue', mode: 'create' })} className="flex items-center gap-1 text-[13px] font-bold bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-md text-rose-400 transition">
+                        <button onClick={() => setModalConfig({ type: 'issue', mode: 'create' })} className="flex items-center gap-1 text-[13px] font-bold bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-md text-rose-400 transition whitespace-nowrap">
                           <Plus className="w-4 h-4" /> 이슈 추가
                         </button>
                       </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]/50 backdrop-blur-xl relative z-10">
-                      <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
-                        <div className="space-y-3 mb-8">
-                          <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
-                             <h4 className="text-[15px] font-black text-emerald-500/80 tracking-widest">프로젝트 공통</h4>
+                      <div className="mb-8 p-1">
+                        <button 
+                          onClick={() => setModalConfig({ type: 'design-hub' })}
+                          className="w-full flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-emerald-500/50 transition-all group shadow-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                              <FolderOpen className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div className="text-left">
+                              <h3 className="font-black text-white/90 text-lg">디자인 허브</h3>
+                              <p className="text-sm text-white/40 mt-0.5 font-medium">프로젝트 전체 시안 ({project.images.length}장)</p>
+                            </div>
                           </div>
-                          <Accordion.Item value="project-reference" className="border border-white/10 bg-white/5 rounded-xl overflow-hidden transition-all data-[state=open]:border-emerald-500/50 data-[state=open]:shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                            <Accordion.Header>
-                              <Accordion.Trigger className="flex w-full items-center justify-between p-5 hover:bg-white/5 transition text-left group">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                                    <FolderOpen className="w-5 h-5 text-emerald-400" />
-                                  </div>
-                                  <div>
-                                    <h3 className="font-bold text-white/90 text-lg group-hover:text-white transition-colors">공통 레퍼런스 / 시안</h3>
-                                    <p className="text-sm text-white/40 mt-1">최초 생성 시 등록된 이미지 ({project.images.length}장)</p>
-                                  </div>
-                                </div>
-                              </Accordion.Trigger>
-                            </Accordion.Header>
-                            <Accordion.Content className="overflow-hidden data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown">
-                               <div className="p-5 pt-0 border-t border-white/10 bg-black/40">
-                                 <p className="text-sm text-white/60 mb-4 mt-4">프로젝트 기본 정보 및 참고 시안이 모두 이곳에 보관됩니다.</p>
-                                 <div className="flex flex-wrap gap-2">
-                                   {project.images.map((img, idx) => (
-                                      <div key={idx} className="w-16 h-16 rounded-md overflow-hidden border border-white/10 shrink-0">
-                                        <img src={getOptimizedUrl(img, 'thumb')} alt="" className="w-full h-full object-cover" />
-                                      </div>
-                                   ))}
-                                 </div>
-                               </div>
-                            </Accordion.Content>
-                          </Accordion.Item>
-                        </div>
+                          <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-emerald-400 transition-colors" />
+                        </button>
+                      </div>
+
+                      <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
-                             <h4 className="text-[15px] font-black text-white/40 tracking-widest">상세 업무</h4>
-                             <span className="text-[15px] font-bold text-white/40">({project.tasks.length})</span>
+                             <h4 className="text-[15px] font-black text-white/40 tracking-widest uppercase">상세 업무</h4>
+                             <span className="text-[14px] font-bold text-white/40">({project.tasks.length})</span>
                           </div>
                           {[...project.tasks].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(t => (
                             <div key={t.id} id={`tracker-item-${t.id}`}>
@@ -338,6 +330,10 @@ function DetailWindow() {
       {modalConfig?.type === 'project' && (
         <ProjectEditModal project={project} onClose={() => setModalConfig(null)} onSave={(updates) => setProject(prev => prev ? { ...prev, ...updates } : prev)} />
       )}
+
+      {modalConfig?.type === 'design-hub' && (
+        <DesignHubModal project={project} onClose={() => setModalConfig(null)} />
+      )}
     </div>
   );
 }
@@ -348,17 +344,35 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => { 
     setIdx(0); 
-    setScale(1); 
-    setPosition({ x: 0, y: 0 }); 
+    handleFit();
   }, [images]);
 
   useEffect(() => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
+    handleFit();
   }, [idx]);
+
+  const handleFit = () => {
+    if (!containerRef.current || !imgRef.current) {
+       setScale(1); setPosition({ x: 0, y: 0 });
+       return;
+    }
+    const cw = containerRef.current.clientWidth;
+    const ch = containerRef.current.clientHeight;
+    const iw = imgRef.current.naturalWidth;
+    const ih = imgRef.current.naturalHeight;
+    if (!iw || !ih) return;
+
+    const scaleW = cw / iw;
+    const scaleH = ch / ih;
+    const newScale = Math.min(scaleW, scaleH) * 0.95; // 5% margin
+    setScale(newScale);
+    setPosition({ x: 0, y: 0 });
+  };
 
   const handlePanStart = (e: React.MouseEvent) => {
     setIsPanning(true);
@@ -370,7 +384,7 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
   };
   const handlePanEnd = () => setIsPanning(false);
   const handleWheel = (e: React.WheelEvent) => {
-    setScale(prev => Math.min(Math.max(0.2, prev - e.deltaY * 0.002), 5));
+    setScale(prev => Math.min(Math.max(0.1, prev - e.deltaY * 0.001 * prev), 10));
   };
 
   if (!images || images.length === 0) return <div className="h-full w-full bg-[#050505] flex items-center justify-center text-white/20 font-bold text-xl">No Images</div>;
@@ -379,7 +393,7 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
   const isStarred = projectImages?.includes(currentImg) ?? false;
 
   return (
-    <div className="relative h-full w-full bg-[#050505] group flex flex-col">
+    <div className="relative h-full w-full bg-[#050505] group flex flex-col" ref={containerRef}>
       <div className="absolute top-5 right-5 z-10 flex gap-3">
          <button onClick={() => onToggleStar(currentImg)} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm">
            <Star className={`w-6 h-6 ${isStarred ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'text-white/50'}`} />
@@ -387,7 +401,10 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
          <button onClick={onEditThumbnails} className="px-5 py-2.5 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition text-base font-bold text-white/90 shadow-lg backdrop-blur-sm">
            썸네일 편집
          </button>
-         <button onClick={() => { setScale(1); setPosition({x:0, y:0}); }} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm" title="Reset Zoom">
+         <button onClick={handleFit} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm" title="Fit to Screen">
+            <Maximize2 className="w-6 h-6 text-white/80" />
+         </button>
+         <button onClick={() => { setScale(1); setPosition({x:0, y:0}); }} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm" title="Reset Zoom (1:1)">
             <Minimize2 className="w-6 h-6 text-white/80" />
          </button>
       </div>
@@ -400,13 +417,12 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
         onWheel={handleWheel}
       >
         <img 
-          src={getOptimizedUrl(currentImg, 'full')} 
+          ref={imgRef}
+          src={currentImg} 
           alt="" 
-          style={{ 
-            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-            transition: isPanning ? 'none' : 'transform 0.1s ease-out'
-          }}
-          className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-none" 
+          onLoad={handleFit}
+          style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})` }}
+          className="max-w-none transition-transform duration-75 select-none pointer-events-none drop-shadow-2xl"
         />
         {scale !== 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white/80 font-mono text-sm pointer-events-none">
@@ -920,6 +936,82 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
         <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
           <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/10 transition">취소</button>
           <button type="button" onClick={() => { onSave({ deadline, pm, status }); onClose(); }} className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white text-black hover:bg-white/90 transition">저장</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesignHubModal({ project, onClose }: { project: Project, onClose: () => void }) {
+  const [idx, setIdx] = useState(0);
+  const images = project.images;
+  const currentImg = images[idx];
+
+  // Traceability logic
+  const associatedItems = useMemo(() => {
+    const found: { type: 'Task' | 'Issue', title: string }[] = [];
+    project.tasks.forEach(t => {
+      if (t.image === currentImg || t.imageUrls?.includes(currentImg)) {
+        found.push({ type: 'Task', title: t.title });
+      }
+    });
+    project.issues.forEach(i => {
+      if (i.imageUrls?.includes(currentImg)) {
+        found.push({ type: 'Issue', title: i.title });
+      }
+    });
+    return found;
+  }, [currentImg, project]);
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 md:p-12 animate-in fade-in duration-300">
+      <button onClick={onClose} className="absolute top-6 right-6 z-20 p-3 bg-white/10 hover:bg-white/20 rounded-full transition text-white/70 hover:text-white">
+        <X className="w-8 h-8" />
+      </button>
+
+      <div className="w-full h-full max-w-7xl flex flex-col gap-8">
+        {/* Main Preview Area */}
+        <div className="flex-1 min-h-0 bg-black/40 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col shadow-2xl">
+          <div className="absolute inset-0 flex items-center justify-center p-8">
+             <img src={currentImg} alt="" className="max-w-full max-h-full object-contain drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] rounded-lg" />
+          </div>
+          
+          {/* Metadata Overlay */}
+          <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black/80 to-transparent">
+             <div className="flex items-end justify-between gap-8">
+                <div className="space-y-2">
+                   <h2 className="text-white/40 text-xs font-black uppercase tracking-[0.2em]">Current Draft No.{idx + 1}</h2>
+                   <h3 className="text-white font-black text-2xl tracking-tight">프로젝트 메인 시안 및 레퍼런스</h3>
+                </div>
+                {associatedItems.length > 0 && (
+                   <div className="bg-emerald-500/10 border border-emerald-500/20 px-6 py-4 rounded-2xl backdrop-blur-md">
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-2 opacity-70">Associated Workflow</span>
+                      <div className="space-y-1.5">
+                        {associatedItems.map((item, i) => (
+                           <div key={i} className="flex items-center gap-2">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-black ${item.type === 'Task' ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>{item.type}</span>
+                              <span className="text-sm font-bold text-white/90">{item.title}</span>
+                           </div>
+                        ))}
+                      </div>
+                   </div>
+                )}
+             </div>
+          </div>
+        </div>
+
+        {/* Thumbnail Strip */}
+        <div className="h-32 shrink-0 flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide px-2">
+           {images.map((img, i) => (
+              <button 
+                key={i} 
+                onClick={() => setIdx(i)}
+                className={`relative w-32 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${idx === i ? 'border-emerald-500 scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'border-white/10 opacity-40 hover:opacity-100 hover:border-white/30'}`}
+              >
+                 <img src={getOptimizedUrl(img, 'thumb')} alt="" className="w-full h-full object-cover" />
+                 {idx === i && <div className="absolute inset-0 bg-emerald-500/10" />}
+              </button>
+           ))}
         </div>
       </div>
     </div>

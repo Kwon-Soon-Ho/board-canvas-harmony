@@ -113,3 +113,10 @@
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 0.16); }
+
+/* Force white color on browser date picker icons */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(200%);
+    cursor: pointer;
+}
+
