@@ -47,7 +47,7 @@ function ControlCenter() {
       }
       return true;
     });
-  }, [dept, statuses, query]);
+  }, [dept, statuses, query, projects]);
 
   // Keep a ref to "last opened project" so Window B can request it on load.
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
@@ -62,7 +62,11 @@ function ControlCenter() {
         if (p) ch.postMessage({ type: "OPEN_PROJECT", projectId: p.id, project: p });
       }
       if (msg?.type === "PROJECT_UPDATE" && msg.project) {
-        setProjects(prev => prev.map(p => p.id === msg.project.id ? msg.project : p));
+        setProjects(prev => {
+          const next = prev.map(p => p.id === msg.project.id ? msg.project : p);
+          localStorage.setItem('design-projects-store', JSON.stringify(next));
+          return next;
+        });
       }
     };
     return () => ch.close();

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/lib/mockProjects";
+import { getOptimizedUrl } from "@/lib/mockProjects";
 import { DeptTag } from "./DeptTag";
 import { StatusTag } from "./StatusTag";
 
@@ -88,10 +89,10 @@ export function ProjectCard({ project, onOpen }: Props) {
                   <div
                     aria-hidden
                     className="absolute inset-0 scale-110 bg-cover bg-center opacity-40 blur-3xl"
-                    style={{ backgroundImage: `url(${src})` }}
+                    style={{ backgroundImage: `url(${getOptimizedUrl(src, 'thumb')})` }}
                   />
                   <img
-                    src={src}
+                    src={getOptimizedUrl(src, 'thumb')}
                     alt=""
                     loading={i === 0 ? "eager" : "lazy"}
                     className="relative z-[1] h-full w-full object-cover"

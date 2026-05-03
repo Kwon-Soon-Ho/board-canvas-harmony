@@ -217,7 +217,19 @@ const ALL_IMAGES = [
   "https://images.unsplash.com/photo-1540932239986-30128078f3c5",
 ];
 
-const img = (index: number) => `${ALL_IMAGES[index % ALL_IMAGES.length]}?auto=format&q=100`;
+// Use base URLs without parameters for the data pool
+const img = (index: number) => ALL_IMAGES[index % ALL_IMAGES.length];
+
+/**
+ * Helper to append Unsplash optimization parameters.
+ * 'thumb' for fast dashboard loading, 'full' for high-quality detail view.
+ */
+export const getOptimizedUrl = (url: string, type: 'thumb' | 'full' = 'full') => {
+  const params = type === 'thumb' 
+    ? "?q=60&w=600&auto=format&fit=crop" 
+    : "?auto=format&q=100";
+  return `${url}${params}`;
+};
 
 const DEPTS: Department[] = ["영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -229,117 +241,135 @@ const TITLES: Record<Department, string[]> = {
   공통: ["전사 디자인 가이드라인", "브랜드 통합 경험 시스템", "글로벌 비주얼 아이덴티티", "연간 디자인 성과 리포트", "디자인 팀 통합 워크숍", "크리에이티브 에셋 라이브러리", "팀 간 협업 프로세스 혁신", "전사 폰트 시스템 구축"],
 };
 
-export const MOCK_PROJECTS: Project[] = Array.from({ length: 48 }, (_, i) => {
-  const isCommon = i < 5;
-  const dept = isCommon ? "공통" : DEPTS[(i - 5) % DEPTS.length];
-  const titleList = TITLES[dept];
-  const title = isCommon 
-    ? (titleList[i] || `공통 프로젝트 ${i + 1}`)
-    : (titleList[Math.floor((i - 5) / DEPTS.length)] || `${dept} 프로젝트 ${i}`);
+export const MOCK_PROJECTS: Project[] = (() => {
+  // Try to load from localStorage first for persistence
+  const saved = typeof window !== 'undefined' ? localStorage.getItem('design-projects-store') : null;
+  const initialData = Array.from({ length: 48 }, (_, i) => {
+    const isCommon = i < 5;
+    const dept = isCommon ? "공통" : DEPTS[(i - 5) % DEPTS.length];
+    const titleList = TITLES[dept];
+    const title = isCommon 
+      ? (titleList[i] || `공통 프로젝트 ${i + 1}`)
+      : (titleList[Math.floor((i - 5) / DEPTS.length)] || `${dept} 프로젝트 ${i}`);
 
-  const imgCount = 3;
-  const images = Array.from({ length: imgCount }, (_, j) => {
-    return img(i * imgCount + j);
-  });
-  
-  const status = STATUSES[i % STATUSES.length];
-  const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
-
-  // PM assignment: Must be Senior or higher
-  const deptCandidates = TEAM_DATA[dept].filter(m => ["수석", "책임", "선임"].includes(m.rank));
-  const fallbackCandidates = PM_CANDIDATES;
-  const pmInfo = (isCommon || deptCandidates.length === 0) 
-    ? fallbackCandidates[i % fallbackCandidates.length]
-    : deptCandidates[i % deptCandidates.length];
-  
-  const pm = pmInfo.name;
-  const pmRankValue = RANK_VALUE[pmInfo.rank];
-
-  // Assign 3-4 members, EXCLUDING the PM AND members with rank > PM
-  const isEligibleMember = (m: {name: string, rank: string}) => m.name !== pm && RANK_VALUE[m.rank] <= pmRankValue;
-  
-  const memberPool = ALL_MEMBERS.filter(isEligibleMember);
-  const deptMemberPool = TEAM_DATA[dept].filter(isEligibleMember);
-  
-  // For Common projects, or as fallback, use the whole eligible pool. Ensure at least 3 members.
-  const sourcePool = (isCommon || deptMemberPool.length < 3) ? memberPool : deptMemberPool;
-  
-  // Safety check if sourcePool is empty
-  const safeSourcePool = sourcePool.length > 0 ? sourcePool : memberPool;
-
-  const members = Array.from({ length: 3 + (i % 2) }, (_, j) => {
-    return safeSourcePool[(i + j) % safeSourcePool.length].name;
-  });
-
-  const membersList = Array.from(new Set(members)).filter(Boolean);
-
-  // Generate Tasks
-  const taskCount = 3 + (i % 4); // 3 to 6 tasks
-  const taskStatuses: TaskStatus[] = ["대기", "진행", "검토중", "승인됨", "보류", "취소", "완료"];
-  const tasks: Task[] = Array.from({ length: taskCount }, (_, t) => {
-    const tStart = new Date(2026, 3 + (t % 2), 10 + (t * 2));
-    const tEnd = new Date(tStart);
-    tEnd.setDate(tEnd.getDate() + 7 + (t * 3));
-    const rawProgress = Math.floor(Math.random() * 10) * 10;
-    const taskStatus = rawProgress === 100 ? "완료" : (rawProgress > 0 ? "진행" : "대기");
+    const imgCount = 3;
+    const images = Array.from({ length: imgCount }, (_, j) => {
+      return img(i * imgCount + j);
+    });
     
+    const status = STATUSES[i % STATUSES.length];
+    const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
+
+    // PM assignment: Must be Senior or higher
+    const deptCandidates = TEAM_DATA[dept].filter(m => ["수석", "책임", "선임"].includes(m.rank));
+    const fallbackCandidates = PM_CANDIDATES;
+    const pmInfo = (isCommon || deptCandidates.length === 0) 
+      ? fallbackCandidates[i % fallbackCandidates.length]
+      : deptCandidates[i % deptCandidates.length];
+    
+    const pm = pmInfo.name;
+    const pmRankValue = RANK_VALUE[pmInfo.rank];
+
+    // Assign 3-4 members, EXCLUDING the PM AND members with rank > PM
+    const isEligibleMember = (m: {name: string, rank: string}) => m.name !== pm && RANK_VALUE[m.rank] <= pmRankValue;
+    
+    const memberPool = ALL_MEMBERS.filter(isEligibleMember);
+    const deptMemberPool = TEAM_DATA[dept].filter(isEligibleMember);
+    
+    // For Common projects, or as fallback, use the whole eligible pool. Ensure at least 3 members.
+    const sourcePool = (isCommon || deptMemberPool.length < 3) ? memberPool : deptMemberPool;
+    
+    // Safety check if sourcePool is empty
+    const safeSourcePool = sourcePool.length > 0 ? sourcePool : memberPool;
+
+    const members = Array.from({ length: 3 + (i % 2) }, (_, j) => {
+      return safeSourcePool[(i + j) % safeSourcePool.length].name;
+    });
+
+    const membersList = Array.from(new Set(members)).filter(Boolean);
+
+    // Generate Tasks
+    const taskCount = 3 + (i % 4); // 3 to 6 tasks
+    const taskStatuses: TaskStatus[] = ["대기", "진행", "검토중", "승인됨", "보류", "취소", "완료"];
+    const tasks: Task[] = Array.from({ length: taskCount }, (_, t) => {
+      const tStart = new Date(2026, 3 + (t % 2), 10 + (t * 2));
+      const tEnd = new Date(tStart);
+      tEnd.setDate(tEnd.getDate() + 7 + (t * 3));
+      const rawProgress = Math.floor(Math.random() * 10) * 10;
+      const taskStatus = rawProgress === 100 ? "완료" : (rawProgress > 0 ? "진행" : "대기");
+      
+      return {
+        id: `t-${i}-${t}`,
+        title: `${title} - 단계 ${t + 1}`,
+        content: `이 작업은 ${title}의 주요 마일스톤 중 하나로, 프로젝트 성공에 필수적인 단계입니다. 담당자는 정해진 기한 내에 산출물을 제출해야 합니다.`,
+        status: taskStatus,
+        progress: rawProgress,
+        startDate: tStart.toISOString().slice(0, 10),
+        endDate: tEnd.toISOString().slice(0, 10),
+        assignee: membersList[t % membersList.length] || pm,
+        imageUrls: [images[t % images.length]],
+      };
+    });
+
+    const totalProgress = tasks.length > 0 
+      ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
+      : 0;
+
+    // Generate Issues
+    const issueCount = i % 3; // 0 to 2 issues
+    const issues: Issue[] = Array.from({ length: issueCount }, (_, is) => {
+      const isResolved = is % 2 === 0;
+      const iStart = new Date(2026, 4, 15 + is);
+      const iEnd = new Date(iStart);
+      iEnd.setDate(iEnd.getDate() + 3);
+      return {
+        id: `iss-${i}-${is}`,
+        title: `디자인 검토 이슈 #${is + 1}`,
+        content: `이슈 설명: 현재 디자인 시안의 톤앤매너가 브랜드 가이드라인과 일부 불일치합니다. 수정이 필요합니다.`,
+        status: isResolved ? "Resolved" : "Issue",
+        startDate: iStart.toISOString().slice(0, 10),
+        endDate: iEnd.toISOString().slice(0, 10),
+        assignee: membersList[is % membersList.length] || pm,
+        imageUrls: [images[(is + 1) % images.length]],
+        resolved: isResolved,
+        memo: isResolved ? "피드백 반영 완료: 색상 대비 및 타이포그래피 여백 수정 확인됨." : undefined,
+        timestamp: isResolved ? new Date().toISOString() : undefined,
+      };
+    });
+
     return {
-      id: `t-${i}-${t}`,
-      title: `${title} - 단계 ${t + 1}`,
-      content: `이 작업은 ${title}의 주요 마일스톤 중 하나로, 프로젝트 성공에 필수적인 단계입니다. 담당자는 정해진 기한 내에 산출물을 제출해야 합니다.`,
-      status: taskStatus,
-      progress: rawProgress,
-      startDate: tStart.toISOString().slice(0, 10),
-      endDate: tEnd.toISOString().slice(0, 10),
-      assignee: membersList[t % membersList.length] || pm,
-      imageUrls: [images[t % images.length]],
+      id: `p-${String(i + 1).padStart(3, "0")}`,
+      title,
+      department: dept,
+      status,
+      progress: totalProgress,
+      deadline: status === "상시" ? "상시" : deadline,
+      pm,
+      members: membersList,
+      image: images[0],
+      images,
+      thumbnail: {
+        coverIndex: 0,
+        focal: { x: 0.5, y: 0.5 },
+        zoom: 1,
+        sequence: Array.from({ length: images.length }, (_, j) => j),
+      },
+      tasks,
+      issues,
     };
   });
 
-  const totalProgress = tasks.length > 0 
-    ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
-    : 0;
-
-  // Generate Issues
-  const issueCount = i % 3; // 0 to 2 issues
-  const issues: Issue[] = Array.from({ length: issueCount }, (_, is) => {
-    const isResolved = is % 2 === 0;
-    const iStart = new Date(2026, 4, 15 + is);
-    const iEnd = new Date(iStart);
-    iEnd.setDate(iEnd.getDate() + 3);
-    return {
-      id: `iss-${i}-${is}`,
-      title: `디자인 검토 이슈 #${is + 1}`,
-      content: `이슈 설명: 현재 디자인 시안의 톤앤매너가 브랜드 가이드라인과 일부 불일치합니다. 수정이 필요합니다.`,
-      status: isResolved ? "Resolved" : "Issue",
-      startDate: iStart.toISOString().slice(0, 10),
-      endDate: iEnd.toISOString().slice(0, 10),
-      assignee: membersList[is % membersList.length] || pm,
-      imageUrls: [images[(is + 1) % images.length]],
-      resolved: isResolved,
-      memo: isResolved ? "피드백 반영 완료: 색상 대비 및 타이포그래피 여백 수정 확인됨." : undefined,
-      timestamp: isResolved ? new Date().toISOString() : undefined,
-    };
-  });
-
-  return {
-    id: `p-${String(i + 1).padStart(3, "0")}`,
-    title,
-    department: dept,
-    status,
-    progress: totalProgress,
-    deadline: status === "상시" ? "상시" : deadline,
-    pm,
-    members: membersList,
-    image: images[0],
-    images,
-    thumbnail: {
-      coverIndex: 0,
-      focal: { x: 0.5, y: 0.5 },
-      zoom: 1,
-      sequence: Array.from({ length: images.length }, (_, j) => j),
-    },
-    tasks,
-    issues,
-  };
-});
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Merge saved data with initial data to ensure all projects exist but modifications are kept
+      return initialData.map(p => {
+        const found = parsed.find((x: any) => x.id === p.id);
+        return found || p;
+      });
+    } catch {
+      return initialData;
+    }
+  }
+  return initialData;
+})();

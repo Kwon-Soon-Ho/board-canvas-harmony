@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
-import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, getOptimizedUrl } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2 } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
@@ -61,6 +61,20 @@ function DetailWindow() {
     const ch = getSyncChannel();
     if (!ch) return;
     ch.postMessage({ type: "PROJECT_UPDATE", project });
+    
+    // Persist to localStorage
+    const saved = localStorage.getItem('design-projects-store');
+    let allProjects = MOCK_PROJECTS;
+    if (saved) {
+      try {
+        allProjects = JSON.parse(saved);
+        const pIdx = allProjects.findIndex(p => p.id === project.id);
+        if (pIdx !== -1) allProjects[pIdx] = project;
+        else allProjects.push(project);
+      } catch { /* ignore */ }
+    }
+    localStorage.setItem('design-projects-store', JSON.stringify(allProjects));
+
     return () => ch.close();
   }, [project]);
 
@@ -255,7 +269,7 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
          </button>
       </div>
       <div className="flex-1 relative overflow-hidden flex items-center justify-center">
-        <img src={currentImg} alt="" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+        <img src={getOptimizedUrl(currentImg, 'full')} alt="" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
       </div>
       {images.length > 1 && (
         <>
@@ -281,9 +295,9 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: str
               <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition"><X className="w-8 h-8 text-white/50" /></button>
            </div>
            <div className="p-8 grid grid-cols-3 gap-6 overflow-y-auto max-h-[60vh]">
-              {images?.map((img, idx) => (
-                <div key={img} className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black shadow-lg">
-                  <img src={img} className="w-full h-full object-cover" />
+              {images?.map((imgUrl, idx) => (
+                <div key={imgUrl} className="relative group rounded-xl overflow-hidden border border-white/10 aspect-video bg-black shadow-lg">
+                  <img src={getOptimizedUrl(imgUrl, 'thumb')} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
                      <button type="button" onClick={() => {
                         const newImgs = [...images];
