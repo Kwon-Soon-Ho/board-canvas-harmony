@@ -217,7 +217,7 @@ const ALL_IMAGES = [
   "https://images.unsplash.com/photo-1540932239986-30128078f3c5",
 ];
 
-const img = (index: number) => `${ALL_IMAGES[index % ALL_IMAGES.length]}?q=80&w=1200&auto=format&fit=crop`;
+const img = (index: number) => `${ALL_IMAGES[index % ALL_IMAGES.length]}?q=90&w=2400&auto=format&fit=crop`;
 
 const DEPTS: Department[] = ["영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
