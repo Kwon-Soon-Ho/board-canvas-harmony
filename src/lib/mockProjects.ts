@@ -67,7 +67,7 @@ const RANK_VALUE: Record<string, number> = {
   "연구원": 1
 };
 
-const TEAM_DATA: Record<Department, { name: string; rank: string }[]> = {
+export const TEAM_DATA: Record<Department, { name: string; rank: string }[]> = {
   공통: [{ name: "신혜영", rank: "수석" }],
   영상: [
     { name: "김태식", rank: "책임" }, { name: "최영환", rank: "선임" }, { name: "박지영", rank: "선임" },
@@ -83,7 +83,7 @@ const TEAM_DATA: Record<Department, { name: string; rank: string }[]> = {
   ],
 };
 
-const ALL_MEMBERS = Object.values(TEAM_DATA).flat();
+export const ALL_MEMBERS = Object.values(TEAM_DATA).flat();
 const PM_CANDIDATES = ALL_MEMBERS.filter(m => ["수석", "책임", "선임"].includes(m.rank));
 
 const ALL_IMAGES = [
@@ -231,8 +231,8 @@ export const getOptimizedUrl = (url: string, type: 'thumb' | 'full' = 'full') =>
   return `${url}${params}`;
 };
 
-const DEPTS: Department[] = ["영상", "편집", "UX"];
-const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
+export const DEPTS: Department[] = ["영상", "편집", "UX"];
+export const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
 
 const TITLES: Record<Department, string[]> = {
   영상: ["시네마틱 4K 프로모션", "모션 그래픽 오프닝", "브랜드 필름 에디팅", "유튜브 시리즈 편집", "CF 광고 영상 제작", "인터뷰 다큐멘터리", "3D 제품 렌더링", "뮤직비디오 컬러그레이딩", "티저 트레일러", "이벤트 현장 스케치", "숏폼 챌린지 시리즈", "기업 홍보 영상", "디지털 사이니지 모션", "캠페인 히어로 비디오", "SNS 프로모션 영상", "드론 항공 촬영본"],

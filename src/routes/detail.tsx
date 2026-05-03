@@ -22,7 +22,18 @@ function DndProvider({ children }: { children: React.ReactNode }) {
 function DetailWindow() {
   const { id } = Route.useSearch();
   const navigate = useNavigate();
-  const [project, setProject] = useState<Project | null>(() => id ? MOCK_PROJECTS.find((p) => p.id === id) ?? null : null);
+  const [project, setProject] = useState<Project | null>(() => {
+    if (!id) return null;
+    const saved = localStorage.getItem('design-projects-store');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const found = parsed.find((p: Project) => p.id === id);
+        if (found) return found;
+      } catch {}
+    }
+    return MOCK_PROJECTS.find((p) => p.id === id) ?? null;
+  });
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [isImageViewerFull, setIsImageViewerFull] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
@@ -143,14 +154,33 @@ function DetailWindow() {
     }, 50);
   };
 
+  const handleUpdateEndDate = (id: string, daysDelta: number) => {
+    setProject(prev => {
+      if (!prev) return prev;
+      const updateEnd = (dateStr: string, delta: number) => {
+        const d = new Date(dateStr);
+        d.setDate(d.getDate() + delta);
+        return d.toISOString().slice(0, 10);
+      };
+
+      const isTask = prev.tasks.some(t => t.id === id);
+      if (isTask) {
+        return { ...prev, tasks: prev.tasks.map(t => t.id === id ? { ...t, endDate: updateEnd(t.endDate, daysDelta) } : t) };
+      } else {
+        return { ...prev, issues: prev.issues.map(i => i.id === id ? { ...i, endDate: updateEnd(i.endDate, daysDelta) } : i) };
+      }
+    });
+  };
+
   const activeTask = project.tasks.find(t => t.id === activeItemId);
   const activeIssue = project.issues.find(i => i.id === activeItemId);
   const imagesToShow = activeTask?.imageUrls && activeTask.imageUrls.length > 0 ? activeTask.imageUrls : 
                        activeIssue?.imageUrls && activeIssue.imageUrls.length > 0 ? activeIssue.imageUrls : project.images;
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-[#050505] text-white overflow-hidden font-sans">
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#0a0a0a] px-6">
+    <div className="flex h-screen w-screen flex-col bg-[#050505] bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center text-white overflow-hidden font-sans">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl z-0" />
+      <header className="relative z-10 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#0a0a0a]/60 backdrop-blur-xl px-6">
         <div className="flex items-center gap-6">
           <button onClick={() => window.opener ? window.close() : navigate({ to: "/" })} className="hover:bg-white/10 p-2 rounded transition">
             <ArrowLeft className="h-6 w-6" />
@@ -195,7 +225,7 @@ function DetailWindow() {
                         </button>
                       </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]">
+                    <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]/50 backdrop-blur-xl relative z-10">
                       <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
@@ -231,7 +261,13 @@ function DetailWindow() {
             <>
               <ResizeHandleHorizontal />
               <Panel order={2} defaultSize={40} minSize={20}>
-                <GanttChart tasks={project.tasks} issues={project.issues} activeId={activeItemId} setActiveId={(id) => handleFocusItem(id, 'gantt')} />
+                <GanttChart 
+                  tasks={project.tasks} 
+                  issues={project.issues} 
+                  activeId={activeItemId} 
+                  setActiveId={(id) => handleFocusItem(id, 'gantt')} 
+                  onUpdateEndDate={handleUpdateEndDate}
+                />
               </Panel>
             </>
           )}
@@ -251,7 +287,34 @@ function DetailWindow() {
 
 function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: { images: string[], projectImages: string[], onToggleStar: (url: string) => void, onEditThumbnails: () => void }) {
   const [idx, setIdx] = useState(0);
-  useEffect(() => { setIdx(0); }, [images]);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+
+  useEffect(() => { 
+    setIdx(0); 
+    setScale(1); 
+    setPosition({ x: 0, y: 0 }); 
+  }, [images]);
+
+  useEffect(() => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, [idx]);
+
+  const handlePanStart = (e: React.MouseEvent) => {
+    setIsPanning(true);
+    setStartPan({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+  const handlePanMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPosition({ x: e.clientX - startPan.x, y: e.clientY - startPan.y });
+  };
+  const handlePanEnd = () => setIsPanning(false);
+  const handleWheel = (e: React.WheelEvent) => {
+    setScale(prev => Math.min(Math.max(0.2, prev - e.deltaY * 0.002), 5));
+  };
 
   if (!images || images.length === 0) return <div className="h-full w-full bg-[#050505] flex items-center justify-center text-white/20 font-bold text-xl">No Images</div>;
 
@@ -267,9 +330,32 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
          <button onClick={onEditThumbnails} className="px-5 py-2.5 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition text-base font-bold text-white/90 shadow-lg backdrop-blur-sm">
            썸네일 편집
          </button>
+         <button onClick={() => { setScale(1); setPosition({x:0, y:0}); }} className="p-3 bg-black/60 hover:bg-white/10 rounded-lg border border-white/10 transition shadow-lg backdrop-blur-sm" title="Reset Zoom">
+            <Minimize2 className="w-6 h-6 text-white/80" />
+         </button>
       </div>
-      <div className="flex-1 relative overflow-hidden flex items-center justify-center">
-        <img src={getOptimizedUrl(currentImg, 'full')} alt="" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+      <div 
+        className={`flex-1 relative overflow-hidden flex items-center justify-center ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
+        onMouseDown={handlePanStart}
+        onMouseMove={handlePanMove}
+        onMouseUp={handlePanEnd}
+        onMouseLeave={handlePanEnd}
+        onWheel={handleWheel}
+      >
+        <img 
+          src={getOptimizedUrl(currentImg, 'full')} 
+          alt="" 
+          style={{ 
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            transition: isPanning ? 'none' : 'transform 0.1s ease-out'
+          }}
+          className="max-w-full max-h-full object-contain drop-shadow-2xl pointer-events-none" 
+        />
+        {scale !== 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white/80 font-mono text-sm pointer-events-none">
+            {Math.round(scale * 100)}%
+          </div>
+        )}
       </div>
       {images.length > 1 && (
         <>
@@ -455,9 +541,9 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      <div className="w-full max-w-3xl bg-[#111] border border-white/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-white/10 bg-[#161616] flex justify-between items-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-3xl bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-center backdrop-blur-md">
           <h2 className="text-2xl font-black text-white/90">{config.mode === 'create' ? '새로 만들기' : '수정'} - {isTask ? '상세 업무' : '이슈 사항'}</h2>
           <button type="button" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition"><X className="w-7 h-7 text-white/50" /></button>
         </div>
@@ -532,7 +618,7 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
   );
 }
 
-function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], issues: Issue[], activeId?: string, setActiveId: (id: string) => void }) {
+function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: { tasks: Task[], issues: Issue[], activeId?: string, setActiveId: (id: string) => void, onUpdateEndDate: (id: string, days: number) => void }) {
   const [viewWeeks, setViewWeeks] = useState<4 | 8 | 12>(8);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -568,8 +654,8 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
   const mockNow = today.getTime();
 
   return (
-    <div className="flex h-full flex-col bg-[#0f0f0f] select-none border-t border-white/10 overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/10 px-8 py-5 shrink-0 bg-[#0a0a0a] z-30">
+    <div className="flex h-full flex-col bg-[#0f0f0f]/60 backdrop-blur-md select-none border-t border-white/10 overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/10 px-8 py-5 shrink-0 bg-[#0a0a0a]/80 backdrop-blur-xl z-30">
         <h3 className="text-xl font-black tracking-widest text-white/80">워크 플랜</h3>
         <div className="flex items-center gap-6">
           <div className="flex gap-2">
@@ -618,13 +704,13 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
 
             {tasks.map((t) => (
                <div key={t.id} data-gantt-id={t.id}>
-                 <GanttBar item={t} type="task" left={getLeft(t.startDate)} width={getWidth(t.startDate, t.endDate)} isActive={activeId === t.id} onClick={() => setActiveId(t.id)} />
+                 <GanttBar item={t} type="task" left={getLeft(t.startDate)} width={getWidth(t.startDate, t.endDate)} dayWidth={dayWidth} isActive={activeId === t.id} onClick={() => setActiveId(t.id)} onUpdateEnd={(days) => onUpdateEndDate(t.id, days)} />
                </div>
             ))}
             <div className="h-8" />
             {issues.map((iss) => (
                <div key={iss.id} data-gantt-id={iss.id}>
-                 <GanttBar item={iss as unknown as Task} type="issue" left={getLeft(iss.startDate)} width={getWidth(iss.startDate, iss.endDate)} isActive={activeId === iss.id} onClick={() => setActiveId(iss.id)} />
+                 <GanttBar item={iss as unknown as Task} type="issue" left={getLeft(iss.startDate)} width={getWidth(iss.startDate, iss.endDate)} dayWidth={dayWidth} isActive={activeId === iss.id} onClick={() => setActiveId(iss.id)} onUpdateEnd={(days) => onUpdateEndDate(iss.id, days)} />
                </div>
             ))}
           </div>
@@ -632,9 +718,10 @@ function GanttChart({ tasks, issues, activeId, setActiveId }: { tasks: Task[], i
       </div>
     </div>
   );
+  );
 }
 
-function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, type: 'task'|'issue', left: number, width: number, isActive: boolean, onClick: () => void }) {
+function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpdateEnd }: { item: Task, type: 'task'|'issue', left: number, width: number, dayWidth: number, isActive: boolean, onClick: () => void, onUpdateEnd: (days: number) => void }) {
   const isTask = type === 'task';
   const durationDays = Math.max(1, Math.ceil((new Date(item.endDate).getTime() - new Date(item.startDate).getTime()) / 86400000));
   
@@ -648,26 +735,64 @@ function GanttBar({ item, type, left, width, isActive, onClick }: { item: Task, 
 
   const textColor = isResolvedIssue ? "text-black" : "text-[#FFFFFF]";
 
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.pageX;
+    const startWidth = width;
+
+    const onMove = (moveEvent: MouseEvent) => {
+      const diff = moveEvent.pageX - startX;
+      setDragWidth(Math.max(dayWidth, startWidth + diff));
+    };
+
+    const onUp = (upEvent: MouseEvent) => {
+      const diff = upEvent.pageX - startX;
+      const daysDelta = Math.round(diff / dayWidth);
+      if (daysDelta !== 0) onUpdateEnd(daysDelta);
+      setDragWidth(null);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
+  const activeWidth = dragWidth !== null ? dragWidth : width;
+  const displayDays = dragWidth !== null ? Math.max(1, Math.ceil(dragWidth / dayWidth)) : durationDays;
+
   return (
     <div className="relative h-14 w-full group mb-5">
       <div 
         data-gantt-target={item.id}
         onClick={onClick} 
-        style={{ left, width }} 
-        className={`absolute top-0 h-full rounded-2xl scroll-ml-[100px] shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-all bg-[#1a1a1a] border border-white/5 overflow-hidden ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
+        style={{ left, width: activeWidth }} 
+        className={`absolute top-0 h-full rounded-2xl scroll-ml-[100px] shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-none bg-[#1a1a1a] border border-white/5 overflow-visible ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
       >
-        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-all duration-500`} style={{ width: `${progress}%`, opacity: 1 }} />
+        <div className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-none`} style={{ width: `${progress}%`, opacity: 1, borderTopLeftRadius: '1rem', borderBottomLeftRadius: '1rem' }} />
         
         <span className={`relative z-10 text-lg font-black truncate pr-4 drop-shadow-md ${textColor}`}>
           {item.title}
         </span>
         <span className={`relative z-10 text-[13px] font-black px-3 py-1.5 rounded-md shrink-0 shadow-sm ${isResolvedIssue ? 'bg-black/10' : 'bg-black/80'} ${textColor}`}>
-          {durationDays} days
+          {displayDays} days
         </span>
+
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={handleResizeStart}
+          className="absolute right-0 top-0 bottom-0 w-4 cursor-e-resize flex items-center justify-center opacity-0 group-hover:opacity-100 bg-white/10 hover:bg-white/20 transition-all rounded-r-2xl"
+        >
+          <div className="w-1 h-4 border-l border-r border-white/40" />
+        </div>
       </div>
     </div>
   );
 }
+
 
 function ResizeHandleVertical() {
   return (

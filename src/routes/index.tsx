@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/control/Header";
 import { FilterBar } from "@/components/control/FilterBar";
 import { ProjectCard } from "@/components/control/ProjectCard";
-import { MOCK_PROJECTS, type Department, type Status } from "@/lib/mockProjects";
+import { CreateProjectModal } from "@/components/control/CreateProjectModal";
+import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
+import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
 import { getSyncChannel, openDetailWindow } from "@/lib/sync";
 
 export const Route = createFileRoute("/")({
@@ -16,6 +18,9 @@ function ControlCenter() {
   const [statuses, setStatuses] = useState<Set<Status>>(new Set());
   const [searchValue, setSearchValue] = useState("");
   const [query, setQuery] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"deadline" | "progress" | "recent">("recent");
+  const [sortDesc, setSortDesc] = useState(true);
 
   const clearSearch = () => {
     setSearchValue("");
@@ -47,7 +52,21 @@ function ControlCenter() {
       }
       return true;
     });
-  }, [dept, statuses, query, projects]);
+
+    return baseFiltered.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "deadline") {
+        if (a.deadline === "상시") return 1;
+        if (b.deadline === "상시") return -1;
+        cmp = a.deadline.localeCompare(b.deadline);
+      } else if (sortBy === "progress") {
+        cmp = a.progress - b.progress;
+      } else {
+        cmp = b.id.localeCompare(a.id); // 'recent' by ID (approximate)
+      }
+      return sortDesc ? -cmp : cmp;
+    });
+  }, [dept, statuses, query, projects, sortBy, sortDesc]);
 
   // Keep a ref to "last opened project" so Window B can request it on load.
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
@@ -100,18 +119,37 @@ function ControlCenter() {
       />
 
       <main className="mx-auto max-w-[1600px] px-10 py-12">
-        <div className="mb-6 flex items-end justify-between">
+        <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
           <div>
-            <h1 className="text-[24px] font-semibold tracking-tight">프로젝트</h1>
-            <p className="mt-1 text-[16px] text-muted-foreground">
-              총 {filtered.length}개 / 전체 {projects.length}개
+            <h1 className="text-[32px] font-black tracking-tighter text-white">전체 프로젝트</h1>
+            <p className="mt-2 text-[15px] font-medium text-white/40">
+              총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
             </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md">
+              <button onClick={() => { setSortBy("recent"); setSortDesc(true); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}>최신순</button>
+              <button onClick={() => { setSortBy("progress"); setSortDesc(true); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}><CheckCircle2 className="w-4 h-4"/> 진척도순</button>
+              <button onClick={() => { setSortBy("deadline"); setSortDesc(false); }} className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}><Clock className="w-4 h-4"/> 마감임박순</button>
+            </div>
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-white/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            >
+              <Plus className="w-5 h-5" />
+              새 프로젝트
+            </button>
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-hairline text-[16px] text-muted-foreground">
-            조건에 맞는 프로젝트가 없습니다.
+          <div className="flex flex-col h-[400px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-sm">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+              <ArrowUpDown className="w-8 h-8 text-white/20" />
+            </div>
+            <h3 className="text-xl font-bold text-white/70 mb-2">조건에 맞는 프로젝트가 없습니다</h3>
+            <p className="text-[15px] text-white/40">필터를 조정하거나 새로운 프로젝트를 생성해보세요.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-x-12 gap-y-16 px-2 pb-24 md:grid-cols-2 lg:grid-cols-3">
@@ -121,6 +159,18 @@ function ControlCenter() {
           </div>
         )}
       </main>
+
+      <CreateProjectModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onCreate={(newProject) => {
+          setProjects(prev => {
+            const next = [newProject, ...prev];
+            localStorage.setItem('design-projects-store', JSON.stringify(next));
+            return next;
+          });
+        }}
+      />
     </div>
   );
 }
