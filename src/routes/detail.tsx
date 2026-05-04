@@ -86,7 +86,14 @@ function DetailWindow() {
     ch.onmessage = (e) => {
       const msg = e.data;
       if (msg?.type === "OPEN_PROJECT" && msg.project) {
-        setProject(msg.project as Project);
+        const incoming = msg.project as Project;
+        const normalized = incoming.status === "완료" ? {
+          ...incoming,
+          progress: 100,
+          tasks: incoming.tasks.map((t) => ({ ...t, status: "완료" as TaskStatus, progress: 100 })),
+          issues: incoming.issues.map((i) => ({ ...i, status: "Resolved" as IssueStatus, resolved: true })),
+        } : incoming;
+        setProject(normalized);
         setActiveItemId(undefined);
         setModalConfig(null);
       } else if (msg?.type === "PROJECT_DELETED" && msg.projectId === project?.id) {
