@@ -5,6 +5,7 @@ import { FilterBar } from "@/components/control/FilterBar";
 import { KpiBar } from "@/components/control/KpiBar";
 import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
+import { ActivityFeed } from "@/components/control/ActivityFeed";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
@@ -235,119 +236,126 @@ function ControlCenter() {
         toggleStatus={toggleStatus}
       />
 
-      <main className="mx-auto max-w-[1600px] px-10 py-12">
-        <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
+      <main className="mx-auto max-w-[1920px] px-10 py-12">
+        <div className="flex gap-8">
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[32px] font-black tracking-tighter text-white">
-              {heading}
-            </h1>
-            <p className="mt-2 text-[15px] font-medium text-white/40">
-              총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
-            </p>
-            <ActiveFilterChips
-              dept={dept}
-              statuses={statuses}
-              query={query}
-              urgentOnly={urgentOnly}
-              issuesOnly={issuesOnly}
-              onClearDept={() => setDept("전체")}
-              onClearStatus={(s) => toggleStatus(s)}
-              onClearQuery={() => { setSearchValue(""); setQuery(""); }}
-              onClearUrgent={() => setUrgentOnly(false)}
-              onClearIssues={() => setIssuesOnly(false)}
-              onResetAll={handleResetAll}
-            />
-          </div>
+            <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-[32px] font-black tracking-tighter text-white">
+                  {heading}
+                </h1>
+                <p className="mt-2 text-[15px] font-medium text-white/40">
+                  총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
+                </p>
+                <ActiveFilterChips
+                  dept={dept}
+                  statuses={statuses}
+                  query={query}
+                  urgentOnly={urgentOnly}
+                  issuesOnly={issuesOnly}
+                  onClearDept={() => setDept("전체")}
+                  onClearStatus={(s) => toggleStatus(s)}
+                  onClearQuery={() => { setSearchValue(""); setQuery(""); }}
+                  onClearUrgent={() => setUrgentOnly(false)}
+                  onClearIssues={() => setIssuesOnly(false)}
+                  onResetAll={handleResetAll}
+                />
+              </div>
 
-          <div className="flex items-center gap-4">
-            <div
-              role="group"
-              aria-label="정렬"
-              className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
-            >
-              <button
-                aria-pressed={sortBy === "recent"}
-                onClick={() => { setSortBy("recent"); setSortDesc(true); }}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-              >
-                최신순
-              </button>
-              <button
-                aria-pressed={sortBy === "progress"}
-                onClick={() => { setSortBy("progress"); setSortDesc(true); }}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-              >
-                <CheckCircle2 className="w-4 h-4" /> 진행률순
-              </button>
-              <button
-                aria-pressed={sortBy === "deadline"}
-                onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-              >
-                <Clock className="w-4 h-4" /> 마감임박순
-              </button>
+              <div className="flex items-center gap-4">
+                <div
+                  role="group"
+                  aria-label="정렬"
+                  className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                >
+                  <button
+                    aria-pressed={sortBy === "recent"}
+                    onClick={() => { setSortBy("recent"); setSortDesc(true); }}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    최신순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "progress"}
+                    onClick={() => { setSortBy("progress"); setSortDesc(true); }}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> 진행률순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "deadline"}
+                    onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    <Clock className="w-4 h-4" /> 마감임박순
+                  </button>
+                </div>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  aria-label="새 프로젝트 생성"
+                  className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-white/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                >
+                  <Plus className="w-5 h-5" />
+                  새 프로젝트
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              aria-label="새 프로젝트 생성"
-              className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-white/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-            >
-              <Plus className="w-5 h-5" />
-              새 프로젝트
-            </button>
-          </div>
-        </div>
 
-        {filtered.length === 0 ? (
-          <div className="flex flex-col h-[400px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-sm">
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-              <ArrowUpDown className="w-8 h-8 text-white/20" />
-            </div>
-            <h3 className="text-xl font-bold text-white/70 mb-2">조건에 맞는 프로젝트가 없습니다</h3>
-            <p className="text-[15px] text-white/40 mb-5">필터를 조정하거나 새로운 프로젝트를 생성해보세요.</p>
-            {(dept !== "전체" || statuses.size > 0 || query.trim().length > 0) && (
-              <div className="flex flex-wrap items-center justify-center gap-2 mb-5 max-w-[600px]">
-                {dept !== "전체" && (
-                  <span className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
-                    부서: {dept}
-                  </span>
+            {filtered.length === 0 ? (
+              <div className="flex flex-col h-[400px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-sm">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                  <ArrowUpDown className="w-8 h-8 text-white/20" />
+                </div>
+                <h3 className="text-xl font-bold text-white/70 mb-2">조건에 맞는 프로젝트가 없습니다</h3>
+                <p className="text-[15px] text-white/40 mb-5">필터를 조정하거나 새로운 프로젝트를 생성해보세요.</p>
+                {(dept !== "전체" || statuses.size > 0 || query.trim().length > 0) && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 mb-5 max-w-[600px]">
+                    {dept !== "전체" && (
+                      <span className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
+                        부서: {dept}
+                      </span>
+                    )}
+                    {[...statuses].map((s) => (
+                      <span key={s} className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
+                        상태: {s}
+                      </span>
+                    ))}
+                    {query.trim().length > 0 && (
+                      <span className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
+                        검색: "{query}"
+                      </span>
+                    )}
+                  </div>
                 )}
-                {[...statuses].map((s) => (
-                  <span key={s} className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
-                    상태: {s}
-                  </span>
-                ))}
-                {query.trim().length > 0 && (
-                  <span className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
-                    검색: "{query}"
-                  </span>
+                {(dept !== "전체" || statuses.size > 0 || query.trim().length > 0) && (
+                  <button
+                    onClick={handleResetAll}
+                    className="px-4 py-2 rounded-lg bg-white text-black text-[13px] font-bold hover:bg-white/90 transition"
+                  >
+                    필터 초기화
+                  </button>
                 )}
               </div>
-            )}
-            {(dept !== "전체" || statuses.size > 0 || query.trim().length > 0) && (
-              <button
-                onClick={handleResetAll}
-                className="px-4 py-2 rounded-lg bg-white text-black text-[13px] font-bold hover:bg-white/90 transition"
+            ) : (
+              <section
+                aria-label="프로젝트 목록"
+                className="grid grid-cols-1 gap-x-12 gap-y-16 px-2 pb-24 md:grid-cols-2 lg:grid-cols-3"
               >
-                필터 초기화
-              </button>
+                {filtered.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    project={p}
+                    onOpen={handleOpen}
+                    onDelete={() => setPendingDeleteId(p.id)}
+                  />
+                ))}
+              </section>
             )}
           </div>
-        ) : (
-          <section
-            aria-label="프로젝트 목록"
-            className="grid grid-cols-1 gap-x-12 gap-y-16 px-2 pb-24 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {filtered.map((p) => (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                onOpen={handleOpen}
-                onDelete={() => setPendingDeleteId(p.id)}
-              />
-            ))}
-          </section>
-        )}
+
+          {/* P9 + P10: Activity feed in the previously unused right gutter */}
+          <ActivityFeed projects={projects} onOpen={handleOpen} />
+        </div>
       </main>
 
       <CreateProjectModal
