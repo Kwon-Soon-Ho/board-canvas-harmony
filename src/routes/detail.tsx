@@ -105,28 +105,36 @@ function DetailWindow() {
   }, []);
 
   // Broadcast changes to other windows (Window A)
+  const initialProjectRef = useRef(project);
   useEffect(() => {
     if (!project) return;
-    
+
+    // Stamp updatedAt automatically when meaningful state changes (skip first render)
+    let outgoing = project;
+    if (initialProjectRef.current && initialProjectRef.current !== project) {
+      outgoing = { ...project, updatedAt: new Date().toISOString() };
+    }
+    initialProjectRef.current = project;
+
     // Update the in-memory MOCK_PROJECTS array so it persists during the session
-    const idx = MOCK_PROJECTS.findIndex(p => p.id === project.id);
+    const idx = MOCK_PROJECTS.findIndex(p => p.id === outgoing.id);
     if (idx !== -1) {
-      MOCK_PROJECTS[idx] = project;
+      MOCK_PROJECTS[idx] = outgoing;
     }
 
     const ch = getSyncChannel();
     if (!ch) return;
-    ch.postMessage({ type: "PROJECT_UPDATE", project });
-    
+    ch.postMessage({ type: "PROJECT_UPDATE", project: outgoing });
+
     // Persist to localStorage
     const saved = localStorage.getItem('design-projects-store');
     let allProjects = MOCK_PROJECTS;
     if (saved) {
       try {
         allProjects = JSON.parse(saved);
-        const pIdx = allProjects.findIndex(p => p.id === project.id);
-        if (pIdx !== -1) allProjects[pIdx] = project;
-        else allProjects.push(project);
+        const pIdx = allProjects.findIndex(p => p.id === outgoing.id);
+        if (pIdx !== -1) allProjects[pIdx] = outgoing;
+        else allProjects.push(outgoing);
       } catch { /* ignore */ }
     }
     localStorage.setItem('design-projects-store', JSON.stringify(allProjects));
@@ -254,10 +262,12 @@ function DetailWindow() {
             {/* Expanded Info - Enlarged for better visibility */}
             <div className="ml-4 flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-base">
               <div className="flex items-center gap-2.5">
-                <span className="text-[11px] font-black text-orange-400 uppercase tracking-widest opacity-80">마감일</span>
+                <span className="text-[11px] font-black text-orange-400 uppercase tracking-widest opacity-80">일정</span>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4.5 h-4.5 text-white/90" />
-                  <span className="font-mono text-white/90 font-bold">{project.deadline}</span>
+                  <span className="text-white/90 font-bold tabular-nums">
+                    {project.startDate ? `${project.startDate} ~ ${project.deadline}` : project.deadline}
+                  </span>
                 </div>
               </div>
               <div className="w-px h-4 bg-white/20" />
@@ -1203,15 +1213,18 @@ function ResizeHandleHorizontal() {
 }
 
 function ProjectEditModal({ project, onClose, onSave }: { project: Project, onClose: () => void, onSave: (p: Partial<Project>) => void }) {
+  const [startDate, setStartDate] = useState(project.startDate ?? "");
   const [deadline, setDeadline] = useState(project.deadline);
   const [pm, setPm] = useState(project.pm);
   const [status, setStatus] = useState<any>(project.status);
 
-  // We need to fetch ALL_MEMBERS and TEAM_DATA directly or assume they are exported.
-  // Actually, we can import them at the top of detail.tsx
   const availableMembers = useMemo(() => {
     return project.department === "공통" ? ALL_MEMBERS : TEAM_DATA[project.department] || ALL_MEMBERS;
   }, [project.department]);
+
+  const dateError = status !== "상시" && startDate && deadline && deadline !== "상시" && startDate > deadline
+    ? "시작일이 마감일보다 늦을 수 없습니다."
+    : "";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1223,8 +1236,21 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
         
         <div className="p-8 space-y-6">
           <div className="space-y-3">
-            <label className="text-sm font-semibold text-white/70">마감일</label>
-            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-orange-500 transition color-scheme-dark" disabled={status === "상시"} />
+            <label className="text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-white/60" /> 일정
+              {status === "상시" && <span className="text-[11px] font-normal text-white/40">(상시 프로젝트는 일정 없음)</span>}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">시작일</span>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시"} />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">마감일</span>
+                <input type="date" value={deadline === "상시" ? "" : deadline} min={startDate || undefined} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시"} />
+              </div>
+            </div>
+            {dateError && <p className="text-xs font-semibold text-amber-300">{dateError}</p>}
           </div>
           <div className="space-y-3">
             <label className="text-sm font-semibold text-white/70">PM (담당 책임자)</label>
@@ -1246,7 +1272,12 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
         
         <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
           <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/10 transition">취소</button>
-          <button type="button" onClick={() => { onSave({ deadline, pm, status }); onClose(); }} className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white text-black hover:bg-white/90 transition">저장</button>
+          <button type="button" disabled={!!dateError} onClick={() => {
+            const finalDeadline = status === "상시" ? "상시" : deadline;
+            const finalStart = status === "상시" ? undefined : (startDate || undefined);
+            onSave({ startDate: finalStart, deadline: finalDeadline, pm, status, updatedAt: new Date().toISOString() });
+            onClose();
+          }} className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">저장</button>
         </div>
       </div>
     </div>

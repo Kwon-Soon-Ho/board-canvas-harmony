@@ -47,7 +47,9 @@ export interface Project {
   department: Department;
   status: Status;
   progress: number;
+  startDate?: string;
   deadline: string;
+  updatedAt?: string;
   pm: string;
   members: string[];
   image: string; 

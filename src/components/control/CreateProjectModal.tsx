@@ -9,14 +9,20 @@ interface Props {
 }
 
 export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
+  const today = new Date().toISOString().slice(0, 10);
   const [title, setTitle] = useState("");
   const [department, setDepartment] = useState<Department>("UX");
   const [status, setStatus] = useState<Status>("대기");
+  const [startDate, setStartDate] = useState(today);
   const [deadline, setDeadline] = useState("");
   const [pm, setPm] = useState("");
   const [members, setMembers] = useState<string[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
+
+  const dateError = status !== "상시" && startDate && deadline && startDate > deadline
+    ? "시작일이 마감일보다 늦을 수 없습니다."
+    : "";
 
   const availableMembers = useMemo(() => {
     return department === "공통" ? ALL_MEMBERS : TEAM_DATA[department];
@@ -27,6 +33,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !pm || imageUrls.length === 0) return;
+    if (dateError) return;
 
     const newProject: Project = {
       id: `p-new-${Date.now()}`,
@@ -34,7 +41,9 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
       department,
       status,
       progress: 0,
-      deadline: status === "상시" ? "상시" : deadline || new Date().toISOString().slice(0, 10),
+      startDate: status === "상시" ? undefined : (startDate || today),
+      deadline: status === "상시" ? "상시" : deadline || today,
+      updatedAt: new Date().toISOString(),
       pm,
       members,
       image: imageUrls[0],
@@ -128,15 +137,35 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <label className="block text-sm font-semibold text-white/90 flex items-center gap-2"><Calendar className="w-4 h-4 text-white/80 drop-shadow-md" /> 마감일</label>
-            <input 
-              type="date" 
-              value={deadline} 
-              onChange={e => setDeadline(e.target.value)} 
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-orange-500 transition color-scheme-dark"
-              disabled={status === "상시"}
-            />
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-white/90 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-white/80" /> 일정
+              {status === "상시" && <span className="text-[11px] font-normal text-white/40">(상시 프로젝트는 일정 없음)</span>}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">시작일</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40"
+                  disabled={status === "상시"}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">마감일</span>
+                <input
+                  type="date"
+                  value={deadline}
+                  min={startDate || undefined}
+                  onChange={e => setDeadline(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40"
+                  disabled={status === "상시"}
+                />
+              </div>
+            </div>
+            {dateError && <p className="text-xs font-semibold text-amber-300">{dateError}</p>}
           </div>
 
           <div className="space-y-4">
@@ -203,7 +232,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
             <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 transition">
               취소
             </button>
-            <button type="submit" disabled={!title || !pm || imageUrls.length === 0} className="px-6 py-3 rounded-xl text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            <button type="submit" disabled={!title || !pm || imageUrls.length === 0 || !!dateError} className="px-6 py-3 rounded-xl text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
               프로젝트 생성
             </button>
           </div>

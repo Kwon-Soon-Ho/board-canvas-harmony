@@ -11,7 +11,7 @@ import { KanbanBoard } from "@/components/control/KanbanBoard";
 import { TimelineView } from "@/components/control/TimelineView";
 import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
-import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
+import { Plus, ArrowUpDown, Clock, CheckCircle2, Sparkles, FilePlus2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
 import { getSyncChannel, openDetailWindow } from "@/lib/sync";
 import {
@@ -58,7 +58,7 @@ function ControlCenter() {
   const [searchValue, setSearchValue] = useState("");
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<"deadline" | "progress" | "recent">("recent");
+  const [sortBy, setSortBy] = useState<"updated" | "created" | "progress" | "deadline">("updated");
   const [sortDesc, setSortDesc] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
@@ -161,7 +161,14 @@ function ControlCenter() {
       let cmp = 0;
       if (sortBy === "progress") {
         cmp = a.progress - b.progress;
+      } else if (sortBy === "updated") {
+        const au = a.updatedAt ?? "";
+        const bu = b.updatedAt ?? "";
+        cmp = au.localeCompare(bu);
+        if (cmp === 0) cmp = a.id.localeCompare(b.id);
+        cmp = -cmp; // newer first by default
       } else {
+        // "created" — id desc
         cmp = b.id.localeCompare(a.id);
       }
       return sortDesc ? -cmp : cmp;
@@ -213,6 +220,7 @@ function ControlCenter() {
   };
 
   const handleStatusChange = (id: string, next: Status) => {
+    const now = new Date().toISOString();
     setProjects((prev) => {
       const updated = prev.map((p) => {
         if (p.id !== id) return p;
@@ -221,11 +229,12 @@ function ControlCenter() {
             ...p,
             status: next,
             progress: 100,
+            updatedAt: now,
             tasks: p.tasks.map((t) => ({ ...t, status: "완료" as const, progress: 100 })),
             issues: p.issues.map((i) => ({ ...i, status: "Resolved" as const, resolved: true })),
           };
         }
-        return { ...p, status: next };
+        return { ...p, status: next, updatedAt: now };
       });
       persist(updated);
       const changed = updated.find((p) => p.id === id);
@@ -322,35 +331,42 @@ function ControlCenter() {
 
               <div className="flex items-center gap-4">
                 <ViewSwitcher view={view} setView={setView} />
-                {view === "grid" && (
-                  <div
-                    role="group"
-                    aria-label="정렬"
-                    className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                <div
+                  role="group"
+                  aria-label="정렬"
+                  className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                >
+                  <button
+                    aria-pressed={sortBy === "updated"}
+                    onClick={() => { setSortBy("updated"); setSortDesc(true); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "updated" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    title="최근 수정 순"
                   >
-                    <button
-                      aria-pressed={sortBy === "recent"}
-                      onClick={() => { setSortBy("recent"); setSortDesc(true); }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    >
-                      최신순
-                    </button>
-                    <button
-                      aria-pressed={sortBy === "progress"}
-                      onClick={() => { setSortBy("progress"); setSortDesc(true); }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> 진행률순
-                    </button>
-                    <button
-                      aria-pressed={sortBy === "deadline"}
-                      onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    >
-                      <Clock className="w-4 h-4" /> 마감임박순
-                    </button>
-                  </div>
-                )}
+                    <Sparkles className="w-4 h-4" /> 최신순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "created"}
+                    onClick={() => { setSortBy("created"); setSortDesc(true); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "created" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    title="프로젝트 생성 순"
+                  >
+                    <FilePlus2 className="w-4 h-4" /> 생성순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "progress"}
+                    onClick={() => { setSortBy("progress"); setSortDesc(true); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> 진행률순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "deadline"}
+                    onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    <Clock className="w-4 h-4" /> 마감임박순
+                  </button>
+                </div>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   aria-label="새 프로젝트 생성"
