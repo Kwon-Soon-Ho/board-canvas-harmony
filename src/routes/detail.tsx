@@ -266,7 +266,13 @@ function DetailWindow() {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4.5 h-4.5 text-white/90" />
                   <span className="text-white/90 font-bold tabular-nums">
-                    {project.startDate ? `${project.startDate} ~ ${project.deadline}` : project.deadline}
+                    {project.startDate && project.deadline
+                      ? `${project.startDate} ~ ${project.deadline}`
+                      : project.startDate
+                        ? `${project.startDate} ~`
+                        : project.deadline
+                          ? project.deadline
+                          : "일정 미정"}
                   </span>
                 </div>
               </div>
@@ -285,7 +291,7 @@ function DetailWindow() {
             {(() => {
               // Match thumbnail card logic: done(>=100) → emerald, urgent(D-7 & in-progress) → amber, else neutral
               const ddayDiff = (() => {
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+                if (!project.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
                 const t = new Date(); t.setHours(0,0,0,0);
                 const d = new Date(project.deadline); d.setHours(0,0,0,0);
                 return Math.round((d.getTime() - t.getTime()) / 86400000);
@@ -1243,11 +1249,11 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">시작일</span>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시"} />
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "대기"} />
               </div>
               <div className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">마감일</span>
-                <input type="date" value={deadline === "상시" ? "" : deadline} min={startDate || undefined} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시"} />
+                <input type="date" value={deadline === "상시" ? "" : deadline} min={startDate || undefined} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시" || status === "대기"} />
               </div>
             </div>
             {dateError && <p className="text-xs font-semibold text-amber-300">{dateError}</p>}
@@ -1273,8 +1279,13 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
         <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
           <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/10 transition">취소</button>
           <button type="button" disabled={!!dateError} onClick={() => {
-            const finalDeadline = status === "상시" ? "상시" : deadline;
-            const finalStart = status === "상시" ? undefined : (startDate || undefined);
+            const finalDeadline =
+              status === "상시" ? "상시" :
+              status === "대기" ? "" :
+              deadline;
+            const finalStart =
+              status === "대기" ? undefined :
+              (startDate || undefined);
             const userChangedStart = finalStart !== project.startDate;
             onSave({
               startDate: finalStart,

@@ -81,7 +81,8 @@ export function seededRand(seed: string): number {
  * - 상시 / no deadline: random start in last 90 days, seeded.
  */
 export function backfillStartDate<T extends Partial<Project> & { id: string; status?: string; deadline?: string; startDate?: string; startDateUserSet?: boolean }>(p: T, force = false): T {
-  if (p.status === "대기") return { ...p, startDate: undefined };
+  // 대기: 시작일/마감일 모두 비움
+  if (p.status === "대기") return { ...p, startDate: undefined, deadline: "" } as T;
   if (p.startDateUserSet && p.startDate) return p;
   if (!force && p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
 
@@ -388,7 +389,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
       status,
       progress: totalProgress,
       startDate,
-      deadline: status === "상시" ? "상시" : deadline,
+      deadline: status === "상시" ? "상시" : (status === "대기" ? "" : deadline),
       pm,
       members: membersList,
       image: images[0].url,
@@ -406,3 +407,24 @@ export const MOCK_PROJECTS: Project[] = (() => {
 
   return initialData;
 })();
+
+// ──────────────────────────────────────────────────────────────────────
+// Placeholder image (gradient by department) for projects without uploads
+// ──────────────────────────────────────────────────────────────────────
+export function makePlaceholderImage(dept: Department, title: string): string {
+  const c = DEPT_COLOR[dept] ?? "#666";
+  const safeTitle = (title || "Project").replace(/[<>&"']/g, "");
+  const initial = safeTitle.trim().charAt(0).toUpperCase();
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 500'>
+    <defs>
+      <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0%' stop-color='${c}' stop-opacity='0.85'/>
+        <stop offset='100%' stop-color='#0a0a0a' stop-opacity='1'/>
+      </linearGradient>
+    </defs>
+    <rect width='800' height='500' fill='#0a0a0a'/>
+    <rect width='800' height='500' fill='url(#g)'/>
+    <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle' font-family='Inter, system-ui, sans-serif' font-size='220' font-weight='900' fill='rgba(255,255,255,0.25)'>${initial}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}

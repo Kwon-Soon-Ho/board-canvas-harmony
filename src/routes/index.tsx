@@ -33,8 +33,8 @@ export const Route = createFileRoute("/")({
 });
 
 const STORAGE_KEY = "design-projects-store";
-const BACKUP_KEY = "design-projects-store-backup-v3";
-const MIGRATION_KEY = "design-projects-migration-v4";
+const BACKUP_KEY = "design-projects-store-backup-v4";
+const MIGRATION_KEY = "design-projects-migration-v5";
 
 function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
@@ -162,7 +162,7 @@ function ControlCenter() {
       const sStr = p.startDate;
       const eStr = p.deadline;
       const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
-      const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+      const e = eStr && /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
       if (!s && !e) return false;
       const start = s ?? e!;
       const end = e ?? s!;
@@ -183,7 +183,7 @@ function ControlCenter() {
         if (!hay.includes(q)) return false;
       }
       if (urgentOnly) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) return false;
+        if (!p.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) return false;
         const d = new Date(p.deadline);
         d.setHours(0, 0, 0, 0);
         const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
@@ -200,12 +200,12 @@ function ControlCenter() {
         if (!ok) return false;
       }
       // Quarter overlap: project is in scope if its [startDate, deadline] overlaps the quarter.
-      // 상시 (always-on, no deadline) projects always pass.
+      // 상시 (always-on) projects always pass. 대기 (no dates) excluded from quarter view.
       if (qStart && qEnd && p.deadline !== "상시") {
         const sStr = p.startDate;
         const eStr = p.deadline;
         const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
-        const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+        const e = eStr && /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
         if (!s && !e) return false;
         const start = s ?? e!;
         const end = e ?? s!;
@@ -221,9 +221,11 @@ function ControlCenter() {
       if (urgentOnly || sortBy === "deadline") {
         const so = statusOrder[a.status] - statusOrder[b.status];
         if (so !== 0) return so;
-        if (a.deadline === "상시" && b.deadline !== "상시") return 1;
-        if (b.deadline === "상시" && a.deadline !== "상시") return -1;
-        if (a.deadline === "상시" && b.deadline === "상시") return 0;
+        const aHas = !!a.deadline && a.deadline !== "상시";
+        const bHas = !!b.deadline && b.deadline !== "상시";
+        if (!aHas && bHas) return 1;
+        if (aHas && !bHas) return -1;
+        if (!aHas && !bHas) return a.id.localeCompare(b.id);
         return a.deadline.localeCompare(b.deadline);
       }
 

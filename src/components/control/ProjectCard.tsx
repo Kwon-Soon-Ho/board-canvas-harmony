@@ -13,7 +13,8 @@ interface Props {
   quarterRange?: { year: number; quarter: 1 | 2 | 3 | 4 } | null;
 }
 
-function ddayLabel(deadline: string): string {
+function ddayLabel(deadline?: string): string {
+  if (!deadline) return "일정 미정";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline)) return deadline;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -65,7 +66,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
 
   // D-day numeric value for risk gating
   const ddayDiff = (() => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+    if (!project.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const d = new Date(project.deadline);
@@ -76,7 +77,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
   const isUrgent = isInProgress && ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 7 && progress < 100;
   const isOverdue = isInProgress && ddayDiff !== null && ddayDiff < 0 && progress < 100;
   const isCompleted = progress >= 100;
-  const showDday = project.deadline !== "상시" && !isCompleted;
+  const showDday = !!project.deadline && project.deadline !== "상시" && !isCompleted;
 
   // Active issues count
   const activeIssues = project.issues.filter((i) => !i.resolved).length;
@@ -91,7 +92,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
     qEnd.setHours(23, 59, 59, 999);
     const sStr = project.startDate;
     const eStr = project.deadline;
-    if (eStr === "상시") return null;
+    if (!eStr || eStr === "상시") return null;
     const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
     const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
     const carried = !!(s && s < qStart); // 시작이 분기 이전 → 이월
@@ -103,7 +104,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
   // Progress-based color tier (used for both D-day badge and progress bar)
   // Urgent/Overdue use unified AMBER (yellow) — matches the "마감임박" filter color.
   const tier = (() => {
-    if (project.deadline === "상시") return "neutral" as const;
+    if (!project.deadline || project.deadline === "상시") return "neutral" as const;
     if (progress >= 100) return "done" as const;
     if (isUrgent || isOverdue) return "urgent" as const;
     return "neutral" as const;
@@ -297,8 +298,8 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
                     {dday}
                   </span>
                   <span className="inline-flex items-center gap-1 text-[12px] font-bold text-white/75">
-                    {project.deadline !== "상시" && <Calendar className="h-3 w-3 text-white/50" />}
-                    {project.deadline}
+                    {project.deadline && project.deadline !== "상시" && <Calendar className="h-3 w-3 text-white/50" />}
+                    {project.deadline || "일정 미정"}
                   </span>
                 </div>
                 {onDelete && (

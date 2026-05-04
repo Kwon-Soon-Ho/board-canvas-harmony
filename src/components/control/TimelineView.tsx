@@ -127,22 +127,35 @@ export function TimelineView({ projects, onOpen }: Props) {
     return { rangeStart: start, rangeEnd: realEnd, totalMs, ticks };
   }, [today, preset, customRange]);
 
-  // Item: project that overlaps the visible range (uses startDate→deadline)
+  // Item: project that overlaps the visible range. 상시(no deadline)는 시작일~range 끝까지로 가상 확장.
   const items = useMemo(() => {
     return projects
-      .map((p) => ({
-        p,
-        s: parseDate(p.startDate),
-        e: parseDate(p.deadline),
-      }))
-      .filter((x) => x.s || x.e)
-      .map((x) => ({ ...x, s: x.s ?? x.e!, e: x.e ?? x.s! }))
+      .filter((p) => p.status !== "대기") // 대기는 별도 섹션
+      .map((p) => {
+        const s = parseDate(p.startDate);
+        const e = parseDate(p.deadline);
+        const isOngoing = p.status === "상시";
+        // 상시: 시작일이 있으면 그 시점부터 range 끝까지로 처리
+        if (isOngoing && s) {
+          return { p, s, e: rangeEnd, isOngoing: true };
+        }
+        return { p, s, e, isOngoing: false };
+      })
+      .filter((x): x is { p: Project; s: Date; e: Date; isOngoing: boolean } => !!(x.s && x.e))
       .filter(({ s, e }) => e >= rangeStart && s <= rangeEnd)
-      .sort((a, b) => a.e.getTime() - b.e.getTime());
+      .sort((a, b) => {
+        // Stable multi-key sort: endDate → startDate → id (no ties → no flicker)
+        const de = a.e.getTime() - b.e.getTime();
+        if (de !== 0) return de;
+        const ds = a.s.getTime() - b.s.getTime();
+        if (ds !== 0) return ds;
+        return a.p.id.localeCompare(b.p.id);
+      });
   }, [projects, rangeStart, rangeEnd]);
 
-  const ongoing = useMemo(
-    () => projects.filter((p) => !parseDate(p.deadline) && !parseDate(p.startDate)),
+  // 대기: 시작일/마감일 모두 없음 → 하단 칩 섹션
+  const pending = useMemo(
+    () => projects.filter((p) => p.status === "대기"),
     [projects]
   );
 
@@ -277,13 +290,13 @@ export function TimelineView({ projects, onOpen }: Props) {
         </div>
       </div>
 
-      {items.length === 0 && ongoing.length === 0 ? (
+      {items.length === 0 && pending.length === 0 ? (
         <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[14px] text-white/50">
           이 기간에 표시할 프로젝트가 없습니다.
         </div>
       ) : (
         <div className="flex flex-col">
-          {items.map(({ p, s, e }) => {
+          {items.map(({ p, s, e, isOngoing }) => {
             const startClamp = s < rangeStart ? rangeStart : s > rangeEnd ? rangeEnd : s;
             const endClamp = e < rangeStart ? rangeStart : e > rangeEnd ? rangeEnd : e;
             const leftPct = ((startClamp.getTime() - rangeStart.getTime()) / totalMs) * 100;
@@ -296,6 +309,9 @@ export function TimelineView({ projects, onOpen }: Props) {
             const isUrgent = isInProgress && diffDays <= 7 && p.progress < 100;
             const colorVar = STATUS_COLOR_VAR[p.status] ?? "var(--status-active)";
             const openIssues = p.issues.filter((i) => !i.resolved).length;
+            const elapsedDays = isOngoing && p.startDate
+              ? Math.max(0, Math.round((today.getTime() - new Date(p.startDate).getTime()) / 86400000))
+              : null;
 
             return (
               <button
@@ -332,7 +348,11 @@ export function TimelineView({ projects, onOpen }: Props) {
                       width: `${widthPct}%`,
                       background: `color-mix(in srgb, ${colorVar} 18%, transparent)`,
                     }}
-                    title={`${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`}
+                    title={
+                      isOngoing
+                        ? `${p.title}\n상시 · 시작 ${p.startDate ?? "?"} (${elapsedDays}일째)\n진행률 ${p.progress}%`
+                        : `${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`
+                    }
                   >
                     <div
                       className="h-full"
@@ -346,14 +366,23 @@ export function TimelineView({ projects, onOpen }: Props) {
                     {s < rangeStart && (
                       <span className="pointer-events-none absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-white/40 to-transparent" aria-hidden />
                     )}
-                    {/* Clipped-right indicator */}
-                    {e > rangeEnd && (
-                      <span className="pointer-events-none absolute inset-y-0 right-0 w-3 bg-gradient-to-l from-white/40 to-transparent" aria-hidden />
+                    {/* 상시: 우측 페이드아웃 (끝이 열려 있음을 표현). 일반 클립에도 사용. */}
+                    {(isOngoing || e > rangeEnd) && (
+                      <span
+                        className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent"
+                        aria-hidden
+                      />
                     )}
                     <span className="absolute inset-0 flex items-center justify-between px-2 font-mono text-[12px] font-bold text-white/95">
                       <span>{p.progress}%</span>
                       <span className={isUrgent ? "text-amber-200" : "text-white/80"}>
-                        {diffDays === 0 ? "D-day" : diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`}
+                        {isOngoing
+                          ? "상시"
+                          : diffDays === 0
+                            ? "D-day"
+                            : diffDays > 0
+                              ? `D-${diffDays}`
+                              : `D+${Math.abs(diffDays)}`}
                       </span>
                     </span>
                   </div>
@@ -364,13 +393,13 @@ export function TimelineView({ projects, onOpen }: Props) {
         </div>
       )}
 
-      {ongoing.length > 0 && (
+      {pending.length > 0 && (
         <div className="mt-6">
           <div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">
-            상시 · 마감 미정
+            대기 · 일정 미정
           </div>
           <div className="flex flex-wrap gap-2">
-            {ongoing.map((p) => (
+            {pending.map((p) => (
               <button
                 key={p.id}
                 type="button"

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { X, Plus, Calendar, Users, Image as ImageIcon } from "lucide-react";
-import { TEAM_DATA, ALL_MEMBERS, DEPTS, STATUSES, type Project, type Department, type Status } from "@/lib/mockProjects";
+import { X, Calendar, Users, Image as ImageIcon } from "lucide-react";
+import { TEAM_DATA, ALL_MEMBERS, DEPTS, STATUSES, makePlaceholderImage, type Project, type Department, type Status } from "@/lib/mockProjects";
 
 interface Props {
   isOpen: boolean;
@@ -9,18 +9,21 @@ interface Props {
 }
 
 export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
-  const today = new Date().toISOString().slice(0, 10);
   const [title, setTitle] = useState("");
   const [department, setDepartment] = useState<Department>("UX");
-  const [status, setStatus] = useState<Status>("대기");
-  const [startDate, setStartDate] = useState(today);
+  const [status, setStatus] = useState<Status>("진행");
+  const [startDate, setStartDate] = useState("");
   const [deadline, setDeadline] = useState("");
   const [pm, setPm] = useState("");
   const [members, setMembers] = useState<string[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
 
-  const dateError = status !== "상시" && startDate && deadline && startDate > deadline
+  // 상태에 따라 시작일/마감일 입력 가능 여부
+  const startAllowed = status !== "대기";
+  const deadlineAllowed = status === "진행" || status === "완료";
+
+  const dateError = deadlineAllowed && startDate && deadline && startDate > deadline
     ? "시작일이 마감일보다 늦을 수 없습니다."
     : "";
 
@@ -32,8 +35,22 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !pm || imageUrls.length === 0) return;
+    if (!title || !pm) return;
     if (dateError) return;
+
+    // 이미지 없으면 placeholder 1장
+    const finalImages = imageUrls.length > 0
+      ? imageUrls
+      : [makePlaceholderImage(department, title)];
+
+    // 상태별 날짜 정리
+    const finalStart =
+      status === "대기" ? undefined :
+      (startDate || undefined);
+    const finalDeadline: string =
+      status === "상시" ? "상시" :
+      status === "대기" ? "" :
+      (deadline || "");
 
     const newProject: Project = {
       id: `p-new-${Date.now()}`,
@@ -41,19 +58,19 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
       department,
       status,
       progress: 0,
-      startDate: status === "상시" ? undefined : (startDate || today),
-      startDateUserSet: status !== "상시",
-      deadline: status === "상시" ? "상시" : deadline || today,
+      startDate: finalStart,
+      startDateUserSet: !!finalStart,
+      deadline: finalDeadline,
       updatedAt: new Date().toISOString(),
       pm,
       members,
-      image: imageUrls[0],
-      images: imageUrls.map((url) => ({ url, memo: "" })),
+      image: finalImages[0],
+      images: finalImages.map((url) => ({ url, memo: "" })),
       thumbnail: {
         coverIndex: 0,
         focal: { x: 0.5, y: 0.5 },
         zoom: 1,
-        sequence: imageUrls.map((_, i) => i),
+        sequence: finalImages.map((_, i) => i),
       },
       tasks: [],
       issues: [],
@@ -140,8 +157,9 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
 
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-white/90 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-white/80" /> 일정
-              {status === "상시" && <span className="text-[11px] font-normal text-white/40">(상시 프로젝트는 일정 없음)</span>}
+              <Calendar className="w-4 h-4 text-white/80" /> 일정 <span className="text-[11px] font-normal text-white/40">(선택)</span>
+              {status === "상시" && <span className="text-[11px] font-normal text-white/40">· 상시는 마감일 없음</span>}
+              {status === "대기" && <span className="text-[11px] font-normal text-white/40">· 대기는 일정 없음</span>}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -151,7 +169,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40"
-                  disabled={status === "상시"}
+                  disabled={!startAllowed}
                 />
               </div>
               <div className="space-y-1.5">
@@ -162,7 +180,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
                   min={startDate || undefined}
                   onChange={e => setDeadline(e.target.value)}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40"
-                  disabled={status === "상시"}
+                  disabled={!deadlineAllowed}
                 />
               </div>
             </div>
@@ -201,7 +219,9 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
           </div>
 
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-white/70 flex items-center gap-2"><ImageIcon className="w-4 h-4" /> 레퍼런스 이미지 URL (최소 1장) *</label>
+            <label className="block text-sm font-semibold text-white/70 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" /> 레퍼런스 이미지 URL <span className="text-[11px] font-normal text-white/40">(선택 · 없으면 부서 색 placeholder가 자동 생성됨)</span>
+            </label>
             <div className="flex gap-2">
               <input 
                 type="text" 
@@ -233,7 +253,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
             <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 transition">
               취소
             </button>
-            <button type="submit" disabled={!title || !pm || imageUrls.length === 0 || !!dateError} className="px-6 py-3 rounded-xl text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            <button type="submit" disabled={!title || !pm || !!dateError} className="px-6 py-3 rounded-xl text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
               프로젝트 생성
             </button>
           </div>
