@@ -51,6 +51,7 @@ function ControlCenter() {
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [issuesOnly, setIssuesOnly] = useState(false);
   const [assignee, setAssignee] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>("grid");
 
   // Hydrate from localStorage on client only
   useEffect(() => {
