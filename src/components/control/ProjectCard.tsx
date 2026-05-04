@@ -71,33 +71,31 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
     d.setHours(0, 0, 0, 0);
     return Math.round((d.getTime() - today.getTime()) / 86400000);
   })();
-  const isUrgent = ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 3 && progress < 100;
+  const isUrgent = ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 7 && progress < 100;
   const isOverdue = ddayDiff !== null && ddayDiff < 0 && progress < 100;
+  const isCompleted = progress >= 100;
+  const showDday = project.deadline !== "상시" && !isCompleted;
 
   // Active issues count
   const activeIssues = project.issues.filter((i) => !i.resolved).length;
 
   // Progress-based color tier (used for both D-day badge and progress bar)
+  // Yellow tier removed. Only red when urgent/overdue, otherwise neutral.
   const tier = (() => {
     if (project.deadline === "상시") return "neutral" as const;
     if (progress >= 100) return "done" as const;
-    if (progress >= 70) return "good" as const;
-    if (progress >= 40) return "warn" as const;
-    return "bad" as const;
+    if (isUrgent || isOverdue) return "bad" as const;
+    return "neutral" as const;
   })();
 
   const tierBadgeClass = {
     done: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
-    good: "bg-white/10 text-white ring-white/20",
-    warn: "bg-amber-500/10 text-amber-400 ring-amber-500/20",
     bad: "bg-red-500/10 text-red-500 ring-red-500/20",
     neutral: "bg-slate-500/10 text-slate-300 ring-slate-500/20",
   }[tier];
 
   const tierBarClass = {
     done: "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]",
-    good: "bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)]",
-    warn: "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]",
     bad: "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]",
     neutral: "bg-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.4)]",
   }[tier];
@@ -105,17 +103,13 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
   // Always-on slim bar color (subtle version)
   const tierBarSubtleClass = {
     done: "bg-emerald-400/80",
-    good: "bg-white/70",
-    warn: "bg-amber-400/90",
     bad: "bg-red-500/90",
     neutral: "bg-slate-400/60",
   }[tier];
 
-  // Urgency ring on the entire card
-  const urgencyRingClass = isOverdue
+  // Urgency ring on the entire card — unified red
+  const urgencyRingClass = (isOverdue || isUrgent)
     ? "ring-1 ring-red-500/50 shadow-[0_0_24px_-4px_rgba(239,68,68,0.45)]"
-    : isUrgent
-    ? "ring-1 ring-amber-400/40 shadow-[0_0_20px_-4px_rgba(251,191,36,0.35)]"
     : "";
 
   const handleKeyOpen = (e: React.KeyboardEvent) => {
