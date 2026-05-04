@@ -5,7 +5,7 @@ import {
   type Status,
   type Project,
 } from "@/lib/mockProjects";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Clock3, AlertTriangle } from "lucide-react";
 
 const DEPARTMENTS: Array<Department | "전체"> = ["전체", "공통", "영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
