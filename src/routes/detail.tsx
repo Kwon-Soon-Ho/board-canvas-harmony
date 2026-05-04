@@ -62,6 +62,10 @@ function DetailWindow() {
   const [isImageViewerFull, setIsImageViewerFull] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ kind: 'task' | 'issue'; id: string; title: string } | null>(null);
+  const [trackerSort, setTrackerSort] = useState<'startDate' | 'progress' | 'status'>('startDate');
+  const [trackerSortDesc, setTrackerSortDesc] = useState(false);
+  const [taskStatusFilter, setTaskStatusFilter] = useState<TaskStatus | '전체'>('전체');
+  const [issueStatusFilter, setIssueStatusFilter] = useState<'전체' | 'Issue' | 'Resolved'>('전체');
   
   const isAutoScrolling = useRef(false);
 
