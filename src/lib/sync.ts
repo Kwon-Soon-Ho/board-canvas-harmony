@@ -28,13 +28,21 @@ export async function openDetailWindow(projectId: string): Promise<Window | null
 
   const url = `/detail?id=${encodeURIComponent(projectId)}`;
 
-  // Default: maximize on current screen using availWidth/availHeight
+  // Default: maximize on current screen
   let left = 0;
   let top = 0;
   let width = window.screen.availWidth;
   let height = window.screen.availHeight;
 
-  // Try multi-screen API (Chrome 100+) to find a monitor to the right.
+  // CRITICAL: open the window FIRST, synchronously inside the user gesture.
+  // Awaiting getScreenDetails() before window.open() detaches it from the
+  // gesture, triggers a permission prompt, and on prompt-close the browser
+  // restores focus to the clicked element via scrollIntoView — which causes
+  // the page to jump to the bottom or to the next card row.
+  const features = `left=${left},top=${top},width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no`;
+  const win = window.open(url, "WindowB_Detail", features);
+
+  // Best-effort multi-screen positioning AFTER the window is open.
   try {
     // @ts-expect-error — Window Management API (experimental)
     if (window.getScreenDetails) {
@@ -49,23 +57,19 @@ export async function openDetailWindow(projectId: string): Promise<Window | null
         top = right.availTop;
         width = right.availWidth;
         height = right.availHeight;
+        if (win) {
+          try {
+            win.moveTo(left, top);
+            win.resizeTo(width, height);
+          } catch {
+            /* ignore */
+          }
+        }
       }
     }
   } catch {
     /* fall back to current-screen maximize */
   }
 
-  const features = `left=${left},top=${top},width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no`;
-  // Fixed target name => same Window B is reused for every project click.
-  const win = window.open(url, "WindowB_Detail", features);
-
-  if (win) {
-    try {
-      win.moveTo(left, top);
-      win.resizeTo(width, height);
-    } catch {
-      /* ignore */
-    }
-  }
   return win;
 }
