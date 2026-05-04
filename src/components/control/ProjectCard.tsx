@@ -66,7 +66,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
 
   // D-day numeric value for risk gating
   const ddayDiff = (() => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+    if (!project.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const d = new Date(project.deadline);
@@ -77,7 +77,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
   const isUrgent = isInProgress && ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 7 && progress < 100;
   const isOverdue = isInProgress && ddayDiff !== null && ddayDiff < 0 && progress < 100;
   const isCompleted = progress >= 100;
-  const showDday = project.deadline !== "상시" && !isCompleted;
+  const showDday = !!project.deadline && project.deadline !== "상시" && !isCompleted;
 
   // Active issues count
   const activeIssues = project.issues.filter((i) => !i.resolved).length;
