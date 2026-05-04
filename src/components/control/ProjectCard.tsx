@@ -104,7 +104,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
   // Progress-based color tier (used for both D-day badge and progress bar)
   // Urgent/Overdue use unified AMBER (yellow) — matches the "마감임박" filter color.
   const tier = (() => {
-    if (project.deadline === "상시") return "neutral" as const;
+    if (!project.deadline || project.deadline === "상시") return "neutral" as const;
     if (progress >= 100) return "done" as const;
     if (isUrgent || isOverdue) return "urgent" as const;
     return "neutral" as const;
