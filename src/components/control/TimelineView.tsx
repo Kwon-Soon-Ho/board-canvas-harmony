@@ -317,6 +317,7 @@ export function TimelineView({ projects, onOpen }: Props) {
               <button
                 key={p.id}
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onOpen(p.id)}
                 className="grid items-center border-b border-white/5 py-2.5 text-left transition hover:bg-white/[0.03]"
                 style={{ gridTemplateColumns: `260px 1fr` }}
