@@ -204,10 +204,11 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
                   <span className="text-[11px] text-white/40 font-medium">{project.deadline}</span>
                 </div>
                 {onDelete && (
-                  <button 
+                  <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
                     className="p-1.5 rounded-md hover:bg-rose-500/20 hover:text-rose-400 text-white/30 transition-colors pointer-events-auto"
                     title="프로젝트 삭제"
+                    aria-label={`${project.title} 프로젝트 삭제`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
