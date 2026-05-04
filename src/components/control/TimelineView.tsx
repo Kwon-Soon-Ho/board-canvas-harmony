@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import type { Project } from "@/lib/mockProjects";
 import { DEPT_COLOR } from "@/lib/mockProjects";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Props {
   projects: Project[];
@@ -15,8 +19,16 @@ const STATUS_COLOR_VAR: Record<string, string> = {
   완료: "var(--status-done)",
 };
 
-const WEEK_OPTIONS = [2, 4, 6, 8, 10, 12] as const;
-type WeekOption = (typeof WEEK_OPTIONS)[number];
+type PresetKey = "thisWeek" | "twoWeeks" | "thisMonth" | "nextMonth" | "quarter" | "custom";
+
+const PRESETS: { key: PresetKey; label: string }[] = [
+  { key: "thisWeek", label: "이번 주" },
+  { key: "twoWeeks", label: "2주" },
+  { key: "thisMonth", label: "이번 달" },
+  { key: "nextMonth", label: "다음 달까지" },
+  { key: "quarter", label: "분기" },
+  { key: "custom", label: "직접 선택" },
+];
 
 function parseDate(s: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
@@ -25,8 +37,62 @@ function parseDate(s: string): Date | null {
   return d;
 }
 
+function startOfWeek(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  const day = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - day);
+  return x;
+}
+function endOfWeek(d: Date) {
+  const x = startOfWeek(d);
+  x.setDate(x.getDate() + 6);
+  return x;
+}
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function endOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+}
+
+function rangeFor(preset: PresetKey, today: Date, custom?: { from?: Date; to?: Date }) {
+  switch (preset) {
+    case "thisWeek":
+      return { start: startOfWeek(today), end: endOfWeek(today) };
+    case "twoWeeks": {
+      const start = startOfWeek(today);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 13);
+      return { start, end };
+    }
+    case "thisMonth":
+      return { start: startOfMonth(today), end: endOfMonth(today) };
+    case "nextMonth": {
+      const start = startOfMonth(today);
+      const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      return { start, end: endOfMonth(next) };
+    }
+    case "quarter": {
+      const q = Math.floor(today.getMonth() / 3);
+      const start = new Date(today.getFullYear(), q * 3, 1);
+      const end = new Date(today.getFullYear(), q * 3 + 3, 0);
+      return { start, end };
+    }
+    case "custom": {
+      const start = custom?.from ? new Date(custom.from) : startOfWeek(today);
+      const end = custom?.to ? new Date(custom.to) : endOfWeek(today);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      return { start, end };
+    }
+  }
+}
+
 export function TimelineView({ projects, onOpen }: Props) {
-  const [weeks, setWeeks] = useState<WeekOption>(8);
+  const [preset, setPreset] = useState<PresetKey>("thisMonth");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -34,31 +100,32 @@ export function TimelineView({ projects, onOpen }: Props) {
     return d;
   }, []);
 
-  // Build a window of N weeks starting from this week's start (Mon)
   const { rangeStart, rangeEnd, totalMs, ticks } = useMemo(() => {
-    const start = new Date(today);
-    // Start from beginning of current week (Mon)
-    const day = (start.getDay() + 6) % 7; // 0 = Mon
-    start.setDate(start.getDate() - day);
-    const end = new Date(start);
-    end.setDate(end.getDate() + weeks * 7);
-    const totalMs = end.getTime() - start.getTime();
+    const { start, end } = rangeFor(preset, today, customRange);
+    const realEnd = new Date(end);
+    realEnd.setDate(realEnd.getDate() + 1);
+    const totalMs = realEnd.getTime() - start.getTime();
+    const days = Math.round(totalMs / 86400000);
 
-    // Tick every 1 or 2 weeks depending on span
-    const tickStepWeeks = weeks <= 6 ? 1 : 2;
+    // Tick step adapts to span
+    let stepDays: number;
+    if (days <= 14) stepDays = 1;
+    else if (days <= 31) stepDays = 3;
+    else if (days <= 62) stepDays = 7;
+    else stepDays = 14;
+
     const ticks: { date: Date; label: string }[] = [];
-    for (let w = 0; w <= weeks; w += tickStepWeeks) {
+    for (let i = 0; i <= days; i += stepDays) {
       const t = new Date(start);
-      t.setDate(t.getDate() + w * 7);
+      t.setDate(t.getDate() + i);
       ticks.push({
         date: t,
         label: `${t.getMonth() + 1}/${t.getDate()}`,
       });
     }
-    return { rangeStart: start, rangeEnd: end, totalMs, ticks };
-  }, [today, weeks]);
+    return { rangeStart: start, rangeEnd: realEnd, totalMs, ticks };
+  }, [today, preset, customRange]);
 
-  // Sort by deadline asc; show only dated, within window
   const items = useMemo(() => {
     return projects
       .map((p) => ({ p, d: parseDate(p.deadline) }))
@@ -74,36 +141,63 @@ export function TimelineView({ projects, onOpen }: Props) {
       ? ((today.getTime() - rangeStart.getTime()) / totalMs) * 100
       : null;
 
+  const displayEnd = new Date(rangeEnd);
+  displayEnd.setDate(displayEnd.getDate() - 1);
+
   return (
     <section aria-label="타임라인" className="pb-24">
       {/* Range filter */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
           기간
         </span>
         <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 backdrop-blur-md">
-          {WEEK_OPTIONS.map((w) => (
+          {PRESETS.map((p) => (
             <button
-              key={w}
+              key={p.key}
               type="button"
-              aria-pressed={weeks === w}
-              onClick={() => setWeeks(w)}
+              aria-pressed={preset === p.key}
+              onClick={() => {
+                setPreset(p.key);
+                if (p.key === "custom") setPopoverOpen(true);
+              }}
               className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition ${
-                weeks === w ? "bg-white/20 text-white" : "text-white/50 hover:text-white"
+                preset === p.key ? "bg-white/20 text-white" : "text-white/50 hover:text-white"
               }`}
             >
-              {w}주
+              {p.label}
             </button>
           ))}
         </div>
+
+        {preset === "custom" && (
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-white/80 hover:border-white/30 hover:text-white"
+              >
+                <CalendarIcon className="h-3 w-3" />
+                {customRange.from && customRange.to
+                  ? `${format(customRange.from, "MM.dd")} – ${format(customRange.to, "MM.dd")}`
+                  : "날짜 선택"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={customRange as any}
+                onSelect={(r: any) => setCustomRange(r ?? {})}
+                numberOfMonths={2}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
         <span className="text-[11px] font-mono text-white/40">
-          {`${rangeStart.getFullYear()}.${String(rangeStart.getMonth() + 1).padStart(2, "0")}.${String(rangeStart.getDate()).padStart(2, "0")}`}
-          {" → "}
-          {(() => {
-            const e = new Date(rangeEnd);
-            e.setDate(e.getDate() - 1);
-            return `${e.getFullYear()}.${String(e.getMonth() + 1).padStart(2, "0")}.${String(e.getDate()).padStart(2, "0")}`;
-          })()}
+          {format(rangeStart, "yyyy.MM.dd")} → {format(displayEnd, "yyyy.MM.dd")}
         </span>
       </div>
 
