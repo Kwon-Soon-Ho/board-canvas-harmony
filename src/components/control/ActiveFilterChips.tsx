@@ -7,11 +7,13 @@ interface Props {
   query: string;
   urgentOnly: boolean;
   issuesOnly: boolean;
+  assignee: string | null;
   onClearDept: () => void;
   onClearStatus: (s: Status) => void;
   onClearQuery: () => void;
   onClearUrgent: () => void;
   onClearIssues: () => void;
+  onClearAssignee: () => void;
   onResetAll: () => void;
 }
 
@@ -21,11 +23,13 @@ export function ActiveFilterChips({
   query,
   urgentOnly,
   issuesOnly,
+  assignee,
   onClearDept,
   onClearStatus,
   onClearQuery,
   onClearUrgent,
   onClearIssues,
+  onClearAssignee,
   onResetAll,
 }: Props) {
   const hasAny =
@@ -33,7 +37,8 @@ export function ActiveFilterChips({
     statuses.size > 0 ||
     query.trim().length > 0 ||
     urgentOnly ||
-    issuesOnly;
+    issuesOnly ||
+    !!assignee;
 
   if (!hasAny) return null;
 
@@ -83,6 +88,7 @@ export function ActiveFilterChips({
       )}
       {urgentOnly && <Chip label="마감 7일 이내" onRemove={onClearUrgent} tone="warn" />}
       {issuesOnly && <Chip label="이슈 있음" onRemove={onClearIssues} tone="danger" />}
+      {assignee && <Chip label={`담당자: ${assignee}`} onRemove={onClearAssignee} />}
       <button
         type="button"
         onClick={onResetAll}
