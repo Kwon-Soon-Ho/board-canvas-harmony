@@ -258,141 +258,152 @@ export function TimelineView({ projects, onOpen }: Props) {
         </span>
       </div>
 
-      {/* Tick header */}
-      <div className="mb-3 grid border-b border-white/10" style={{ gridTemplateColumns: `260px 1fr` }}>
-        <div className="px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-white/50">
-          프로젝트
-        </div>
-        <div className="relative h-9">
-          {ticks.map((t, i) => {
-            const left = ((t.date.getTime() - rangeStart.getTime()) / totalMs) * 100;
-            return (
-              <div
-                key={i}
-                className="absolute top-0 bottom-0 border-l border-white/10 pl-1.5 text-[12px] font-bold tabular-nums text-white/60"
-                style={{ left: `${left}%` }}
-              >
-                {t.label}
-              </div>
-            );
-          })}
-          {todayLeftPct !== null && (
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 w-px bg-red-400/70"
-              style={{ left: `${todayLeftPct}%` }}
-              aria-label="오늘"
+      {/* Timeline grid wrapper — overlay holds the today line spanning header + rows */}
+      <div className="relative">
+        {/* TODAY overlay line spans the entire timeline column */}
+        {todayLeftPct !== null && (
+          <div
+            className="pointer-events-none absolute top-0 bottom-0 z-20"
+            style={{ left: `calc(260px + (100% - 260px) * ${todayLeftPct / 100})` }}
+            aria-hidden
+          >
+            <div className="absolute inset-y-0 left-0 w-px bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+            <span
+              className="absolute -top-7 left-0 -translate-x-1/2 whitespace-nowrap rounded bg-red-500/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-md"
             >
-              <span className="absolute -top-1 -left-4 rounded bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                TODAY
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+              현재 ({format(today, "M월 d일")})
+            </span>
+          </div>
+        )}
 
-      {items.length === 0 && pending.length === 0 ? (
-        <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[14px] text-white/50">
-          이 기간에 표시할 프로젝트가 없습니다.
-        </div>
-      ) : (
-        <div className="flex flex-col">
-          {items.map(({ p, s, e, isOngoing }) => {
-            const startClamp = s < rangeStart ? rangeStart : s > rangeEnd ? rangeEnd : s;
-            const endClamp = e < rangeStart ? rangeStart : e > rangeEnd ? rangeEnd : e;
-            const leftPct = ((startClamp.getTime() - rangeStart.getTime()) / totalMs) * 100;
-            const widthPct = Math.max(
-              0.6,
-              ((endClamp.getTime() - startClamp.getTime()) / totalMs) * 100
-            );
-            const diffDays = Math.round((e.getTime() - today.getTime()) / 86400000);
-            const isInProgress = p.status === "진행";
-            const isUrgent = isInProgress && diffDays <= 7 && p.progress < 100;
-            const colorVar = STATUS_COLOR_VAR[p.status] ?? "var(--status-active)";
-            const openIssues = p.issues.filter((i) => !i.resolved).length;
-            const elapsedDays = isOngoing && p.startDate
-              ? Math.max(0, Math.round((today.getTime() - new Date(p.startDate).getTime()) / 86400000))
-              : null;
-
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onOpen(p.id)}
-                className="grid items-center border-b border-white/5 py-2.5 text-left transition hover:bg-white/[0.03]"
-                style={{ gridTemplateColumns: `260px 1fr` }}
-              >
-                <div className="flex min-w-0 items-center gap-2 px-3">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{
-                      backgroundColor: DEPT_COLOR[p.department],
-                      boxShadow: `0 0 6px ${DEPT_COLOR[p.department]}`,
-                    }}
-                  />
-                  <span className="truncate text-[14px] font-bold text-white">{p.title}</span>
-                  {openIssues > 0 && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-red-300">
-                      <AlertCircle className="h-3 w-3" />
-                      {openIssues}
-                    </span>
-                  )}
+        {/* Tick header */}
+        <div className="mb-3 grid border-b border-white/10" style={{ gridTemplateColumns: `260px 1fr` }}>
+          <div className="px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-white/50">
+            프로젝트
+          </div>
+          <div className="relative h-9">
+            {ticks.map((t, i) => {
+              const left = ((t.date.getTime() - rangeStart.getTime()) / totalMs) * 100;
+              return (
+                <div
+                  key={i}
+                  className="absolute top-0 bottom-0 border-l border-white/10 pl-1.5 text-[12px] font-bold tabular-nums text-white/60"
+                  style={{ left: `${left}%` }}
+                >
+                  {t.label}
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                <div className="relative h-8">
-                  <div
-                    className={`absolute top-1 h-6 rounded-md border ${
-                      isUrgent ? "border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.35)]" : "border-white/15"
-                    } overflow-hidden`}
-                    style={{
-                      left: `${leftPct}%`,
-                      width: `${widthPct}%`,
-                      background: `color-mix(in srgb, ${colorVar} 18%, transparent)`,
-                    }}
-                    title={
-                      isOngoing
-                        ? `${p.title}\n상시 · 시작 ${p.startDate ?? "?"} (${elapsedDays}일째)\n진행률 ${p.progress}%`
-                        : `${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`
-                    }
-                  >
-                    <div
-                      className="h-full"
+        {items.length === 0 && pending.length === 0 ? (
+          <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[14px] text-white/50">
+            이 기간에 표시할 프로젝트가 없습니다.
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {items.map(({ p, s, e, isOngoing }) => {
+              const startClamp = s < rangeStart ? rangeStart : s > rangeEnd ? rangeEnd : s;
+              const endClamp = e < rangeStart ? rangeStart : e > rangeEnd ? rangeEnd : e;
+              const leftPct = ((startClamp.getTime() - rangeStart.getTime()) / totalMs) * 100;
+              const widthPct = Math.max(
+                0.6,
+                ((endClamp.getTime() - startClamp.getTime()) / totalMs) * 100
+              );
+              const diffDays = Math.round((e.getTime() - today.getTime()) / 86400000);
+              const isInProgress = p.status === "진행";
+              const isUrgent = isInProgress && diffDays <= 7 && p.progress < 100;
+              const colorVar = STATUS_COLOR_VAR[p.status] ?? "var(--status-active)";
+              const openIssues = p.issues.filter((i) => !i.resolved).length;
+              const elapsedDays = isOngoing && p.startDate
+                ? Math.max(0, Math.round((today.getTime() - new Date(p.startDate).getTime()) / 86400000))
+                : null;
+              // Hide inline label text when bar is too narrow to fit it cleanly.
+              const showLabels = widthPct >= 6;
+
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onOpen(p.id)}
+                  className="grid items-center border-b border-white/5 py-2.5 text-left transition hover:bg-white/[0.03]"
+                  style={{ gridTemplateColumns: `260px 1fr` }}
+                >
+                  <div className="flex min-w-0 items-center gap-2 px-3">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
                       style={{
-                        width: `${p.progress}%`,
-                        background: isUrgent ? "oklch(0.82 0.17 85)" : colorVar,
-                        opacity: 0.85,
+                        backgroundColor: DEPT_COLOR[p.department],
+                        boxShadow: `0 0 6px ${DEPT_COLOR[p.department]}`,
                       }}
                     />
-                    {/* Clipped-left indicator */}
-                    {s < rangeStart && (
-                      <span className="pointer-events-none absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-white/40 to-transparent" aria-hidden />
-                    )}
-                    {/* 상시: 우측 페이드아웃 (끝이 열려 있음을 표현). 일반 클립에도 사용. */}
-                    {(isOngoing || e > rangeEnd) && (
-                      <span
-                        className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent"
-                        aria-hidden
-                      />
-                    )}
-                    <span className="absolute inset-0 flex items-center justify-between px-2 font-mono text-[12px] font-bold text-white/95">
-                      <span>{p.progress}%</span>
-                      <span className={isUrgent ? "text-amber-200" : "text-white/80"}>
-                        {isOngoing
-                          ? "상시"
-                          : diffDays === 0
-                            ? "D-day"
-                            : diffDays > 0
-                              ? `D-${diffDays}`
-                              : `D+${Math.abs(diffDays)}`}
+                    <span className="truncate text-[14px] font-bold text-white">{p.title}</span>
+                    {openIssues > 0 && (
+                      <span className="inline-flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-red-300">
+                        <AlertCircle className="h-3 w-3" />
+                        {openIssues}
                       </span>
-                    </span>
+                    )}
                   </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+
+                  <div className="relative h-8">
+                    <div
+                      className={`absolute top-1 h-6 rounded-md border ${
+                        isUrgent ? "border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.35)]" : "border-white/15"
+                      } overflow-hidden`}
+                      style={{
+                        left: `${leftPct}%`,
+                        width: `${widthPct}%`,
+                        background: `color-mix(in srgb, ${colorVar} 18%, transparent)`,
+                      }}
+                      title={
+                        isOngoing
+                          ? `${p.title}\n상시 · 시작 ${p.startDate ?? "?"} (${elapsedDays}일째)\n진행률 ${p.progress}%`
+                          : `${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`
+                      }
+                    >
+                      <div
+                        className="h-full"
+                        style={{
+                          width: `${p.progress}%`,
+                          background: isUrgent ? "oklch(0.82 0.17 85)" : colorVar,
+                          opacity: 0.85,
+                        }}
+                      />
+                      {/* Clipped-left indicator */}
+                      {s < rangeStart && (
+                        <span className="pointer-events-none absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-white/40 to-transparent" aria-hidden />
+                      )}
+                      {(isOngoing || e > rangeEnd) && (
+                        <span
+                          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent"
+                          aria-hidden
+                        />
+                      )}
+                      {showLabels && (
+                        <span className="absolute inset-0 flex items-center justify-between px-2 font-mono text-[12px] font-bold text-white/95">
+                          <span>{p.progress}%</span>
+                          <span className={isUrgent ? "text-amber-200" : "text-white/80"}>
+                            {isOngoing
+                              ? "상시"
+                              : diffDays === 0
+                                ? "D-day"
+                                : diffDays > 0
+                                  ? `D-${diffDays}`
+                                  : `D+${Math.abs(diffDays)}`}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {pending.length > 0 && (
         <div className="mt-6">
