@@ -110,7 +110,7 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
 
   // Urgency ring on the entire card — unified amber/yellow
   const urgencyRingClass = (isOverdue || isUrgent)
-    ? "ring-1 ring-amber-400/60 shadow-[0_0_28px_-4px_rgba(251,191,36,0.55)]"
+    ? "ring-2 ring-amber-400/70 shadow-[0_0_0_1px_rgba(251,191,36,0.45),0_0_32px_rgba(251,191,36,0.55),0_0_60px_rgba(251,191,36,0.3)]"
     : "";
 
   const handleKeyOpen = (e: React.KeyboardEvent) => {
