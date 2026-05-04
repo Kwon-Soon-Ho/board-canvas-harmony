@@ -278,7 +278,7 @@ function ControlCenter() {
 
       <TeamWorkloadBar projects={projects} assignee={assignee} setAssignee={setAssignee} />
 
-      <main className="mx-auto max-w-[1920px] px-10 py-12">
+      <main className="mx-auto max-w-[1920px] px-12 py-12">
         <div className="flex gap-8">
           <div className="min-w-0 flex-1">
             <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
