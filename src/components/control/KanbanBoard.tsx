@@ -137,7 +137,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                               <span
                                 className={`inline-flex items-center gap-1 font-mono font-bold tabular-nums ${
                                   isInProgress && dd.urgent && p.progress < 100
-                                    ? "text-red-300"
+                                    ? "text-amber-300"
                                     : "text-white/60"
                                 }`}
                               >
