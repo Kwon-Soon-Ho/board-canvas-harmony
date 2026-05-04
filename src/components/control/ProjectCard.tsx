@@ -10,6 +10,7 @@ interface Props {
   project: Project;
   onOpen: (id: string) => void;
   onDelete?: () => void;
+  quarterRange?: { year: number; quarter: 1 | 2 | 3 | 4 } | null;
 }
 
 function ddayLabel(deadline: string): string {
@@ -24,7 +25,7 @@ function ddayLabel(deadline: string): string {
   return `D+${Math.abs(diff)}`;
 }
 
-export function ProjectCard({ project, onOpen, onDelete }: Props) {
+export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) {
   const [hover, setHover] = useState(false);
   const [hasHovered, setHasHovered] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -79,6 +80,25 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
 
   // Active issues count
   const activeIssues = project.issues.filter((i) => !i.resolved).length;
+
+  // Quarter overflow detection — does project span beyond the selected quarter?
+  const overflow = useMemo(() => {
+    if (!quarterRange) return null;
+    const { year, quarter } = quarterRange;
+    const qStart = new Date(year, (quarter - 1) * 3, 1);
+    const qEnd = new Date(year, quarter * 3, 0);
+    qStart.setHours(0, 0, 0, 0);
+    qEnd.setHours(23, 59, 59, 999);
+    const sStr = project.startDate;
+    const eStr = project.deadline;
+    if (eStr === "상시") return null;
+    const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
+    const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+    const carried = !!(s && s < qStart); // 시작이 분기 이전 → 이월
+    const extends_ = !!(e && e > qEnd); // 마감이 분기 이후 → 연장
+    if (!carried && !extends_) return null;
+    return { carried, extends_ };
+  }, [quarterRange, project.startDate, project.deadline]);
 
   // Progress-based color tier (used for both D-day badge and progress bar)
   // Urgent/Overdue use unified AMBER (yellow) — matches the "마감임박" filter color.
@@ -170,6 +190,19 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
             <div className="absolute left-3 top-3 z-[3] flex items-center gap-2 pointer-events-none">
               <DeptTag dept={project.department} />
               <StatusTag status={project.status} />
+              {overflow && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md bg-black/75 px-1.5 py-0.5 ring-1 ring-violet-400/60 backdrop-blur-md text-[10px] font-black text-violet-200 shadow-[0_0_10px_rgba(167,139,250,0.35)]"
+                  title={[
+                    overflow.carried ? `이전 분기에서 이월 (시작: ${project.startDate})` : null,
+                    overflow.extends_ ? `다음 분기로 연장 (마감: ${project.deadline})` : null,
+                  ].filter(Boolean).join(" · ")}
+                >
+                  {overflow.carried && <span>← 이월</span>}
+                  {overflow.carried && overflow.extends_ && <span className="text-violet-400/60">·</span>}
+                  {overflow.extends_ && <span>연장 →</span>}
+                </span>
+              )}
             </div>
 
             {/* Always-on issue badge — high contrast for any background */}

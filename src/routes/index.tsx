@@ -36,6 +36,26 @@ function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
 }
 
+function backfillStartDate(p: any): any {
+  if (p.status === "상시") return p;
+  if (p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
+  // Derive a sensible startDate: earliest task startDate, else 30 days before deadline, else today
+  let derived: string | undefined;
+  const taskDates = (p.tasks || [])
+    .map((t: any) => t.startDate)
+    .filter((s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s))
+    .sort();
+  if (taskDates.length > 0) derived = taskDates[0];
+  else if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+    const d = new Date(p.deadline);
+    d.setDate(d.getDate() - 30);
+    derived = d.toISOString().slice(0, 10);
+  } else {
+    derived = new Date().toISOString().slice(0, 10);
+  }
+  return { ...p, startDate: derived };
+}
+
 function normalizeProgress(list: Project[]): Project[] {
   return list.map((p) => {
     if (p.status !== "완료") return p;
@@ -66,6 +86,13 @@ function ControlCenter() {
   const [assignee, setAssignee] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("grid");
 
+  // Quarter filter — defaults to current quarter
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = (Math.floor(now.getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+  const [year, setYear] = useState<number>(currentYear);
+  const [quarter, setQuarter] = useState<1 | 2 | 3 | 4 | "all">(currentQuarter);
+
   // Hydrate from localStorage on client only
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,7 +100,7 @@ function ControlCenter() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const migrated = parsed.map((p: any) => ({
+        const migrated = parsed.map((p: any) => backfillStartDate({
           ...p,
           images: migrateImages(p.images),
           tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
@@ -81,9 +108,8 @@ function ControlCenter() {
         }));
         const normalized = normalizeProgress(migrated);
         setProjects(normalized);
-        if (JSON.stringify(normalized) !== JSON.stringify(migrated)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        }
+        // Always persist after migration so backfilled startDate sticks
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
       }
     } catch (err) {
       console.error("Dashboard Migration failed", err);
@@ -121,6 +147,12 @@ function ControlCenter() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Quarter range (inclusive)
+    const qStart = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
+    const qEnd = quarter === "all" ? null : new Date(year, quarter * 3, 0);
+    if (qStart) qStart.setHours(0, 0, 0, 0);
+    if (qEnd) qEnd.setHours(23, 59, 59, 999);
+
     const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
       if (statuses.size > 0 && !statuses.has(p.status)) return false;
@@ -141,6 +173,18 @@ function ControlCenter() {
       }
       if (assignee) {
         if (p.pm !== assignee && !p.members.includes(assignee)) return false;
+      }
+      // Quarter overlap: project is in scope if its [startDate, deadline] overlaps the quarter.
+      // 상시 (always-on, no deadline) projects always pass.
+      if (qStart && qEnd && p.deadline !== "상시") {
+        const sStr = p.startDate;
+        const eStr = p.deadline;
+        const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
+        const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+        if (!s && !e) return false;
+        const start = s ?? e!;
+        const end = e ?? s!;
+        if (end < qStart || start > qEnd) return false;
       }
       return true;
     });
@@ -173,19 +217,20 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee, year, quarter]);
 
   // Dynamic heading based on active filters
   const heading = useMemo(() => {
     const parts: string[] = [];
+    if (quarter !== "all") parts.push(`${year}년 ${quarter}분기`);
+    else parts.push(`${year}년 전체`);
     if (dept !== "전체") parts.push(`${dept} 부서`);
     if (statuses.size > 0) parts.push([...statuses].join("·") + " 상태");
     if (urgentOnly) parts.push("마감 7일 이내");
     if (issuesOnly) parts.push("이슈 있음");
     if (assignee) parts.push(`${assignee} 담당`);
-    if (parts.length === 0) return "전체 프로젝트";
     return parts.join(" · ");
-  }, [dept, statuses, urgentOnly, issuesOnly, assignee]);
+  }, [dept, statuses, urgentOnly, issuesOnly, assignee, year, quarter]);
 
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
@@ -330,6 +375,42 @@ function ControlCenter() {
               </div>
 
               <div className="flex items-center gap-4">
+                <div
+                  role="group"
+                  aria-label="기간"
+                  className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                >
+                  <select
+                    value={year}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    aria-label="연도 선택"
+                    className="bg-transparent text-white text-sm font-bold px-2 py-2 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer appearance-none tabular-nums"
+                  >
+                    {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                      <option key={y} value={y} className="bg-neutral-900 text-white">{y}년</option>
+                    ))}
+                  </select>
+                  <div className="h-5 w-px bg-white/15" />
+                  {([1, 2, 3, 4] as const).map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      aria-pressed={quarter === q}
+                      onClick={() => setQuarter(q)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      Q{q}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    aria-pressed={quarter === "all"}
+                    onClick={() => setQuarter("all")}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === "all" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    연간
+                  </button>
+                </div>
                 <ViewSwitcher view={view} setView={setView} />
                 <div
                   role="group"
@@ -433,6 +514,7 @@ function ControlCenter() {
                     project={p}
                     onOpen={handleOpen}
                     onDelete={() => setPendingDeleteId(p.id)}
+                    quarterRange={quarter === "all" ? null : { year, quarter }}
                   />
                 ))}
               </section>
