@@ -108,28 +108,32 @@ export function FilterBar({
                     onClick={() => setDept(d)}
                     style={{
                       background: active
-                        ? `linear-gradient(to bottom, ${color}33, ${color}11)`
+                        ? `linear-gradient(to bottom, ${color}55, ${color}22)`
                         : undefined,
-                      borderColor: active ? `${color}66` : undefined,
+                      borderColor: active ? color : undefined,
+                      boxShadow: active ? `0 0 0 1px ${color}88, 0 0 18px ${color}55` : undefined,
+                      color: active ? "#000" : undefined,
                     }}
-                    className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-medium transition-all ${
+                    className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
-                        ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                        ? ""
                         : "border-white/10 bg-[#1A1A1A] text-gray-400 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
                     }`}
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: d === "전체" ? "rgba(255,255,255,0.35)" : color,
-                        boxShadow: d === "전체" ? "none" : `0 0 6px ${color}`,
+                        backgroundColor: active ? "#000" : (d === "전체" ? "rgba(255,255,255,0.35)" : color),
+                        boxShadow: active ? "none" : (d === "전체" ? "none" : `0 0 6px ${color}`),
                       }}
                     />
                     <span>{d}</span>
                     <span
-                      className={`ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums ${
-                        active ? "bg-white/15 text-white" : "bg-white/[0.06] text-white/60"
-                      }`}
+                      className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
+                      style={{
+                        background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
+                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                      }}
                     >
                       {count}
                     </span>
@@ -155,25 +159,34 @@ export function FilterBar({
                     onClick={() => toggleStatus(s)}
                     style={{
                       background: active
-                        ? `linear-gradient(to bottom, color-mix(in srgb, ${colorVar} 20%, transparent), color-mix(in srgb, ${colorVar} 5%, transparent))`
+                        ? `linear-gradient(to bottom, color-mix(in srgb, ${colorVar} 55%, transparent), color-mix(in srgb, ${colorVar} 25%, transparent))`
                         : undefined,
-                      borderColor: active ? `color-mix(in srgb, ${colorVar} 40%, transparent)` : undefined,
+                      borderColor: active ? colorVar : undefined,
+                      boxShadow: active
+                        ? `0 0 0 1px color-mix(in srgb, ${colorVar} 70%, transparent), 0 0 18px color-mix(in srgb, ${colorVar} 45%, transparent)`
+                        : undefined,
+                      color: active ? "#000" : undefined,
                     }}
-                    className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-medium transition-all ${
+                    className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
-                        ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                        ? ""
                         : "border-white/10 bg-[#1A1A1A] text-gray-400 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
                     }`}
                   >
                     <span
                       className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: colorVar, boxShadow: `0 0 6px ${colorVar}` }}
+                      style={{
+                        backgroundColor: active ? "#000" : colorVar,
+                        boxShadow: active ? "none" : `0 0 6px ${colorVar}`,
+                      }}
                     />
                     <span>{s}</span>
                     <span
-                      className={`ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums ${
-                        active ? "bg-white/15 text-white" : "bg-white/[0.06] text-white/60"
-                      }`}
+                      className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
+                      style={{
+                        background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
+                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                      }}
                     >
                       {statusCounts[s] ?? 0}
                     </span>

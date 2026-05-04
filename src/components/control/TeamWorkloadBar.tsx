@@ -53,17 +53,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
     return Array.from(map.values()).sort((a, b) => b.active - a.active || b.total - a.total);
   }, [projects]);
 
-  const max = Math.max(1, ...stats.map((s) => s.active));
   const visible = expanded ? stats : stats.slice(0, 8);
-
-  // Workload tone: green (light) → amber → red based on active count
-  const toneFor = (active: number) => {
-    const ratio = active / max;
-    if (ratio >= 0.75) return { bar: "bg-red-400/70", text: "text-red-200", ring: "ring-red-400/40" };
-    if (ratio >= 0.45) return { bar: "bg-amber-400/70", text: "text-amber-200", ring: "ring-amber-400/40" };
-    if (ratio > 0) return { bar: "bg-emerald-400/60", text: "text-emerald-200", ring: "ring-emerald-400/30" };
-    return { bar: "bg-white/15", text: "text-white/40", ring: "ring-white/10" };
-  };
 
   return (
     <section
@@ -82,20 +72,8 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
           {/* Legend */}
           <div className="flex shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-2 py-1 text-[10px] text-white/50">
             <span className="font-semibold uppercase tracking-wider text-white/35">범례</span>
-            <span className="inline-flex items-center gap-1">
-              <span className="h-1.5 w-3 rounded-full bg-emerald-400/60" />
-              여유
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="h-1.5 w-3 rounded-full bg-amber-400/70" />
-              보통
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="h-1.5 w-3 rounded-full bg-red-400/70" />
-              과부하
-            </span>
-            <span className="text-white/30">|</span>
-            <span className="font-mono">숫자</span>= 진행 중인 프로젝트 수
+            <span className="font-mono">N</span>
+            = 진행 중인 프로젝트 수
             <span className="text-white/30">|</span>
             <span className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[9px] font-bold text-red-200 ring-1 ring-red-500/40">
               !N
@@ -115,7 +93,6 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             )}
             {visible.map((s) => {
               const active = assignee === s.name;
-              const tone = toneFor(s.active);
               const isDisabled = s.total === 0;
               return (
                 <button
@@ -124,10 +101,10 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
                   disabled={isDisabled}
                   aria-pressed={active}
                   onClick={() => setAssignee(active ? null : s.name)}
-                  title={`${s.name} (${s.rank}) · 진행 ${s.active} / 미완료 ${s.total}${
-                    s.pmCount ? ` · PM ${s.pmCount}` : ""
-                  }${s.urgent ? ` · 긴급 ${s.urgent}` : ""}`}
-                  className={`group inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold transition ${
+                  title={`${s.name} (${s.rank}) · 진행 ${s.active}${
+                    s.urgent ? ` · 긴급 ${s.urgent}` : ""
+                  }`}
+                  className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
                     active
                       ? "border-white/40 bg-white/15 text-white"
                       : isDisabled
@@ -135,14 +112,8 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
                       : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/25 hover:text-white"
                   }`}
                 >
-                  <span className={`relative flex h-1.5 w-6 overflow-hidden rounded-full bg-white/10 ring-1 ${tone.ring}`}>
-                    <span
-                      className={`h-full ${tone.bar} transition-all`}
-                      style={{ width: `${(s.active / max) * 100}%` }}
-                    />
-                  </span>
                   <span>{s.name}</span>
-                  <span className={`font-mono tabular-nums ${active ? "text-white" : tone.text}`}>
+                  <span className={`font-mono tabular-nums ${active ? "text-white" : "text-white/60"}`}>
                     {s.active}
                   </span>
                   {s.urgent > 0 && (
