@@ -290,7 +290,7 @@ export function TimelineView({ projects, onOpen }: Props) {
         </div>
       </div>
 
-      {items.length === 0 && ongoing.length === 0 ? (
+      {items.length === 0 && pending.length === 0 ? (
         <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[14px] text-white/50">
           이 기간에 표시할 프로젝트가 없습니다.
         </div>
