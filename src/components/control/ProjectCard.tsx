@@ -62,8 +62,40 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
   const dday = ddayLabel(project.deadline);
   const progress = project.progress;
 
+  // Progress-based color tier (used for both D-day badge and progress bar)
+  const tier = (() => {
+    if (project.deadline === "상시") return "neutral" as const;
+    if (progress >= 100) return "done" as const;
+    if (progress >= 70) return "good" as const;
+    if (progress >= 40) return "warn" as const;
+    return "bad" as const;
+  })();
+
+  const tierBadgeClass = {
+    done: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
+    good: "bg-white/10 text-white ring-white/20",
+    warn: "bg-amber-500/10 text-amber-400 ring-amber-500/20",
+    bad: "bg-red-500/10 text-red-500 ring-red-500/20",
+    neutral: "bg-slate-500/10 text-slate-300 ring-slate-500/20",
+  }[tier];
+
+  const tierBarClass = {
+    done: "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]",
+    good: "bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)]",
+    warn: "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]",
+    bad: "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]",
+    neutral: "bg-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.4)]",
+  }[tier];
+
+  const handleKeyOpen = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpen(project.id);
+    }
+  };
+
   return (
-    <div className="relative aspect-[16/10]">
+    <article className="relative aspect-[16/10]">
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -78,7 +110,9 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
       >
         <button
           onClick={() => onOpen(project.id)}
-          className="block w-full text-left focus:outline-none"
+          onKeyDown={handleKeyOpen}
+          aria-label={`${project.title} 프로젝트 열기`}
+          className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-t-xl"
         >
           <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-neutral-900">
             {seq.map((img, i) => {
