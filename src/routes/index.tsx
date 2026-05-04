@@ -13,7 +13,7 @@ import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2, Sparkles, FilePlus2 } from "lucide-react";
 import { MOCK_PROJECTS, backfillStartDate, type Department, type Status, type Project } from "@/lib/mockProjects";
-import { getSyncChannel, openDetailWindow } from "@/lib/sync";
+import { getSyncChannel, openDetailWindow, ensureScreenDetails } from "@/lib/sync";
 import {
   AlertDialog,
   AlertDialogAction,
