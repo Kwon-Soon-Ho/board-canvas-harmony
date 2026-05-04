@@ -137,7 +137,19 @@ function ControlCenter() {
       return true;
     });
 
+    const statusOrder: Record<Status, number> = { 진행: 0, 상시: 1, 대기: 2, 완료: 3 };
+
     return baseFiltered.sort((a, b) => {
+      // When 마감임박 is on, prioritize by status: 진행 → 상시 → 대기 → 완료
+      if (urgentOnly) {
+        const so = statusOrder[a.status] - statusOrder[b.status];
+        if (so !== 0) return so;
+        // tie-breaker: nearer deadline first
+        if (a.deadline === "상시" && b.deadline !== "상시") return 1;
+        if (b.deadline === "상시" && a.deadline !== "상시") return -1;
+        return a.deadline.localeCompare(b.deadline);
+      }
+
       let cmp = 0;
       if (sortBy === "deadline") {
         if (a.deadline === "상시") return 1;
