@@ -375,6 +375,42 @@ function ControlCenter() {
               </div>
 
               <div className="flex items-center gap-4">
+                <div
+                  role="group"
+                  aria-label="기간"
+                  className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                >
+                  <select
+                    value={year}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    aria-label="연도 선택"
+                    className="bg-transparent text-white text-sm font-bold px-2 py-2 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer appearance-none tabular-nums"
+                  >
+                    {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                      <option key={y} value={y} className="bg-neutral-900 text-white">{y}년</option>
+                    ))}
+                  </select>
+                  <div className="h-5 w-px bg-white/15" />
+                  {([1, 2, 3, 4] as const).map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      aria-pressed={quarter === q}
+                      onClick={() => setQuarter(q)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      Q{q}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    aria-pressed={quarter === "all"}
+                    onClick={() => setQuarter("all")}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === "all" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    연간
+                  </button>
+                </div>
                 <ViewSwitcher view={view} setView={setView} />
                 <div
                   role="group"
