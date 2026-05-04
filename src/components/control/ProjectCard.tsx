@@ -10,6 +10,7 @@ interface Props {
   project: Project;
   onOpen: (id: string) => void;
   onDelete?: () => void;
+  quarterRange?: { year: number; quarter: 1 | 2 | 3 | 4 } | null;
 }
 
 function ddayLabel(deadline: string): string {
@@ -24,7 +25,7 @@ function ddayLabel(deadline: string): string {
   return `D+${Math.abs(diff)}`;
 }
 
-export function ProjectCard({ project, onOpen, onDelete }: Props) {
+export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) {
   const [hover, setHover] = useState(false);
   const [hasHovered, setHasHovered] = useState(false);
   const [idx, setIdx] = useState(0);
