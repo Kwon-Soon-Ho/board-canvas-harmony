@@ -62,8 +62,8 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
       className="border-b border-white/10 bg-[#0A0A0A]"
     >
       <div className="mx-auto max-w-[1920px] px-12 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-[30px] shrink-0 items-center gap-1.5">
             <Users className="h-4 w-4 text-white/50" />
             <span className="text-[13px] font-semibold uppercase tracking-wider text-white/55">
               담당자
