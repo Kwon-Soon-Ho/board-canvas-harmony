@@ -136,21 +136,33 @@ export function ActivityFeed({ projects, onOpen }: Props) {
         </span>
       </div>
 
-      {/* Quick summary chips */}
-      <div className="flex items-center gap-1 px-5 py-3 border-b border-white/5 text-[11px] font-bold">
-        <span className="inline-flex items-center gap-1 text-red-300/90">
+      {/* Quick summary chips — labeled so the meaning is obvious */}
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-white/5 text-[11px] font-bold">
+        <span
+          className="inline-flex items-center gap-1 text-red-300/90"
+          title="마감 임박 + 미해결 이슈 건수"
+        >
           <AlertOctagon className="w-3 h-3" />
-          {counts.urgent + counts.issue}
+          <span className="text-white/45 font-semibold">긴급</span>
+          <span className="tabular-nums">{counts.urgent + counts.issue}</span>
         </span>
-        <span className="text-white/20">·</span>
-        <span className="inline-flex items-center gap-1 text-emerald-300/80">
+        <span className="text-white/15">·</span>
+        <span
+          className="inline-flex items-center gap-1 text-emerald-300/80"
+          title="최근 완료된 업무 수"
+        >
           <CheckCircle2 className="w-3 h-3" />
-          {counts.completed}
+          <span className="text-white/45 font-semibold">완료</span>
+          <span className="tabular-nums">{counts.completed}</span>
         </span>
-        <span className="text-white/20">·</span>
-        <span className="inline-flex items-center gap-1 text-white/60">
+        <span className="text-white/15">·</span>
+        <span
+          className="inline-flex items-center gap-1 text-white/60"
+          title="최근 추가된 프로젝트 수"
+        >
           <Sparkles className="w-3 h-3" />
-          {counts.new}
+          <span className="text-white/45 font-semibold">신규</span>
+          <span className="tabular-nums">{counts.new}</span>
         </span>
       </div>
 
