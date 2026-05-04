@@ -13,7 +13,8 @@ interface Props {
   quarterRange?: { year: number; quarter: 1 | 2 | 3 | 4 } | null;
 }
 
-function ddayLabel(deadline: string): string {
+function ddayLabel(deadline?: string): string {
+  if (!deadline) return "일정 미정";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline)) return deadline;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
