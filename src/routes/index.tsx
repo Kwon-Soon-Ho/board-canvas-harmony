@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/control/Header";
 import { FilterBar } from "@/components/control/FilterBar";
+import { KpiBar } from "@/components/control/KpiBar";
+import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
@@ -42,6 +44,8 @@ function ControlCenter() {
   const [sortBy, setSortBy] = useState<"deadline" | "progress" | "recent">("recent");
   const [sortDesc, setSortDesc] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [urgentOnly, setUrgentOnly] = useState(false);
+  const [issuesOnly, setIssuesOnly] = useState(false);
 
   // Hydrate from localStorage on client only
   useEffect(() => {
@@ -84,16 +88,32 @@ function ControlCenter() {
     setQuery("");
     setDept("전체");
     setStatuses(new Set());
+    setUrgentOnly(false);
+    setIssuesOnly(false);
   };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
       if (statuses.size > 0 && !statuses.has(p.status)) return false;
       if (q) {
         const hay = [p.title, p.pm, ...p.members].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
+      }
+      if (urgentOnly) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) return false;
+        const d = new Date(p.deadline);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+        if (!(diff <= 7 && p.progress < 100)) return false;
+      }
+      if (issuesOnly) {
+        const open = p.issues.filter((i) => !i.resolved).length;
+        if (open === 0) return false;
       }
       return true;
     });
@@ -111,7 +131,18 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly]);
+
+  // Dynamic heading based on active filters
+  const heading = useMemo(() => {
+    const parts: string[] = [];
+    if (dept !== "전체") parts.push(`${dept} 부서`);
+    if (statuses.size > 0) parts.push([...statuses].join("·") + " 상태");
+    if (urgentOnly) parts.push("마감 7일 이내");
+    if (issuesOnly) parts.push("이슈 있음");
+    if (parts.length === 0) return "전체 프로젝트";
+    return parts.join(" · ");
+  }, [dept, statuses, urgentOnly, issuesOnly]);
 
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
@@ -194,13 +225,38 @@ function ControlCenter() {
         onResetAll={handleResetAll}
       />
 
+      <KpiBar
+        projects={projects}
+        urgentOnly={urgentOnly}
+        setUrgentOnly={setUrgentOnly}
+        issuesOnly={issuesOnly}
+        setIssuesOnly={setIssuesOnly}
+        statuses={statuses}
+        toggleStatus={toggleStatus}
+      />
+
       <main className="mx-auto max-w-[1600px] px-10 py-12">
         <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
-          <div>
-            <h1 className="text-[32px] font-black tracking-tighter text-white">전체 프로젝트</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[32px] font-black tracking-tighter text-white">
+              {heading}
+            </h1>
             <p className="mt-2 text-[15px] font-medium text-white/40">
               총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
             </p>
+            <ActiveFilterChips
+              dept={dept}
+              statuses={statuses}
+              query={query}
+              urgentOnly={urgentOnly}
+              issuesOnly={issuesOnly}
+              onClearDept={() => setDept("전체")}
+              onClearStatus={(s) => toggleStatus(s)}
+              onClearQuery={() => { setSearchValue(""); setQuery(""); }}
+              onClearUrgent={() => setUrgentOnly(false)}
+              onClearIssues={() => setIssuesOnly(false)}
+              onResetAll={handleResetAll}
+            />
           </div>
 
           <div className="flex items-center gap-4">

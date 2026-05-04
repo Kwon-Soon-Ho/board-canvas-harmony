@@ -62,6 +62,21 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
   const dday = ddayLabel(project.deadline);
   const progress = project.progress;
 
+  // D-day numeric value for risk gating
+  const ddayDiff = (() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(project.deadline);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - today.getTime()) / 86400000);
+  })();
+  const isUrgent = ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 3 && progress < 100;
+  const isOverdue = ddayDiff !== null && ddayDiff < 0 && progress < 100;
+
+  // Active issues count
+  const activeIssues = project.issues.filter((i) => !i.resolved).length;
+
   // Progress-based color tier (used for both D-day badge and progress bar)
   const tier = (() => {
     if (project.deadline === "상시") return "neutral" as const;
@@ -87,6 +102,22 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
     neutral: "bg-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.4)]",
   }[tier];
 
+  // Always-on slim bar color (subtle version)
+  const tierBarSubtleClass = {
+    done: "bg-emerald-400/80",
+    good: "bg-white/70",
+    warn: "bg-amber-400/90",
+    bad: "bg-red-500/90",
+    neutral: "bg-slate-400/60",
+  }[tier];
+
+  // Urgency ring on the entire card
+  const urgencyRingClass = isOverdue
+    ? "ring-1 ring-red-500/50 shadow-[0_0_24px_-4px_rgba(239,68,68,0.45)]"
+    : isUrgent
+    ? "ring-1 ring-amber-400/40 shadow-[0_0_20px_-4px_rgba(251,191,36,0.35)]"
+    : "";
+
   const handleKeyOpen = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -99,7 +130,7 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        className={`project-card group absolute left-0 top-0 w-full rounded-xl border border-white/10 bg-[#0F0F0F] text-left transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        className={`project-card group absolute left-0 top-0 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0F0F0F] text-left transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${urgencyRingClass} ${
           hover
             ? "z-50 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] scale-[1.25]"
             : "z-0 shadow-none scale-100"
@@ -111,7 +142,7 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
         <button
           onClick={() => onOpen(project.id)}
           onKeyDown={handleKeyOpen}
-          aria-label={`${project.title} 프로젝트 열기`}
+          aria-label={`${project.title} 프로젝트 열기${activeIssues > 0 ? `, 미해결 이슈 ${activeIssues}건` : ""}`}
           className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-t-xl"
         >
           <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-neutral-900">
@@ -145,12 +176,48 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
               <DeptTag dept={project.department} />
               <StatusTag status={project.status} />
             </div>
+
+            {/* Always-on issue badge */}
+            {activeIssues > 0 && (
+              <div
+                className="absolute right-3 top-3 z-[3] flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 ring-1 ring-red-500/40 backdrop-blur-sm pointer-events-none"
+                title={`미해결 이슈 ${activeIssues}건`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)]" />
+                <span className="font-mono text-[11px] font-bold text-red-300 tabular-nums">
+                  {activeIssues}
+                </span>
+              </div>
+            )}
+
+            {/* Always-on urgency D-day badge (only when urgent/overdue, since hover hides it otherwise) */}
+            {(isUrgent || isOverdue) && (
+              <div
+                className={`absolute right-3 z-[3] inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black ring-1 ring-inset backdrop-blur-sm pointer-events-none ${
+                  activeIssues > 0 ? "top-10" : "top-3"
+                } ${isOverdue ? "bg-red-500/20 text-red-300 ring-red-500/40" : "bg-amber-500/20 text-amber-200 ring-amber-500/40"}`}
+                title={`마감 ${dday}`}
+              >
+                {dday}
+              </div>
+            )}
           </div>
 
-          <div className={`bg-[#0F0F0F] px-4 py-3 ${hover ? '' : 'rounded-b-xl'}`}>
+          <div className={`relative bg-[#0F0F0F] px-4 py-3 ${hover ? '' : 'rounded-b-xl'}`}>
             <h3 className="truncate text-base font-bold tracking-tight text-white/90">
               {project.title}
             </h3>
+
+            {/* Always-on slim progress bar at the bottom of the title block */}
+            <div
+              className="absolute bottom-0 left-0 h-[2px] w-full bg-white/[0.04]"
+              aria-hidden
+            >
+              <div
+                className={`h-full transition-all duration-700 ease-out ${tierBarSubtleClass}`}
+                style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
+              />
+            </div>
           </div>
         </button>
 

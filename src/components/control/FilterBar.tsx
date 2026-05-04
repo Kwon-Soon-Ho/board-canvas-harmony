@@ -126,7 +126,11 @@ export function FilterBar({
                       }}
                     />
                     <span>{d}</span>
-                    <span className={`font-mono text-[11px] tabular-nums ${active ? "text-white/70" : "text-white/30"}`}>
+                    <span
+                      className={`ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums ${
+                        active ? "bg-white/15 text-white" : "bg-white/[0.06] text-white/60"
+                      }`}
+                    >
                       {count}
                     </span>
                   </button>
@@ -166,7 +170,11 @@ export function FilterBar({
                       style={{ backgroundColor: colorVar, boxShadow: `0 0 6px ${colorVar}` }}
                     />
                     <span>{s}</span>
-                    <span className={`font-mono text-[11px] tabular-nums ${active ? "text-white/70" : "text-white/30"}`}>
+                    <span
+                      className={`ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums ${
+                        active ? "bg-white/15 text-white" : "bg-white/[0.06] text-white/60"
+                      }`}
+                    >
                       {statusCounts[s] ?? 0}
                     </span>
                   </button>
