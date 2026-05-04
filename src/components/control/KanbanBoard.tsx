@@ -109,6 +109,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                         setDraggingId(null);
                         setOverCol(null);
                       }}
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => onOpen(p.id)}
                       className={`group cursor-pointer rounded-lg border border-white/10 bg-[#141414] p-3 transition hover:border-white/30 hover:bg-[#1a1a1a] ${urgentRing} ${
                         draggingId === p.id ? "opacity-40" : ""
