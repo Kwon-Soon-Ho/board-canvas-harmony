@@ -123,15 +123,17 @@ export function FilterBar({
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: d === "전체" ? "rgba(255,255,255,0.35)" : color,
-                        boxShadow: d === "전체" ? "none" : `0 0 6px ${color}`,
+                        backgroundColor: active ? "#000" : (d === "전체" ? "rgba(255,255,255,0.35)" : color),
+                        boxShadow: active ? "none" : (d === "전체" ? "none" : `0 0 6px ${color}`),
                       }}
                     />
                     <span>{d}</span>
                     <span
-                      className={`ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums ${
-                        active ? "bg-white/15 text-white" : "bg-white/[0.06] text-white/60"
-                      }`}
+                      className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
+                      style={{
+                        background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
+                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                      }}
                     >
                       {count}
                     </span>
