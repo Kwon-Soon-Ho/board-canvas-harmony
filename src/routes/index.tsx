@@ -142,16 +142,35 @@ function ControlCenter() {
     setAssignee(null);
   };
 
+  // Quarter range (inclusive) — shared between FilterBar (counts) and main filtering
+  const { qStart, qEnd } = useMemo(() => {
+    const s = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
+    const e = quarter === "all" ? null : new Date(year, quarter * 3, 0);
+    if (s) s.setHours(0, 0, 0, 0);
+    if (e) e.setHours(23, 59, 59, 999);
+    return { qStart: s, qEnd: e };
+  }, [year, quarter]);
+
+  // Projects scoped to selected quarter — used by FilterBar so dept/status counts sync
+  const projectsInQuarter = useMemo(() => {
+    if (!qStart || !qEnd) return projects;
+    return projects.filter((p) => {
+      if (p.deadline === "상시") return true;
+      const sStr = p.startDate;
+      const eStr = p.deadline;
+      const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
+      const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+      if (!s && !e) return false;
+      const start = s ?? e!;
+      const end = e ?? s!;
+      return !(end < qStart || start > qEnd);
+    });
+  }, [projects, qStart, qEnd]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // Quarter range (inclusive)
-    const qStart = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
-    const qEnd = quarter === "all" ? null : new Date(year, quarter * 3, 0);
-    if (qStart) qStart.setHours(0, 0, 0, 0);
-    if (qEnd) qEnd.setHours(23, 59, 59, 999);
 
     const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
@@ -217,7 +236,7 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee, year, quarter]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee, qStart, qEnd]);
 
   // Dynamic heading based on active filters
   const heading = useMemo(() => {
@@ -328,7 +347,7 @@ function ControlCenter() {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <FilterBar
-        projects={projects}
+        projects={projectsInQuarter}
         dept={dept}
         setDept={setDept}
         statuses={statuses}
@@ -344,37 +363,14 @@ function ControlCenter() {
         setIssuesOnly={setIssuesOnly}
       />
 
-      <TeamWorkloadBar projects={projects} assignee={assignee} setAssignee={setAssignee} />
+      <TeamWorkloadBar projects={projectsInQuarter} assignee={assignee} setAssignee={setAssignee} />
 
       <main className="mx-auto max-w-[1920px] px-12 py-12">
         <div className="flex gap-8">
           <div className="min-w-0 flex-1">
-            <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
-              <div className="min-w-0 flex-1">
-                <h1 className="truncate text-[32px] font-black tracking-tighter text-white">
-                  {heading}
-                </h1>
-                <p className="mt-2 text-[15px] font-medium text-white/40">
-                  총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
-                </p>
-                <ActiveFilterChips
-                  dept={dept}
-                  statuses={statuses}
-                  query={query}
-                  urgentOnly={urgentOnly}
-                  issuesOnly={issuesOnly}
-                  assignee={assignee}
-                  onClearDept={() => setDept("전체")}
-                  onClearStatus={(s) => toggleStatus(s)}
-                  onClearQuery={() => { setSearchValue(""); setQuery(""); }}
-                  onClearUrgent={() => setUrgentOnly(false)}
-                  onClearIssues={() => setIssuesOnly(false)}
-                  onClearAssignee={() => setAssignee(null)}
-                  onResetAll={handleResetAll}
-                />
-              </div>
-
-              <div className="flex items-center gap-4">
+            <div className="mb-8 border-b border-white/10 pb-6">
+              {/* Row 1 — Controls (always on a stable line) */}
+              <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
                 <div
                   role="group"
                   aria-label="기간"
@@ -399,7 +395,7 @@ function ControlCenter() {
                       onClick={() => setQuarter(q)}
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
                     >
-                      Q{q}
+                      {q}분기
                     </button>
                   ))}
                   <button
@@ -456,6 +452,31 @@ function ControlCenter() {
                   <Plus className="w-5 h-5" />
                   새 프로젝트
                 </button>
+              </div>
+
+              {/* Row 2 — Heading + count + active filter chips (free to wrap) */}
+              <div className="min-w-0">
+                <h1 className="text-[32px] font-black tracking-tighter text-white break-keep">
+                  {heading}
+                </h1>
+                <p className="mt-2 text-[15px] font-medium text-white/40">
+                  총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
+                </p>
+                <ActiveFilterChips
+                  dept={dept}
+                  statuses={statuses}
+                  query={query}
+                  urgentOnly={urgentOnly}
+                  issuesOnly={issuesOnly}
+                  assignee={assignee}
+                  onClearDept={() => setDept("전체")}
+                  onClearStatus={(s) => toggleStatus(s)}
+                  onClearQuery={() => { setSearchValue(""); setQuery(""); }}
+                  onClearUrgent={() => setUrgentOnly(false)}
+                  onClearIssues={() => setIssuesOnly(false)}
+                  onClearAssignee={() => setAssignee(null)}
+                  onResetAll={handleResetAll}
+                />
               </div>
             </div>
 

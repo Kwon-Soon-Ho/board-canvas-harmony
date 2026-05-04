@@ -96,7 +96,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                   const isInProgress = p.status === "진행";
                   const urgentRing =
                     isInProgress && dd?.urgent && p.progress < 100
-                      ? "ring-1 ring-red-500/60"
+                      ? "ring-1 ring-amber-400/70 shadow-[0_0_18px_rgba(251,191,36,0.25)]"
                       : "";
                   const openIssues = p.issues.filter((i) => !i.resolved).length;
                   return (
@@ -137,7 +137,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                               <span
                                 className={`inline-flex items-center gap-1 font-mono font-bold tabular-nums ${
                                   isInProgress && dd.urgent && p.progress < 100
-                                    ? "text-red-300"
+                                    ? "text-amber-300"
                                     : "text-white/60"
                                 }`}
                               >
@@ -163,7 +163,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                                 width: `${p.progress}%`,
                                 background:
                                   isInProgress && dd?.urgent && p.progress < 100
-                                    ? "var(--status-active)"
+                                    ? "oklch(0.82 0.17 85)"
                                     : colorVar,
                               }}
                             />

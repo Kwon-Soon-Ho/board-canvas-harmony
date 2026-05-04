@@ -282,7 +282,7 @@ export function TimelineView({ projects, onOpen }: Props) {
                 <div className="relative h-7">
                   <div
                     className={`absolute top-1 h-5 rounded-md border ${
-                      isUrgent ? "border-red-500/60" : "border-white/15"
+                      isUrgent ? "border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.35)]" : "border-white/15"
                     } overflow-hidden`}
                     style={{
                       left: `${leftPct}%`,
@@ -295,13 +295,13 @@ export function TimelineView({ projects, onOpen }: Props) {
                       className="h-full"
                       style={{
                         width: `${p.progress}%`,
-                        background: isUrgent ? "var(--status-active)" : colorVar,
+                        background: isUrgent ? "oklch(0.82 0.17 85)" : colorVar,
                         opacity: 0.85,
                       }}
                     />
                     <span className="absolute inset-0 flex items-center justify-between px-1.5 font-mono text-[10px] font-bold text-white/90">
                       <span>{p.progress}%</span>
-                      <span className={isUrgent ? "text-red-200" : "text-white/70"}>
+                      <span className={isUrgent ? "text-amber-200" : "text-white/70"}>
                         {diffDays === 0 ? "D-day" : diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`}
                       </span>
                     </span>
