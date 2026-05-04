@@ -127,22 +127,35 @@ export function TimelineView({ projects, onOpen }: Props) {
     return { rangeStart: start, rangeEnd: realEnd, totalMs, ticks };
   }, [today, preset, customRange]);
 
-  // Item: project that overlaps the visible range (uses startDate→deadline)
+  // Item: project that overlaps the visible range. 상시(no deadline)는 시작일~range 끝까지로 가상 확장.
   const items = useMemo(() => {
     return projects
-      .map((p) => ({
-        p,
-        s: parseDate(p.startDate),
-        e: parseDate(p.deadline),
-      }))
-      .filter((x) => x.s || x.e)
-      .map((x) => ({ ...x, s: x.s ?? x.e!, e: x.e ?? x.s! }))
+      .filter((p) => p.status !== "대기") // 대기는 별도 섹션
+      .map((p) => {
+        const s = parseDate(p.startDate);
+        const e = parseDate(p.deadline);
+        const isOngoing = p.status === "상시";
+        // 상시: 시작일이 있으면 그 시점부터 range 끝까지로 처리
+        if (isOngoing && s) {
+          return { p, s, e: rangeEnd, isOngoing: true };
+        }
+        return { p, s, e, isOngoing: false };
+      })
+      .filter((x): x is { p: Project; s: Date; e: Date; isOngoing: boolean } => !!(x.s && x.e))
       .filter(({ s, e }) => e >= rangeStart && s <= rangeEnd)
-      .sort((a, b) => a.e.getTime() - b.e.getTime());
+      .sort((a, b) => {
+        // Stable multi-key sort: endDate → startDate → id (no ties → no flicker)
+        const de = a.e.getTime() - b.e.getTime();
+        if (de !== 0) return de;
+        const ds = a.s.getTime() - b.s.getTime();
+        if (ds !== 0) return ds;
+        return a.p.id.localeCompare(b.p.id);
+      });
   }, [projects, rangeStart, rangeEnd]);
 
-  const ongoing = useMemo(
-    () => projects.filter((p) => !parseDate(p.deadline) && !parseDate(p.startDate)),
+  // 대기: 시작일/마감일 모두 없음 → 하단 칩 섹션
+  const pending = useMemo(
+    () => projects.filter((p) => p.status === "대기"),
     [projects]
   );
 
