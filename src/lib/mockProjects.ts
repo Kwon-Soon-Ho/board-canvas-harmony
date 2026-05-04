@@ -81,7 +81,8 @@ export function seededRand(seed: string): number {
  * - 상시 / no deadline: random start in last 90 days, seeded.
  */
 export function backfillStartDate<T extends Partial<Project> & { id: string; status?: string; deadline?: string; startDate?: string; startDateUserSet?: boolean }>(p: T, force = false): T {
-  if (p.status === "대기") return { ...p, startDate: undefined };
+  // 대기: 시작일/마감일 모두 비움
+  if (p.status === "대기") return { ...p, startDate: undefined, deadline: "" } as T;
   if (p.startDateUserSet && p.startDate) return p;
   if (!force && p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
 
