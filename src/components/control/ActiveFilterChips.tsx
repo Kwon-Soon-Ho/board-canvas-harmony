@@ -7,13 +7,13 @@ interface Props {
   query: string;
   urgentOnly: boolean;
   issuesOnly: boolean;
-  assignee: string | null;
+  assignees: Set<string>;
   onClearDept: () => void;
   onClearStatus: (s: Status) => void;
   onClearQuery: () => void;
   onClearUrgent: () => void;
   onClearIssues: () => void;
-  onClearAssignee: () => void;
+  onClearAssignee: (name: string) => void;
   onResetAll: () => void;
 }
 
@@ -23,7 +23,7 @@ export function ActiveFilterChips({
   query,
   urgentOnly,
   issuesOnly,
-  assignee,
+  assignees,
   onClearDept,
   onClearStatus,
   onClearQuery,
@@ -38,7 +38,7 @@ export function ActiveFilterChips({
     query.trim().length > 0 ||
     urgentOnly ||
     issuesOnly ||
-    !!assignee;
+    assignees.size > 0;
 
   if (!hasAny) return null;
 
@@ -88,7 +88,9 @@ export function ActiveFilterChips({
       )}
       {urgentOnly && <Chip label="마감 7일 이내" onRemove={onClearUrgent} tone="warn" />}
       {issuesOnly && <Chip label="이슈 있음" onRemove={onClearIssues} tone="danger" />}
-      {assignee && <Chip label={`담당자: ${assignee}`} onRemove={onClearAssignee} />}
+      {[...assignees].map((a) => (
+        <Chip key={a} label={`담당자: ${a}`} onRemove={() => onClearAssignee(a)} />
+      ))}
       <button
         type="button"
         onClick={onResetAll}
