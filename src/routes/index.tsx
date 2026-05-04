@@ -200,12 +200,12 @@ function ControlCenter() {
         if (!ok) return false;
       }
       // Quarter overlap: project is in scope if its [startDate, deadline] overlaps the quarter.
-      // 상시 (always-on, no deadline) projects always pass.
+      // 상시 (always-on) projects always pass. 대기 (no dates) excluded from quarter view.
       if (qStart && qEnd && p.deadline !== "상시") {
         const sStr = p.startDate;
         const eStr = p.deadline;
         const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
-        const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+        const e = eStr && /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
         if (!s && !e) return false;
         const start = s ?? e!;
         const end = e ?? s!;
