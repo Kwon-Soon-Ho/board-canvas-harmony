@@ -255,11 +255,18 @@ function DetailWindow() {
             </div>
 
             {(() => {
+              // Match thumbnail card logic: done(>=100) → emerald, urgent(D-7 & in-progress) → amber, else neutral
+              const ddayDiff = (() => {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+                const t = new Date(); t.setHours(0,0,0,0);
+                const d = new Date(project.deadline); d.setHours(0,0,0,0);
+                return Math.round((d.getTime() - t.getTime()) / 86400000);
+              })();
+              const isUrgentHdr = project.status === "진행" && ddayDiff !== null && ddayDiff <= 7 && derivedProgress < 100;
               const tierBar =
                 derivedProgress >= 100 ? "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]"
-                : derivedProgress >= 70 ? "bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)]"
-                : derivedProgress >= 40 ? "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]"
-                : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
+                : isUrgentHdr ? "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]"
+                : "bg-slate-400 shadow-[0_0_12px_rgba(148,163,184,0.4)]";
               return (
                 <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
                   <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
