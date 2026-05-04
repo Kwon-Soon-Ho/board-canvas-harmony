@@ -266,7 +266,13 @@ function DetailWindow() {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4.5 h-4.5 text-white/90" />
                   <span className="text-white/90 font-bold tabular-nums">
-                    {project.startDate ? `${project.startDate} ~ ${project.deadline}` : project.deadline}
+                    {project.startDate && project.deadline
+                      ? `${project.startDate} ~ ${project.deadline}`
+                      : project.startDate
+                        ? `${project.startDate} ~`
+                        : project.deadline
+                          ? project.deadline
+                          : "일정 미정"}
                   </span>
                 </div>
               </div>
