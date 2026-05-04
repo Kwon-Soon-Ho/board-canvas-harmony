@@ -161,7 +161,14 @@ function ControlCenter() {
       let cmp = 0;
       if (sortBy === "progress") {
         cmp = a.progress - b.progress;
+      } else if (sortBy === "updated") {
+        const au = a.updatedAt ?? "";
+        const bu = b.updatedAt ?? "";
+        cmp = au.localeCompare(bu);
+        if (cmp === 0) cmp = a.id.localeCompare(b.id);
+        cmp = -cmp; // newer first by default
       } else {
+        // "created" — id desc
         cmp = b.id.localeCompare(a.id);
       }
       return sortDesc ? -cmp : cmp;
