@@ -222,14 +222,15 @@ function ControlCenter() {
   // Dynamic heading based on active filters
   const heading = useMemo(() => {
     const parts: string[] = [];
+    if (quarter !== "all") parts.push(`${year}년 ${quarter}분기`);
+    else parts.push(`${year}년 전체`);
     if (dept !== "전체") parts.push(`${dept} 부서`);
     if (statuses.size > 0) parts.push([...statuses].join("·") + " 상태");
     if (urgentOnly) parts.push("마감 7일 이내");
     if (issuesOnly) parts.push("이슈 있음");
     if (assignee) parts.push(`${assignee} 담당`);
-    if (parts.length === 0) return "전체 프로젝트";
     return parts.join(" · ");
-  }, [dept, statuses, urgentOnly, issuesOnly, assignee]);
+  }, [dept, statuses, urgentOnly, issuesOnly, assignee, year, quarter]);
 
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
