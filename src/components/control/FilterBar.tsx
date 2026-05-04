@@ -94,8 +94,25 @@ export function FilterBar({
     return m;
   }, [dept, projects]);
 
+  const quickStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let urgent = 0;
+    let issues = 0;
+    for (const p of projects) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+        const d = new Date(p.deadline);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+        if (diff <= 7 && p.progress < 100) urgent += 1;
+      }
+      if (p.issues.filter((i) => !i.resolved).length > 0) issues += 1;
+    }
+    return { urgent, issues };
+  }, [projects]);
+
   const isAnyActive =
-    dept !== "전체" || statuses.size > 0 || (searchValue?.trim().length ?? 0) > 0 || (local?.trim().length ?? 0) > 0;
+    dept !== "전체" || statuses.size > 0 || (searchValue?.trim().length ?? 0) > 0 || (local?.trim().length ?? 0) > 0 || urgentOnly || issuesOnly;
 
   return (
     <div className="sticky top-16 z-40 border-b border-white/10 bg-black">
