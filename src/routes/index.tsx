@@ -184,6 +184,7 @@ function ControlCenter() {
     const ch = getSyncChannel();
     ch?.postMessage({ type: "OPEN_PROJECT", projectId: id, project });
     ch?.close();
+    await openDetailWindow(id);
   };
 
   const handleStatusChange = (id: string, next: Status) => {
