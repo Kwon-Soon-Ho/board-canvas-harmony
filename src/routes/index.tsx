@@ -36,6 +36,26 @@ function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
 }
 
+function backfillStartDate(p: any): any {
+  if (p.status === "상시") return p;
+  if (p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
+  // Derive a sensible startDate: earliest task startDate, else 30 days before deadline, else today
+  let derived: string | undefined;
+  const taskDates = (p.tasks || [])
+    .map((t: any) => t.startDate)
+    .filter((s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s))
+    .sort();
+  if (taskDates.length > 0) derived = taskDates[0];
+  else if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+    const d = new Date(p.deadline);
+    d.setDate(d.getDate() - 30);
+    derived = d.toISOString().slice(0, 10);
+  } else {
+    derived = new Date().toISOString().slice(0, 10);
+  }
+  return { ...p, startDate: derived };
+}
+
 function normalizeProgress(list: Project[]): Project[] {
   return list.map((p) => {
     if (p.status !== "완료") return p;
@@ -73,7 +93,7 @@ function ControlCenter() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const migrated = parsed.map((p: any) => ({
+        const migrated = parsed.map((p: any) => backfillStartDate({
           ...p,
           images: migrateImages(p.images),
           tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
