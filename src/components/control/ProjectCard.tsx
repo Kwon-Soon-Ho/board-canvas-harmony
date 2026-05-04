@@ -81,6 +81,25 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
   // Active issues count
   const activeIssues = project.issues.filter((i) => !i.resolved).length;
 
+  // Quarter overflow detection — does project span beyond the selected quarter?
+  const overflow = useMemo(() => {
+    if (!quarterRange) return null;
+    const { year, quarter } = quarterRange;
+    const qStart = new Date(year, (quarter - 1) * 3, 1);
+    const qEnd = new Date(year, quarter * 3, 0);
+    qStart.setHours(0, 0, 0, 0);
+    qEnd.setHours(23, 59, 59, 999);
+    const sStr = project.startDate;
+    const eStr = project.deadline;
+    if (eStr === "상시") return null;
+    const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
+    const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+    const carried = !!(s && s < qStart); // 시작이 분기 이전 → 이월
+    const extends_ = !!(e && e > qEnd); // 마감이 분기 이후 → 연장
+    if (!carried && !extends_) return null;
+    return { carried, extends_ };
+  }, [quarterRange, project.startDate, project.deadline]);
+
   // Progress-based color tier (used for both D-day badge and progress bar)
   // Urgent/Overdue use unified AMBER (yellow) — matches the "마감임박" filter color.
   const tier = (() => {
