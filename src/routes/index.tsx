@@ -197,8 +197,11 @@ function ControlCenter() {
         const open = p.issues.filter((i) => !i.resolved).length;
         if (open === 0) return false;
       }
-      if (assignee) {
-        if (p.pm !== assignee && !p.members.includes(assignee)) return false;
+      if (assignees.size > 0) {
+        const involved = new Set<string>([p.pm, ...p.members]);
+        let ok = false;
+        for (const a of assignees) if (involved.has(a)) { ok = true; break; }
+        if (!ok) return false;
       }
       // Quarter overlap: project is in scope if its [startDate, deadline] overlaps the quarter.
       // 상시 (always-on, no deadline) projects always pass.
@@ -243,7 +246,7 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee, qStart, qEnd]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignees, qStart, qEnd]);
 
   // Dynamic heading based on active filters
   const heading = useMemo(() => {
@@ -254,9 +257,9 @@ function ControlCenter() {
     if (statuses.size > 0) parts.push([...statuses].join("·") + " 상태");
     if (urgentOnly) parts.push("마감 7일 이내");
     if (issuesOnly) parts.push("이슈 있음");
-    if (assignee) parts.push(`${assignee} 담당`);
+    if (assignees.size > 0) parts.push(`${[...assignees].join("·")} 담당`);
     return parts.join(" · ");
-  }, [dept, statuses, urgentOnly, issuesOnly, assignee, year, quarter]);
+  }, [dept, statuses, urgentOnly, issuesOnly, assignees, year, quarter]);
 
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
