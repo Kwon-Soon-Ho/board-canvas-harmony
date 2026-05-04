@@ -258,16 +258,10 @@ function ControlCenter() {
         onSubmitSearch={(v) => setQuery(v)}
         onLiveSearch={(v) => setQuery(v)}
         onResetAll={handleResetAll}
-      />
-
-      <KpiBar
-        projects={projects}
         urgentOnly={urgentOnly}
         setUrgentOnly={setUrgentOnly}
         issuesOnly={issuesOnly}
         setIssuesOnly={setIssuesOnly}
-        statuses={statuses}
-        toggleStatus={toggleStatus}
       />
 
       <TeamWorkloadBar projects={projects} assignee={assignee} setAssignee={setAssignee} />
