@@ -53,17 +53,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
     return Array.from(map.values()).sort((a, b) => b.active - a.active || b.total - a.total);
   }, [projects]);
 
-  const max = Math.max(1, ...stats.map((s) => s.active));
   const visible = expanded ? stats : stats.slice(0, 8);
-
-  // Workload tone: green (light) → amber → red based on active count
-  const toneFor = (active: number) => {
-    const ratio = active / max;
-    if (ratio >= 0.75) return { bar: "bg-red-400/70", text: "text-red-200", ring: "ring-red-400/40" };
-    if (ratio >= 0.45) return { bar: "bg-amber-400/70", text: "text-amber-200", ring: "ring-amber-400/40" };
-    if (ratio > 0) return { bar: "bg-emerald-400/60", text: "text-emerald-200", ring: "ring-emerald-400/30" };
-    return { bar: "bg-white/15", text: "text-white/40", ring: "ring-white/10" };
-  };
 
   return (
     <section
