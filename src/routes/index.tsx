@@ -214,9 +214,19 @@ function ControlCenter() {
 
   const handleStatusChange = (id: string, next: Status) => {
     setProjects((prev) => {
-      const updated = prev.map((p) =>
-        p.id === id ? { ...p, status: next, progress: next === "완료" ? 100 : p.progress } : p
-      );
+      const updated = prev.map((p) => {
+        if (p.id !== id) return p;
+        if (next === "완료") {
+          return {
+            ...p,
+            status: next,
+            progress: 100,
+            tasks: p.tasks.map((t) => ({ ...t, status: "완료" as const, progress: 100 })),
+            issues: p.issues.map((i) => ({ ...i, status: "Resolved" as const, resolved: true })),
+          };
+        }
+        return { ...p, status: next };
+      });
       persist(updated);
       const changed = updated.find((p) => p.id === id);
       const ch = getSyncChannel();
