@@ -93,6 +93,38 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             )}
             {visible.map((s) => {
               const active = assignee === s.name;
+              const isDisabled = s.total === 0;
+              return (
+                <button
+                  key={s.name}
+                  type="button"
+                  disabled={isDisabled}
+                  aria-pressed={active}
+                  onClick={() => setAssignee(active ? null : s.name)}
+                  title={`${s.name} (${s.rank}) · 진행 ${s.active}${
+                    s.urgent ? ` · 긴급 ${s.urgent}` : ""
+                  }`}
+                  className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                    active
+                      ? "border-white/40 bg-white/15 text-white"
+                      : isDisabled
+                      ? "cursor-not-allowed border-white/5 bg-white/[0.02] text-white/25"
+                      : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/25 hover:text-white"
+                  }`}
+                >
+                  <span>{s.name}</span>
+                  <span className={`font-mono tabular-nums ${active ? "text-white" : "text-white/60"}`}>
+                    {s.active}
+                  </span>
+                  {s.urgent > 0 && (
+                    <span className="ml-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[9px] font-bold text-red-200 ring-1 ring-red-500/40">
+                      !{s.urgent}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+              const active = assignee === s.name;
               const tone = toneFor(s.active);
               const isDisabled = s.total === 0;
               return (
