@@ -142,16 +142,35 @@ function ControlCenter() {
     setAssignee(null);
   };
 
+  // Quarter range (inclusive) — shared between FilterBar (counts) and main filtering
+  const { qStart, qEnd } = useMemo(() => {
+    const s = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
+    const e = quarter === "all" ? null : new Date(year, quarter * 3, 0);
+    if (s) s.setHours(0, 0, 0, 0);
+    if (e) e.setHours(23, 59, 59, 999);
+    return { qStart: s, qEnd: e };
+  }, [year, quarter]);
+
+  // Projects scoped to selected quarter — used by FilterBar so dept/status counts sync
+  const projectsInQuarter = useMemo(() => {
+    if (!qStart || !qEnd) return projects;
+    return projects.filter((p) => {
+      if (p.deadline === "상시") return true;
+      const sStr = p.startDate;
+      const eStr = p.deadline;
+      const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
+      const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+      if (!s && !e) return false;
+      const start = s ?? e!;
+      const end = e ?? s!;
+      return !(end < qStart || start > qEnd);
+    });
+  }, [projects, qStart, qEnd]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // Quarter range (inclusive)
-    const qStart = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
-    const qEnd = quarter === "all" ? null : new Date(year, quarter * 3, 0);
-    if (qStart) qStart.setHours(0, 0, 0, 0);
-    if (qEnd) qEnd.setHours(23, 59, 59, 999);
 
     const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
