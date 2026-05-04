@@ -31,26 +31,41 @@ export const Route = createFileRoute("/")({
 });
 
 const STORAGE_KEY = "design-projects-store";
+const MIGRATION_KEY = "design-projects-migration-v3";
 
 function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
 }
 
-function backfillStartDate(p: any): any {
-  if (p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
-  // Derive a sensible startDate: earliest task startDate, else 30 days before deadline, else today
+// Seeded pseudo-random so each project gets a stable random offset
+function seededRand(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+function backfillStartDate(p: any, force = false): any {
+  // 대기 (pending) projects intentionally have no startDate
+  if (p.status === "대기") return { ...p, startDate: undefined };
+  if (!force && p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
+
   let derived: string | undefined;
-  const taskDates = (p.tasks || [])
-    .map((t: any) => t.startDate)
-    .filter((s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s))
-    .sort();
-  if (taskDates.length > 0) derived = taskDates[0];
-  else if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+    // Random offset 14–75 days BEFORE deadline (seeded by project id for stability)
+    const r = seededRand(String(p.id));
+    const offset = 14 + Math.floor(r * 62);
     const d = new Date(p.deadline);
-    d.setDate(d.getDate() - 30);
+    d.setDate(d.getDate() - offset);
     derived = d.toISOString().slice(0, 10);
   } else {
-    derived = new Date().toISOString().slice(0, 10);
+    // 상시 / no deadline: random start in last 90 days
+    const r = seededRand(String(p.id));
+    const d = new Date();
+    d.setDate(d.getDate() - Math.floor(r * 90));
+    derived = d.toISOString().slice(0, 10);
   }
   return { ...p, startDate: derived };
 }
