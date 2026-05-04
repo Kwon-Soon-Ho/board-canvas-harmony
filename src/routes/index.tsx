@@ -33,8 +33,8 @@ export const Route = createFileRoute("/")({
 });
 
 const STORAGE_KEY = "design-projects-store";
-const BACKUP_KEY = "design-projects-store-backup-v3";
-const MIGRATION_KEY = "design-projects-migration-v4";
+const BACKUP_KEY = "design-projects-store-backup-v4";
+const MIGRATION_KEY = "design-projects-migration-v5";
 
 function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
