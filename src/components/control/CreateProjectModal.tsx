@@ -9,14 +9,20 @@ interface Props {
 }
 
 export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
+  const today = new Date().toISOString().slice(0, 10);
   const [title, setTitle] = useState("");
   const [department, setDepartment] = useState<Department>("UX");
   const [status, setStatus] = useState<Status>("대기");
+  const [startDate, setStartDate] = useState(today);
   const [deadline, setDeadline] = useState("");
   const [pm, setPm] = useState("");
   const [members, setMembers] = useState<string[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
+
+  const dateError = status !== "상시" && startDate && deadline && startDate > deadline
+    ? "시작일이 마감일보다 늦을 수 없습니다."
+    : "";
 
   const availableMembers = useMemo(() => {
     return department === "공통" ? ALL_MEMBERS : TEAM_DATA[department];
