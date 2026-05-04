@@ -63,7 +63,7 @@ function DetailWindow() {
       }
     }
     const found = MOCK_PROJECTS.find((p) => p.id === id);
-    return found ? normalize(found) : null;
+    return found ? normalize(backfillStartDate(found) as Project) : null;
   });
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [isImageViewerFull, setIsImageViewerFull] = useState(false);
