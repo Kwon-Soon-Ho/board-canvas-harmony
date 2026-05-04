@@ -62,6 +62,21 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
   const dday = ddayLabel(project.deadline);
   const progress = project.progress;
 
+  // D-day numeric value for risk gating
+  const ddayDiff = (() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(project.deadline);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - today.getTime()) / 86400000);
+  })();
+  const isUrgent = ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 3 && progress < 100;
+  const isOverdue = ddayDiff !== null && ddayDiff < 0 && progress < 100;
+
+  // Active issues count
+  const activeIssues = project.issues.filter((i) => !i.resolved).length;
+
   // Progress-based color tier (used for both D-day badge and progress bar)
   const tier = (() => {
     if (project.deadline === "상시") return "neutral" as const;
@@ -86,6 +101,22 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
     bad: "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]",
     neutral: "bg-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.4)]",
   }[tier];
+
+  // Always-on slim bar color (subtle version)
+  const tierBarSubtleClass = {
+    done: "bg-emerald-400/80",
+    good: "bg-white/70",
+    warn: "bg-amber-400/90",
+    bad: "bg-red-500/90",
+    neutral: "bg-slate-400/60",
+  }[tier];
+
+  // Urgency ring on the entire card
+  const urgencyRingClass = isOverdue
+    ? "ring-1 ring-red-500/50 shadow-[0_0_24px_-4px_rgba(239,68,68,0.45)]"
+    : isUrgent
+    ? "ring-1 ring-amber-400/40 shadow-[0_0_20px_-4px_rgba(251,191,36,0.35)]"
+    : "";
 
   const handleKeyOpen = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
