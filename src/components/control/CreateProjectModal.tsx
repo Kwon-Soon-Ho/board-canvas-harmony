@@ -232,7 +232,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
             <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl text-sm font-bold text-white/70 hover:text-white hover:bg-white/5 transition">
               취소
             </button>
-            <button type="submit" disabled={!title || !pm || imageUrls.length === 0} className="px-6 py-3 rounded-xl text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            <button type="submit" disabled={!title || !pm || imageUrls.length === 0 || !!dateError} className="px-6 py-3 rounded-xl text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
               프로젝트 생성
             </button>
           </div>
