@@ -72,7 +72,7 @@
   /* Status colors — restrained, monochrome-leaning */
   --status-active: oklch(0.78 0.16 145);         /* 진행 — green tint */
   --status-ongoing: oklch(0.75 0.12 230);        /* 상시 — cool blue */
-  --status-pending: oklch(0.78 0.14 80);         /* 대기 — amber */
+  --status-pending: oklch(0.70 0.18 300);        /* 대기 — purple */
   --status-done: oklch(0.55 0 0);                /* 완료 — gray */
 }
 
