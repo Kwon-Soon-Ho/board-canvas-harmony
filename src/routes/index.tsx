@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/control/Header";
 import { FilterBar } from "@/components/control/FilterBar";
-import { KpiBar } from "@/components/control/KpiBar";
+
 import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
 import { ActivityFeed } from "@/components/control/ActivityFeed";
