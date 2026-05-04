@@ -265,6 +265,8 @@ export const MOCK_PROJECTS: Project[] = (() => {
     
     const status = STATUSES[i % STATUSES.length];
     const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
+    // Spread start dates across Q1-Q3 2026 for richer quarter filtering demo
+    const startDate = new Date(2026, (i % 7), 1 + ((i * 3) % 28)).toISOString().slice(0, 10);
 
     // PM assignment: Must be Senior or higher
     const deptCandidates = TEAM_DATA[dept].filter(m => ["수석", "책임", "선임"].includes(m.rank));
@@ -349,6 +351,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
       department: dept,
       status,
       progress: totalProgress,
+      startDate: status === "상시" ? undefined : startDate,
       deadline: status === "상시" ? "상시" : deadline,
       pm,
       members: membersList,
