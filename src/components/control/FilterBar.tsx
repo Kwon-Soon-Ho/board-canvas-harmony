@@ -5,7 +5,7 @@ import {
   type Status,
   type Project,
 } from "@/lib/mockProjects";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Clock3, AlertTriangle } from "lucide-react";
 
 const DEPARTMENTS: Array<Department | "전체"> = ["전체", "공통", "영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -28,6 +28,10 @@ interface Props {
   onSubmitSearch: (v: string) => void;
   onLiveSearch: (v: string) => void;
   onResetAll: () => void;
+  urgentOnly: boolean;
+  setUrgentOnly: (v: boolean) => void;
+  issuesOnly: boolean;
+  setIssuesOnly: (v: boolean) => void;
 }
 
 export function FilterBar({
@@ -41,6 +45,10 @@ export function FilterBar({
   onSubmitSearch,
   onLiveSearch,
   onResetAll,
+  urgentOnly,
+  setUrgentOnly,
+  issuesOnly,
+  setIssuesOnly,
 }: Props) {
   const [local, setLocal] = useState(searchValue);
   const debounceRef = useRef<number | null>(null);
@@ -86,8 +94,25 @@ export function FilterBar({
     return m;
   }, [dept, projects]);
 
+  const quickStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let urgent = 0;
+    let issues = 0;
+    for (const p of projects) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+        const d = new Date(p.deadline);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+        if (diff <= 7 && p.progress < 100) urgent += 1;
+      }
+      if (p.issues.filter((i) => !i.resolved).length > 0) issues += 1;
+    }
+    return { urgent, issues };
+  }, [projects]);
+
   const isAnyActive =
-    dept !== "전체" || statuses.size > 0 || (searchValue?.trim().length ?? 0) > 0 || (local?.trim().length ?? 0) > 0;
+    dept !== "전체" || statuses.size > 0 || (searchValue?.trim().length ?? 0) > 0 || (local?.trim().length ?? 0) > 0 || urgentOnly || issuesOnly;
 
   return (
     <div className="sticky top-16 z-40 border-b border-white/10 bg-black">
@@ -112,7 +137,7 @@ export function FilterBar({
                         : undefined,
                       borderColor: active ? color : undefined,
                       boxShadow: active ? `0 0 0 1px ${color}88, 0 0 18px ${color}55` : undefined,
-                      color: active ? "#000" : undefined,
+                      color: active ? "#fff" : undefined,
                     }}
                     className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
@@ -123,7 +148,7 @@ export function FilterBar({
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: active ? "#000" : (d === "전체" ? "rgba(255,255,255,0.35)" : color),
+                        backgroundColor: active ? "#fff" : (d === "전체" ? "rgba(255,255,255,0.35)" : color),
                         boxShadow: active ? "none" : (d === "전체" ? "none" : `0 0 6px ${color}`),
                       }}
                     />
@@ -132,7 +157,7 @@ export function FilterBar({
                       className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
                       style={{
                         background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
-                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
                       }}
                     >
                       {count}
@@ -165,7 +190,7 @@ export function FilterBar({
                       boxShadow: active
                         ? `0 0 0 1px color-mix(in srgb, ${colorVar} 70%, transparent), 0 0 18px color-mix(in srgb, ${colorVar} 45%, transparent)`
                         : undefined,
-                      color: active ? "#000" : undefined,
+                      color: active ? "#fff" : undefined,
                     }}
                     className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
@@ -176,7 +201,7 @@ export function FilterBar({
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: active ? "#000" : colorVar,
+                        backgroundColor: active ? "#fff" : colorVar,
                         boxShadow: active ? "none" : `0 0 6px ${colorVar}`,
                       }}
                     />
@@ -185,7 +210,7 @@ export function FilterBar({
                       className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
                       style={{
                         background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
-                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
                       }}
                     >
                       {statusCounts[s] ?? 0}
@@ -197,8 +222,40 @@ export function FilterBar({
           </div>
         </div>
 
-        {/* Search + Reset */}
+        {/* Quick filters + Search + Reset */}
         <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            aria-pressed={urgentOnly}
+            onClick={() => setUrgentOnly(!urgentOnly)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] font-semibold transition ${
+              urgentOnly
+                ? "border-amber-400 bg-amber-400/20 text-amber-100 shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_0_18px_rgba(251,191,36,0.35)]"
+                : "border-white/10 bg-[#1A1A1A] text-white/60 hover:border-amber-400/40 hover:text-amber-200"
+            }`}
+            title="마감 7일 이내 미완료 프로젝트만 보기"
+          >
+            <Clock3 className="h-3.5 w-3.5" />
+            <span>마감임박</span>
+            <span className="font-mono tabular-nums">{quickStats.urgent}</span>
+          </button>
+          <button
+            type="button"
+            aria-pressed={issuesOnly}
+            onClick={() => setIssuesOnly(!issuesOnly)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] font-semibold transition ${
+              issuesOnly
+                ? "border-red-500 bg-red-500/20 text-red-100 shadow-[0_0_0_1px_rgba(239,68,68,0.5),0_0_18px_rgba(239,68,68,0.35)]"
+                : "border-white/10 bg-[#1A1A1A] text-white/60 hover:border-red-500/40 hover:text-red-300"
+            }`}
+            title="미해결 이슈가 있는 프로젝트만 보기"
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>이슈</span>
+            <span className="font-mono tabular-nums">{quickStats.issues}</span>
+          </button>
+
+          <div className="h-6 w-px bg-white/15" />
           {isAnyActive && (
             <button
               type="button"
