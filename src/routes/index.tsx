@@ -147,6 +147,12 @@ function ControlCenter() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Quarter range (inclusive)
+    const qStart = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
+    const qEnd = quarter === "all" ? null : new Date(year, quarter * 3, 0);
+    if (qStart) qStart.setHours(0, 0, 0, 0);
+    if (qEnd) qEnd.setHours(23, 59, 59, 999);
+
     const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
       if (statuses.size > 0 && !statuses.has(p.status)) return false;
@@ -167,6 +173,18 @@ function ControlCenter() {
       }
       if (assignee) {
         if (p.pm !== assignee && !p.members.includes(assignee)) return false;
+      }
+      // Quarter overlap: project is in scope if its [startDate, deadline] overlaps the quarter.
+      // 상시 (always-on, no deadline) projects always pass.
+      if (qStart && qEnd && p.deadline !== "상시") {
+        const sStr = p.startDate;
+        const eStr = p.deadline;
+        const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
+        const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+        if (!s && !e) return false;
+        const start = s ?? e!;
+        const end = e ?? s!;
+        if (end < qStart || start > qEnd) return false;
       }
       return true;
     });
