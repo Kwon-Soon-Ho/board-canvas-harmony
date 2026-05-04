@@ -282,13 +282,15 @@ function ControlCenter() {
     return () => ch.close();
   }, [lastOpenedId, projects, hydrated]);
 
-  const handleOpen = async (id: string) => {
+  const handleOpen = (id: string) => {
     setLastOpenedId(id);
     const project = projects.find((p) => p.id === id);
     const ch = getSyncChannel();
     ch?.postMessage({ type: "OPEN_PROJECT", projectId: id, project });
     ch?.close();
-    await openDetailWindow(id);
+    // Fire-and-forget: do not await — keeps the click in the same user-gesture frame
+    // and prevents focus-restore scroll jumps when the new window steals focus.
+    void openDetailWindow(id);
   };
 
   const handleStatusChange = (id: string, next: Status) => {
