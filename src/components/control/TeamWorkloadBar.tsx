@@ -54,7 +54,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
     return Array.from(map.values()).sort((a, b) => b.active - a.active || b.total - a.total);
   }, [projects]);
 
-  const visible = expanded ? stats : stats.slice(0, 8);
+  const visible = expanded ? stats : stats.slice(0, 12);
 
   return (
     <section
