@@ -193,7 +193,7 @@ const ALL_IMAGES = [
   "https://images.unsplash.com/photo-1674515513957-bc5b9c5ee367",
   "https://images.unsplash.com/photo-1547658719-da2b51169166",
   "https://images.unsplash.com/photo-1519408469771-2586093c3f14",
-  "https://images.unsplash.com/photo-1533350356005-fd52b3b524fb",
+  "https://images.unsplash.com/photo-1517694712202-14dd9538aa97",
   "https://images.unsplash.com/photo-1497864149936-d3163f0c0f4b",
   "https://images.unsplash.com/photo-1617050318658-a9a3175e34cb",
   "https://images.unsplash.com/photo-1738028449238-fa5ae8c33bce",
