@@ -293,6 +293,7 @@ function ControlCenter() {
 
   const handleStatusChange = (id: string, next: Status) => {
     const now = new Date().toISOString();
+    const todayStr = new Date().toISOString().slice(0, 10);
     setProjects((prev) => {
       const updated = prev.map((p) => {
         if (p.id !== id) return p;
@@ -304,6 +305,34 @@ function ControlCenter() {
             updatedAt: now,
             tasks: p.tasks.map((t) => ({ ...t, status: "완료" as const, progress: 100 })),
             issues: p.issues.map((i) => ({ ...i, status: "Resolved" as const, resolved: true })),
+          };
+        }
+        if (next === "대기") {
+          // 대기는 시작일/마감일 모두 비움 (v5 규칙)
+          return { ...p, status: next, updatedAt: now, startDate: undefined, deadline: "" };
+        }
+        if (next === "상시") {
+          // 상시는 마감일을 "상시"로, 시작일이 없으면 오늘로 채움 (무한바 시작점 필요)
+          return {
+            ...p,
+            status: next,
+            updatedAt: now,
+            startDate: p.startDate || todayStr,
+            deadline: "상시",
+          };
+        }
+        if (next === "진행") {
+          // 진행으로 돌아올 때 시작일이 없으면 오늘로. 마감일이 "상시"거나 비어있으면 비움.
+          const cleanedDeadline =
+            p.deadline && p.deadline !== "상시" && /^\d{4}-\d{2}-\d{2}$/.test(p.deadline)
+              ? p.deadline
+              : "";
+          return {
+            ...p,
+            status: next,
+            updatedAt: now,
+            startDate: p.startDate || todayStr,
+            deadline: cleanedDeadline,
           };
         }
         return { ...p, status: next, updatedAt: now };
