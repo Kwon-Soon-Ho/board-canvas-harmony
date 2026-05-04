@@ -183,7 +183,7 @@ function ControlCenter() {
         if (!hay.includes(q)) return false;
       }
       if (urgentOnly) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) return false;
+        if (!p.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) return false;
         const d = new Date(p.deadline);
         d.setHours(0, 0, 0, 0);
         const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
