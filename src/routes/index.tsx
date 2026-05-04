@@ -5,6 +5,7 @@ import { FilterBar } from "@/components/control/FilterBar";
 import { KpiBar } from "@/components/control/KpiBar";
 import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
+import { ActivityFeed } from "@/components/control/ActivityFeed";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
