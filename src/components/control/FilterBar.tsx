@@ -49,7 +49,6 @@ export function FilterBar({
     setLocal(searchValue);
   }, [searchValue]);
 
-  // Debounced live search (300ms)
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
@@ -92,12 +91,12 @@ export function FilterBar({
 
   return (
     <div className="sticky top-16 z-40 border-b border-white/10 bg-black">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-10 py-4">
-        <div className="flex items-center gap-8">
+      <div className="mx-auto flex max-w-[1600px] flex-nowrap items-center justify-between gap-4 px-10 py-3">
+        <div className="flex flex-nowrap items-center gap-5 min-w-0">
           {/* Department */}
-          <div className="flex items-center gap-3">
-            <span className="text-[15px] font-medium text-gray-400">부서</span>
-            <div className="flex items-center gap-2" role="group" aria-label="부서 필터">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-[12px] font-semibold uppercase tracking-wider text-white/40">부서</span>
+            <div className="flex items-center gap-1.5" role="group" aria-label="부서 필터">
               {DEPARTMENTS.map((d) => {
                 const active = dept === d;
                 const count = deptCounts[d] ?? 0;
@@ -113,32 +112,35 @@ export function FilterBar({
                         : undefined,
                       borderColor: active ? `${color}66` : undefined,
                     }}
-                    className={`group flex items-center gap-2 rounded-lg border px-4 py-2 text-[15px] font-medium transition-all ${
+                    className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-medium transition-all ${
                       active
                         ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                         : "border-white/10 bg-[#1A1A1A] text-gray-400 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
                     }`}
                   >
-                    {d !== "전체" && (
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
-                      />
-                    )}
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{
+                        backgroundColor: d === "전체" ? "rgba(255,255,255,0.35)" : color,
+                        boxShadow: d === "전체" ? "none" : `0 0 6px ${color}`,
+                      }}
+                    />
                     <span>{d}</span>
-                    <span className={`text-[14px] font-bold ${active ? "text-foreground" : "text-gray-500"}`}>({count})</span>
+                    <span className={`font-mono text-[11px] tabular-nums ${active ? "text-white/70" : "text-white/30"}`}>
+                      {count}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className="h-6 w-px bg-white/10" />
+          <div className="h-8 w-px shrink-0 bg-white/15" />
 
           {/* Status */}
-          <div className="flex items-center gap-3">
-            <span className="text-[15px] font-medium text-gray-400">상태</span>
-            <div className="flex items-center gap-2" role="group" aria-label="상태 필터">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-[12px] font-semibold uppercase tracking-wider text-white/40">상태</span>
+            <div className="flex items-center gap-1.5" role="group" aria-label="상태 필터">
               {STATUSES.map((s) => {
                 const active = statuses.has(s);
                 const colorVar = STATUS_COLOR_VAR[s];
@@ -153,7 +155,7 @@ export function FilterBar({
                         : undefined,
                       borderColor: active ? `color-mix(in srgb, ${colorVar} 40%, transparent)` : undefined,
                     }}
-                    className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-[15px] font-medium transition-all ${
+                    className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-medium transition-all ${
                       active
                         ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                         : "border-white/10 bg-[#1A1A1A] text-gray-400 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
@@ -164,8 +166,8 @@ export function FilterBar({
                       style={{ backgroundColor: colorVar, boxShadow: `0 0 6px ${colorVar}` }}
                     />
                     <span>{s}</span>
-                    <span className={`text-[14px] font-bold ${active ? "text-foreground" : "text-gray-500"}`}>
-                      ({statusCounts[s] ?? 0})
+                    <span className={`font-mono text-[11px] tabular-nums ${active ? "text-white/70" : "text-white/30"}`}>
+                      {statusCounts[s] ?? 0}
                     </span>
                   </button>
                 );
@@ -175,7 +177,7 @@ export function FilterBar({
         </div>
 
         {/* Search + Reset */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           {isAnyActive && (
             <button
               type="button"
@@ -183,11 +185,12 @@ export function FilterBar({
                 setLocal("");
                 onResetAll();
               }}
-              className="flex items-center gap-1.5 text-[13px] font-medium text-white/50 hover:text-white transition"
+              className="flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-white/50 hover:text-white transition"
               aria-label="모든 필터 및 검색 초기화"
+              title="모든 필터 및 검색 초기화"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              전체 초기화
+              초기화
             </button>
           )}
           <form
@@ -204,7 +207,7 @@ export function FilterBar({
                 onChange={(e) => setLocal(e.target.value)}
                 placeholder="검색어 입력"
                 aria-label="프로젝트 검색"
-                className="h-10 w-64 rounded-lg border border-white/10 bg-white/[0.03] px-3 pr-8 text-[14px] text-foreground placeholder:text-muted-foreground/40 focus:border-white/30 focus:outline-none"
+                className="h-9 w-56 rounded-md border border-white/10 bg-white/[0.03] px-3 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:border-white/30 focus:outline-none"
               />
               {local && (
                 <button
@@ -221,7 +224,7 @@ export function FilterBar({
             </div>
             <button
               type="submit"
-              className="h-10 rounded-lg bg-foreground px-4 text-[14px] font-semibold text-background hover:opacity-90"
+              className="h-9 rounded-md bg-foreground px-4 text-[13px] font-semibold text-background hover:opacity-90"
             >
               검색
             </button>

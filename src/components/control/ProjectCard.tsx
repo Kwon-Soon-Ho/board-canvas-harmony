@@ -4,7 +4,7 @@ import { getOptimizedUrl } from "@/lib/mockProjects";
 import { DeptTag } from "./DeptTag";
 import { StatusTag } from "./StatusTag";
 
-import { Trash2 } from "lucide-react";
+import { Trash2, Calendar } from "lucide-react";
 
 interface Props {
   project: Project;
@@ -184,7 +184,7 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
               {/* Progress Section */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-white/40 font-bold uppercase tracking-widest">Efficiency</span>
+                  <span className="text-white/40 font-bold uppercase tracking-widest">진행률</span>
                   <span className="font-black text-white/90 tracking-tighter">{progress}%</span>
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
@@ -201,7 +201,10 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
                   <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black ring-1 ring-inset ${tierBadgeClass}`}>
                     {dday}
                   </span>
-                  <span className="text-[11px] text-white/40 font-medium">{project.deadline}</span>
+                  <span className="inline-flex items-center gap-1 text-[12px] font-bold text-white/75">
+                    {project.deadline !== "상시" && <Calendar className="h-3 w-3 text-white/50" />}
+                    {project.deadline}
+                  </span>
                 </div>
                 {onDelete && (
                   <button

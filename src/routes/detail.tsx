@@ -6,6 +6,16 @@ import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, ty
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen, Image, ChevronUp, ChevronDown } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const searchSchema = z.object({ id: z.string().optional() });
 export const Route = createFileRoute("/detail")({
@@ -51,6 +61,7 @@ function DetailWindow() {
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [isImageViewerFull, setIsImageViewerFull] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ kind: 'task' | 'issue'; id: string; title: string } | null>(null);
   
   const isAutoScrolling = useRef(false);
 
@@ -128,17 +139,25 @@ function DetailWindow() {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    if (confirm("정말로 이 상세 업무를 삭제하시겠습니까?")) {
-      setProject(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== taskId) } : prev);
-      if (activeItemId === taskId) setActiveItemId(undefined);
-    }
+    const t = project?.tasks.find(x => x.id === taskId);
+    setPendingDelete({ kind: 'task', id: taskId, title: t?.title ?? '상세 업무' });
   };
 
   const handleDeleteIssue = (issueId: string) => {
-    if (confirm("정말로 이 이슈를 삭제하시겠습니까?")) {
-      setProject(prev => prev ? { ...prev, issues: prev.issues.filter(i => i.id !== issueId) } : prev);
-      if (activeItemId === issueId) setActiveItemId(undefined);
+    const i = project?.issues.find(x => x.id === issueId);
+    setPendingDelete({ kind: 'issue', id: issueId, title: i?.title ?? '이슈' });
+  };
+
+  const confirmPendingDelete = () => {
+    if (!pendingDelete) return;
+    const { kind, id } = pendingDelete;
+    if (kind === 'task') {
+      setProject(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== id) } : prev);
+    } else {
+      setProject(prev => prev ? { ...prev, issues: prev.issues.filter(i => i.id !== id) } : prev);
     }
+    if (activeItemId === id) setActiveItemId(undefined);
+    setPendingDelete(null);
   };
 
   const handleToggleStar = (imgUrl: string) => {
@@ -235,12 +254,21 @@ function DetailWindow() {
               <span className="font-black text-teal-400 text-lg">{project.status}</span>
             </div>
 
-            <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
-              <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
-              <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
-                <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
-              </div>
-            </div>
+            {(() => {
+              const tierBar =
+                derivedProgress >= 100 ? "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]"
+                : derivedProgress >= 70 ? "bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                : derivedProgress >= 40 ? "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]"
+                : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
+              return (
+                <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
+                  <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
+                  <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
+                    <div className={`h-full transition-all duration-500 ${tierBar}`} style={{ width: `${derivedProgress}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -351,6 +379,28 @@ function DetailWindow() {
       {modalConfig?.type === 'design-hub' && (
         <DesignHubModal project={project} onClose={() => setModalConfig(null)} />
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === 'task' ? '상세 업무를 삭제할까요?' : '이슈를 삭제할까요?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.title ?? ''}" 항목이 제거됩니다. 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPendingDelete}
+              className="bg-rose-600 hover:bg-rose-500 text-white"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

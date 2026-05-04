@@ -248,7 +248,34 @@ function ControlCenter() {
               <ArrowUpDown className="w-8 h-8 text-white/20" />
             </div>
             <h3 className="text-xl font-bold text-white/70 mb-2">조건에 맞는 프로젝트가 없습니다</h3>
-            <p className="text-[15px] text-white/40">필터를 조정하거나 새로운 프로젝트를 생성해보세요.</p>
+            <p className="text-[15px] text-white/40 mb-5">필터를 조정하거나 새로운 프로젝트를 생성해보세요.</p>
+            {(dept !== "전체" || statuses.size > 0 || query.trim().length > 0) && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-5 max-w-[600px]">
+                {dept !== "전체" && (
+                  <span className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
+                    부서: {dept}
+                  </span>
+                )}
+                {[...statuses].map((s) => (
+                  <span key={s} className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
+                    상태: {s}
+                  </span>
+                ))}
+                {query.trim().length > 0 && (
+                  <span className="px-2.5 py-1 rounded-md bg-white/10 text-[12px] text-white/70 font-medium">
+                    검색: "{query}"
+                  </span>
+                )}
+              </div>
+            )}
+            {(dept !== "전체" || statuses.size > 0 || query.trim().length > 0) && (
+              <button
+                onClick={handleResetAll}
+                className="px-4 py-2 rounded-lg bg-white text-black text-[13px] font-bold hover:bg-white/90 transition"
+              >
+                필터 초기화
+              </button>
+            )}
           </div>
         ) : (
           <section
