@@ -155,7 +155,7 @@ export function ActivityFeed({ projects, onOpen }: Props) {
       </div>
 
       {/* Feed list */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto">
         {items.length === 0 ? (
           <div className="flex h-40 items-center justify-center px-5 text-center text-[12px] text-white/40">
             아직 표시할 활동이 없습니다.
