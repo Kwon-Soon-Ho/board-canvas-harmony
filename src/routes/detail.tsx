@@ -1057,7 +1057,7 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
       </div>
       <div className={`flex-1 overflow-x-auto overflow-y-auto relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} ref={containerRef} onMouseDown={onMouseDown} onMouseLeave={onMouseLeave} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
         <div style={{ width: totalWidth, minWidth: "max-content", minHeight: "100%" }} className="relative">
-          <div className="sticky top-0 z-20 flex h-20 border-b border-white/10 bg-[#0f0f0f]/95 backdrop-blur-md shadow-sm">
+          <div className="sticky top-0 z-20 flex h-24 border-b border-white/10 bg-[#0f0f0f]/95 backdrop-blur-md shadow-sm">
             {Array.from({ length: totalDays }).map((_, i) => {
               const d = new Date(minDate); d.setDate(d.getDate() + i);
               d.setHours(0, 0, 0, 0);
@@ -1067,17 +1067,21 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
               
               return (
                 <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full z-10" style={{ left: i * dayWidth }}>
+                  {/* Row 1: 현재 배지 (only on today) */}
+                  <div className="h-7 flex items-center">
+                    {isNow && (
+                      <div className="bg-teal-500 text-[#FFFFFF] text-[12px] font-black px-3 py-1 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] whitespace-nowrap z-20">
+                        현재({d.getMonth()+1}월 {d.getDate()}일)
+                      </div>
+                    )}
+                  </div>
+                  {/* Row 2: 날짜 라벨 — 항상 배지 아래에 위치해 가리지 않음 */}
                   {(i % step === 0) && (
-                    <span className={`text-[20px] font-black mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max ${isNow ? 'text-teal-300' : 'text-[#FFFFFF]'}`}>
+                    <span className={`text-[20px] font-black bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max ${isNow ? 'text-teal-300' : 'text-[#FFFFFF]'}`}>
                       {d.getMonth()+1}월 {d.getDate()}일
                     </span>
                   )}
-                  {isNow && (
-                    <div className="bg-teal-500 text-[#FFFFFF] text-[12px] font-black px-3 py-1 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-1 whitespace-nowrap z-20">
-                      현재({d.getMonth()+1}월 {d.getDate()}일)
-                    </div>
-                  )}
-                  <div className={`h-full absolute top-16 ${isNow ? 'w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'w-px bg-white/10'}`} />
+                  <div className={`h-full absolute top-[68px] ${isNow ? 'w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'w-px bg-white/10'}`} />
                 </div>
               );
             })}
