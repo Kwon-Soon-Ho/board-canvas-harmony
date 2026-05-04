@@ -235,12 +235,21 @@ function DetailWindow() {
               <span className="font-black text-teal-400 text-lg">{project.status}</span>
             </div>
 
-            <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
-              <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
-              <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
-                <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500" style={{ width: `${derivedProgress}%` }} />
-              </div>
-            </div>
+            {(() => {
+              const tierBar =
+                derivedProgress >= 100 ? "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]"
+                : derivedProgress >= 70 ? "bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                : derivedProgress >= 40 ? "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]"
+                : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]";
+              return (
+                <div className="ml-2 flex items-center gap-3 bg-white/5 px-5 py-2 rounded-full border border-white/10">
+                  <span className="text-base font-bold text-white/90">진행률 {derivedProgress}%</span>
+                  <div className="flex w-32 h-2.5 overflow-hidden rounded-full bg-black/50 border border-white/10">
+                    <div className={`h-full transition-all duration-500 ${tierBar}`} style={{ width: `${derivedProgress}%` }} />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
