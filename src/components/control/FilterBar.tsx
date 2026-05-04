@@ -230,8 +230,8 @@ export function FilterBar({
             onClick={() => setUrgentOnly(!urgentOnly)}
             className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] font-semibold transition ${
               urgentOnly
-                ? "border-amber-400 bg-amber-400/20 text-amber-100 shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_0_18px_rgba(251,191,36,0.35)]"
-                : "border-white/10 bg-[#1A1A1A] text-white/60 hover:border-amber-400/40 hover:text-amber-200"
+                ? "border-amber-300 bg-amber-400/30 text-amber-50 shadow-[0_0_0_1px_rgba(251,191,36,0.7),0_0_24px_rgba(251,191,36,0.7),0_0_42px_rgba(251,191,36,0.45)]"
+                : "border-amber-400/40 bg-amber-400/[0.06] text-amber-200/90 shadow-[0_0_14px_rgba(251,191,36,0.18)] hover:border-amber-400/70 hover:bg-amber-400/15 hover:text-amber-100 hover:shadow-[0_0_22px_rgba(251,191,36,0.4)]"
             }`}
             title="마감 7일 이내 미완료 프로젝트만 보기"
           >
@@ -256,21 +256,24 @@ export function FilterBar({
           </button>
 
           <div className="h-6 w-px bg-white/15" />
-          {isAnyActive && (
-            <button
-              type="button"
-              onClick={() => {
-                setLocal("");
-                onResetAll();
-              }}
-              className="flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-white/50 hover:text-white transition"
-              aria-label="모든 필터 및 검색 초기화"
-              title="모든 필터 및 검색 초기화"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              초기화
-            </button>
-          )}
+          {/* Reserved slot — keeps layout stable whether reset is shown or not */}
+          <div className="flex w-[64px] shrink-0 justify-center">
+            {isAnyActive && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLocal("");
+                  onResetAll();
+                }}
+                className="flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-white/50 hover:text-white transition"
+                aria-label="모든 필터 및 검색 초기화"
+                title="모든 필터 및 검색 초기화"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                초기화
+              </button>
+            )}
+          </div>
           <form
             className="flex items-center gap-2"
             onSubmit={(e) => {

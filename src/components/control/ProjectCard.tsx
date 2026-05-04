@@ -81,36 +81,36 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
   const activeIssues = project.issues.filter((i) => !i.resolved).length;
 
   // Progress-based color tier (used for both D-day badge and progress bar)
-  // Yellow tier removed. Only red when urgent/overdue, otherwise neutral.
+  // Urgent/Overdue use unified AMBER (yellow) — matches the "마감임박" filter color.
   const tier = (() => {
     if (project.deadline === "상시") return "neutral" as const;
     if (progress >= 100) return "done" as const;
-    if (isUrgent || isOverdue) return "bad" as const;
+    if (isUrgent || isOverdue) return "urgent" as const;
     return "neutral" as const;
   })();
 
   const tierBadgeClass = {
     done: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
-    bad: "bg-red-500/10 text-red-500 ring-red-500/20",
+    urgent: "bg-amber-400/15 text-amber-300 ring-amber-400/40",
     neutral: "bg-slate-500/10 text-slate-300 ring-slate-500/20",
   }[tier];
 
   const tierBarClass = {
     done: "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]",
-    bad: "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]",
+    urgent: "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]",
     neutral: "bg-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.4)]",
   }[tier];
 
   // Always-on slim bar color (subtle version)
   const tierBarSubtleClass = {
     done: "bg-emerald-400/80",
-    bad: "bg-red-500/90",
+    urgent: "bg-amber-400/90",
     neutral: "bg-slate-400/60",
   }[tier];
 
-  // Urgency ring on the entire card — unified red
+  // Urgency ring on the entire card — unified amber/yellow
   const urgencyRingClass = (isOverdue || isUrgent)
-    ? "ring-1 ring-red-500/50 shadow-[0_0_24px_-4px_rgba(239,68,68,0.45)]"
+    ? "ring-1 ring-amber-400/60 shadow-[0_0_28px_-4px_rgba(251,191,36,0.55)]"
     : "";
 
   const handleKeyOpen = (e: React.KeyboardEvent) => {
@@ -185,10 +185,10 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
               </div>
             )}
 
-            {/* Always-on urgency D-day badge — unified red, high contrast */}
+            {/* Always-on urgency D-day badge — unified amber, high contrast */}
             {showDday && (isUrgent || isOverdue) && (
               <div
-                className={`absolute right-3 z-[3] inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black bg-black/75 text-red-300 ring-1 ring-red-500/70 shadow-[0_2px_8px_rgba(0,0,0,0.5)] backdrop-blur-md pointer-events-none ${
+                className={`absolute right-3 z-[3] inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black bg-black/75 text-amber-200 ring-1 ring-amber-400/70 shadow-[0_2px_10px_rgba(0,0,0,0.5),0_0_14px_rgba(251,191,36,0.45)] backdrop-blur-md pointer-events-none ${
                   activeIssues > 0 ? "top-10" : "top-3"
                 }`}
                 title={`마감 ${dday}`}

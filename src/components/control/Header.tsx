@@ -11,7 +11,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black">
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-10">
+      <div className="mx-auto flex h-16 max-w-[1920px] items-center justify-between px-12">
         <div className="flex items-center gap-10">
           <div className="flex items-center gap-2.5">
             <div
