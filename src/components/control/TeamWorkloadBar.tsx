@@ -54,7 +54,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
     return Array.from(map.values()).sort((a, b) => b.active - a.active || b.total - a.total);
   }, [projects]);
 
-  const visible = expanded ? stats : stats.slice(0, 8);
+  const visible = expanded ? stats : stats.slice(0, 12);
 
   return (
     <section
@@ -62,8 +62,8 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
       className="border-b border-white/10 bg-[#0A0A0A]"
     >
       <div className="mx-auto max-w-[1920px] px-12 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-[30px] shrink-0 items-center gap-1.5">
             <Users className="h-4 w-4 text-white/50" />
             <span className="text-[13px] font-semibold uppercase tracking-wider text-white/55">
               담당자
@@ -71,7 +71,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
           </div>
 
           {/* Legend */}
-          <div className="flex shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-2.5 py-1 text-[12px] text-white/65">
+          <div className="flex h-[30px] shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-2.5 text-[12px] text-white/65">
             <span className="font-semibold uppercase tracking-wider text-white/50">범례</span>
             <span className="font-mono">N</span>
             = 진행·상시 프로젝트 수
@@ -81,7 +81,6 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             </span>
             = D-7 이내 긴급 건수
           </div>
-
           <div className="flex flex-1 flex-wrap items-center gap-1.5">
             {assignee && (
               <button
@@ -127,11 +126,11 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             })}
           </div>
 
-          {stats.length > 8 && (
+          {stats.length > 12 && (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[13px] font-semibold text-white/70 hover:text-white"
+              className="inline-flex h-[30px] shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 text-[13px] font-semibold text-white/70 hover:text-white"
             >
 
               {expanded ? (

@@ -230,8 +230,8 @@ export function FilterBar({
             onClick={() => setUrgentOnly(!urgentOnly)}
             className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] font-semibold transition ${
               urgentOnly
-                ? "border-amber-300 bg-amber-400/30 text-amber-50 shadow-[0_0_0_1px_rgba(251,191,36,0.7),0_0_24px_rgba(251,191,36,0.7),0_0_42px_rgba(251,191,36,0.45)]"
-                : "border-amber-400/40 bg-amber-400/[0.06] text-amber-200/90 shadow-[0_0_14px_rgba(251,191,36,0.18)] hover:border-amber-400/70 hover:bg-amber-400/15 hover:text-amber-100 hover:shadow-[0_0_22px_rgba(251,191,36,0.4)]"
+                ? "border-amber-400 bg-amber-400/20 text-amber-100 shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_0_18px_rgba(251,191,36,0.35)]"
+                : "border-white/10 bg-[#1A1A1A] text-white/60 hover:border-amber-400/40 hover:text-amber-300"
             }`}
             title="마감 7일 이내 미완료 프로젝트만 보기"
           >
