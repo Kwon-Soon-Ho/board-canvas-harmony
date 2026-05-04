@@ -37,14 +37,15 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
     }
     for (const p of projects) {
       const involved = new Set<string>([p.pm, ...p.members]);
-      const isInProgress = p.status === "진행";
+      // "active" now includes both 진행 and 상시 projects
+      const isActiveLike = p.status === "진행" || p.status === "상시";
       const isOpen = p.status !== "완료";
       const diff = dDayDiff(p.deadline);
-      const isUrgent = isInProgress && diff !== null && diff <= 7 && p.progress < 100;
+      const isUrgent = p.status === "진행" && diff !== null && diff <= 7 && p.progress < 100;
       for (const name of involved) {
         const s = map.get(name);
         if (!s) continue;
-        if (isInProgress) s.active += 1;
+        if (isActiveLike) s.active += 1;
         if (isOpen) s.total += 1;
         if (p.pm === name && isOpen) s.pmCount += 1;
         if (isUrgent) s.urgent += 1;
