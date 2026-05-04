@@ -247,6 +247,6 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }
