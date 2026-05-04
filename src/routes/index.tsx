@@ -155,11 +155,21 @@ function ControlCenter() {
   }, [year, quarter]);
 
   // Projects scoped to selected quarter — used by FilterBar so dept/status counts sync
+  // Year-scope: 상시/대기 should only appear in years that contain real project deadlines.
+  // (e.g. mock data lives in 2026 → selecting 2025/2027 should yield zero, both quarterly and yearly.)
+  const yearHasData = useMemo(() => {
+    return projects.some((p) => {
+      const eStr = p.deadline;
+      if (!eStr || !/^\d{4}-\d{2}-\d{2}$/.test(eStr)) return false;
+      return new Date(eStr).getFullYear() === year;
+    });
+  }, [projects, year]);
+
   const projectsInQuarter = useMemo(() => {
     if (!qStart || !qEnd) return projects;
     return projects.filter((p) => {
-      if (p.deadline === "상시") return true;
-      if (p.status === "대기") return true; // 대기는 일정 미정 → 모든 기간에서 노출
+      if (p.deadline === "상시") return yearHasData;
+      if (p.status === "대기") return yearHasData;
       const sStr = p.startDate;
       const eStr = p.deadline;
       const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
@@ -169,7 +179,7 @@ function ControlCenter() {
       const end = e ?? s!;
       return !(end < qStart || start > qEnd);
     });
-  }, [projects, qStart, qEnd]);
+  }, [projects, qStart, qEnd, yearHasData]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
