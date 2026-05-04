@@ -198,7 +198,9 @@ function ControlCenter() {
 
   const handleStatusChange = (id: string, next: Status) => {
     setProjects((prev) => {
-      const updated = prev.map((p) => (p.id === id ? { ...p, status: next } : p));
+      const updated = prev.map((p) =>
+        p.id === id ? { ...p, status: next, progress: next === "완료" ? 100 : p.progress } : p
+      );
       persist(updated);
       const changed = updated.find((p) => p.id === id);
       const ch = getSyncChannel();
