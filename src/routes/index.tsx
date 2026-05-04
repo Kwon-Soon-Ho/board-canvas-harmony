@@ -243,6 +243,8 @@ function ControlCenter() {
         toggleStatus={toggleStatus}
       />
 
+      <TeamWorkloadBar projects={projects} assignee={assignee} setAssignee={setAssignee} />
+
       <main className="mx-auto max-w-[1920px] px-10 py-12">
         <div className="flex gap-8">
           <div className="min-w-0 flex-1">
@@ -260,11 +262,13 @@ function ControlCenter() {
                   query={query}
                   urgentOnly={urgentOnly}
                   issuesOnly={issuesOnly}
+                  assignee={assignee}
                   onClearDept={() => setDept("전체")}
                   onClearStatus={(s) => toggleStatus(s)}
                   onClearQuery={() => { setSearchValue(""); setQuery(""); }}
                   onClearUrgent={() => setUrgentOnly(false)}
                   onClearIssues={() => setIssuesOnly(false)}
+                  onClearAssignee={() => setAssignee(null)}
                   onResetAll={handleResetAll}
                 />
               </div>
