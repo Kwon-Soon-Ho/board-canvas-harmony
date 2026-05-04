@@ -184,7 +184,19 @@ function ControlCenter() {
     const ch = getSyncChannel();
     ch?.postMessage({ type: "OPEN_PROJECT", projectId: id, project });
     ch?.close();
-    await openDetailWindow(id);
+  };
+
+  const handleStatusChange = (id: string, next: Status) => {
+    setProjects((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, status: next } : p));
+      persist(updated);
+      const changed = updated.find((p) => p.id === id);
+      const ch = getSyncChannel();
+      if (changed) ch?.postMessage({ type: "PROJECT_UPDATE", project: changed });
+      ch?.close();
+      return updated;
+    });
+    toast.success(`상태가 "${next}"(으)로 변경되었습니다.`);
   };
 
   const confirmDelete = () => {
