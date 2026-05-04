@@ -222,8 +222,40 @@ export function FilterBar({
           </div>
         </div>
 
-        {/* Search + Reset */}
+        {/* Quick filters + Search + Reset */}
         <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            aria-pressed={urgentOnly}
+            onClick={() => setUrgentOnly(!urgentOnly)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] font-semibold transition ${
+              urgentOnly
+                ? "border-amber-400 bg-amber-400/20 text-amber-100 shadow-[0_0_0_1px_rgba(251,191,36,0.5),0_0_18px_rgba(251,191,36,0.35)]"
+                : "border-white/10 bg-[#1A1A1A] text-white/60 hover:border-amber-400/40 hover:text-amber-200"
+            }`}
+            title="마감 7일 이내 미완료 프로젝트만 보기"
+          >
+            <Clock3 className="h-3.5 w-3.5" />
+            <span>마감임박</span>
+            <span className="font-mono tabular-nums">{quickStats.urgent}</span>
+          </button>
+          <button
+            type="button"
+            aria-pressed={issuesOnly}
+            onClick={() => setIssuesOnly(!issuesOnly)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[13px] font-semibold transition ${
+              issuesOnly
+                ? "border-red-500 bg-red-500/20 text-red-100 shadow-[0_0_0_1px_rgba(239,68,68,0.5),0_0_18px_rgba(239,68,68,0.35)]"
+                : "border-white/10 bg-[#1A1A1A] text-white/60 hover:border-red-500/40 hover:text-red-300"
+            }`}
+            title="미해결 이슈가 있는 프로젝트만 보기"
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>이슈</span>
+            <span className="font-mono tabular-nums">{quickStats.issues}</span>
+          </button>
+
+          <div className="h-6 w-px bg-white/15" />
           {isAnyActive && (
             <button
               type="button"
