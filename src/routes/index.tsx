@@ -368,32 +368,9 @@ function ControlCenter() {
       <main className="mx-auto max-w-[1920px] px-12 py-12">
         <div className="flex gap-8">
           <div className="min-w-0 flex-1">
-            <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
-              <div className="min-w-0 flex-1">
-                <h1 className="truncate text-[32px] font-black tracking-tighter text-white">
-                  {heading}
-                </h1>
-                <p className="mt-2 text-[15px] font-medium text-white/40">
-                  총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
-                </p>
-                <ActiveFilterChips
-                  dept={dept}
-                  statuses={statuses}
-                  query={query}
-                  urgentOnly={urgentOnly}
-                  issuesOnly={issuesOnly}
-                  assignee={assignee}
-                  onClearDept={() => setDept("전체")}
-                  onClearStatus={(s) => toggleStatus(s)}
-                  onClearQuery={() => { setSearchValue(""); setQuery(""); }}
-                  onClearUrgent={() => setUrgentOnly(false)}
-                  onClearIssues={() => setIssuesOnly(false)}
-                  onClearAssignee={() => setAssignee(null)}
-                  onResetAll={handleResetAll}
-                />
-              </div>
-
-              <div className="flex items-center gap-4">
+            <div className="mb-8 border-b border-white/10 pb-6">
+              {/* Row 1 — Controls (always on a stable line) */}
+              <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
                 <div
                   role="group"
                   aria-label="기간"
@@ -418,7 +395,7 @@ function ControlCenter() {
                       onClick={() => setQuarter(q)}
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
                     >
-                      Q{q}
+                      {q}분기
                     </button>
                   ))}
                   <button
@@ -475,6 +452,31 @@ function ControlCenter() {
                   <Plus className="w-5 h-5" />
                   새 프로젝트
                 </button>
+              </div>
+
+              {/* Row 2 — Heading + count + active filter chips (free to wrap) */}
+              <div className="min-w-0">
+                <h1 className="text-[32px] font-black tracking-tighter text-white break-keep">
+                  {heading}
+                </h1>
+                <p className="mt-2 text-[15px] font-medium text-white/40">
+                  총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
+                </p>
+                <ActiveFilterChips
+                  dept={dept}
+                  statuses={statuses}
+                  query={query}
+                  urgentOnly={urgentOnly}
+                  issuesOnly={issuesOnly}
+                  assignee={assignee}
+                  onClearDept={() => setDept("전체")}
+                  onClearStatus={(s) => toggleStatus(s)}
+                  onClearQuery={() => { setSearchValue(""); setQuery(""); }}
+                  onClearUrgent={() => setUrgentOnly(false)}
+                  onClearIssues={() => setIssuesOnly(false)}
+                  onClearAssignee={() => setAssignee(null)}
+                  onResetAll={handleResetAll}
+                />
               </div>
             </div>
 
