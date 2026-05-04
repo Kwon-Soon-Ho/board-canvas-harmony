@@ -33,6 +33,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !pm || imageUrls.length === 0) return;
+    if (dateError) return;
 
     const newProject: Project = {
       id: `p-new-${Date.now()}`,
@@ -40,7 +41,9 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
       department,
       status,
       progress: 0,
-      deadline: status === "상시" ? "상시" : deadline || new Date().toISOString().slice(0, 10),
+      startDate: status === "상시" ? undefined : (startDate || today),
+      deadline: status === "상시" ? "상시" : deadline || today,
+      updatedAt: new Date().toISOString(),
       pm,
       members,
       image: imageUrls[0],
