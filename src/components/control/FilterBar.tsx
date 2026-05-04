@@ -100,7 +100,7 @@ export function FilterBar({
     let urgent = 0;
     let issues = 0;
     for (const p of projects) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+      if (p.deadline && /^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
         const d = new Date(p.deadline);
         d.setHours(0, 0, 0, 0);
         const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
