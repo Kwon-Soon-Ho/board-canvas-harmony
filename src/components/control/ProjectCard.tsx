@@ -71,8 +71,9 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
     d.setHours(0, 0, 0, 0);
     return Math.round((d.getTime() - today.getTime()) / 86400000);
   })();
-  const isUrgent = ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 7 && progress < 100;
-  const isOverdue = ddayDiff !== null && ddayDiff < 0 && progress < 100;
+  const isInProgress = project.status === "진행";
+  const isUrgent = isInProgress && ddayDiff !== null && ddayDiff >= 0 && ddayDiff <= 7 && progress < 100;
+  const isOverdue = isInProgress && ddayDiff !== null && ddayDiff < 0 && progress < 100;
   const isCompleted = progress >= 100;
   const showDday = project.deadline !== "상시" && !isCompleted;
 
