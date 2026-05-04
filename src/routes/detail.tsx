@@ -61,6 +61,7 @@ function DetailWindow() {
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [isImageViewerFull, setIsImageViewerFull] = useState(false);
   const [modalConfig, setModalConfig] = useState<ModalConfig | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ kind: 'task' | 'issue'; id: string; title: string } | null>(null);
   
   const isAutoScrolling = useRef(false);
 
