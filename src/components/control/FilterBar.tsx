@@ -28,6 +28,10 @@ interface Props {
   onSubmitSearch: (v: string) => void;
   onLiveSearch: (v: string) => void;
   onResetAll: () => void;
+  urgentOnly: boolean;
+  setUrgentOnly: (v: boolean) => void;
+  issuesOnly: boolean;
+  setIssuesOnly: (v: boolean) => void;
 }
 
 export function FilterBar({
