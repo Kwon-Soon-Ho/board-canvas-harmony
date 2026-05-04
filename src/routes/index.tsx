@@ -36,9 +36,13 @@ function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
 }
 
+function normalizeProgress(list: Project[]): Project[] {
+  return list.map((p) => (p.status === "완료" && p.progress !== 100 ? { ...p, progress: 100 } : p));
+}
+
 function ControlCenter() {
   // SSR-safe initial state
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(() => normalizeProgress(MOCK_PROJECTS));
   const [hydrated, setHydrated] = useState(false);
 
   const [dept, setDept] = useState<Department | "전체">("전체");
@@ -67,7 +71,11 @@ function ControlCenter() {
           tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
           issues: (p.issues || []).map((i: any) => ({ ...i, imageUrls: migrateImages(i.imageUrls) })),
         }));
-        setProjects(migrated);
+        const normalized = normalizeProgress(migrated);
+        setProjects(normalized);
+        if (JSON.stringify(normalized) !== JSON.stringify(migrated)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        }
       }
     } catch (err) {
       console.error("Dashboard Migration failed", err);
