@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
-import { MOCK_PROJECTS, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, backfillStartDate, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen, Image, ChevronUp, ChevronDown } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
@@ -50,12 +50,12 @@ function DetailWindow() {
           const migrate = (imgs: any[]): ProjectImage[] => 
             (imgs || []).map(img => typeof img === 'string' ? { url: img, memo: "" } : img);
 
-          const project: Project = {
+          const project: Project = backfillStartDate({
             ...raw,
             images: migrate(raw.images),
             tasks: (raw.tasks || []).map((t: any) => ({ ...t, imageUrls: migrate(t.imageUrls) })),
             issues: (raw.issues || []).map((i: any) => ({ ...i, imageUrls: migrate(i.imageUrls) })),
-          };
+          }) as Project;
           return normalize(project);
         }
       } catch (err) {
