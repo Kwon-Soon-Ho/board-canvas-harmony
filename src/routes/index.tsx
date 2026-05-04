@@ -6,6 +6,7 @@ import { KpiBar } from "@/components/control/KpiBar";
 import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
 import { ActivityFeed } from "@/components/control/ActivityFeed";
+import { TeamWorkloadBar } from "@/components/control/TeamWorkloadBar";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
@@ -47,6 +48,7 @@ function ControlCenter() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [issuesOnly, setIssuesOnly] = useState(false);
+  const [assignee, setAssignee] = useState<string | null>(null);
 
   // Hydrate from localStorage on client only
   useEffect(() => {
@@ -91,6 +93,7 @@ function ControlCenter() {
     setStatuses(new Set());
     setUrgentOnly(false);
     setIssuesOnly(false);
+    setAssignee(null);
   };
 
   const filtered = useMemo(() => {
@@ -116,6 +119,9 @@ function ControlCenter() {
         const open = p.issues.filter((i) => !i.resolved).length;
         if (open === 0) return false;
       }
+      if (assignee) {
+        if (p.pm !== assignee && !p.members.includes(assignee)) return false;
+      }
       return true;
     });
 
@@ -132,7 +138,7 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee]);
 
   // Dynamic heading based on active filters
   const heading = useMemo(() => {
@@ -141,9 +147,10 @@ function ControlCenter() {
     if (statuses.size > 0) parts.push([...statuses].join("·") + " 상태");
     if (urgentOnly) parts.push("마감 7일 이내");
     if (issuesOnly) parts.push("이슈 있음");
+    if (assignee) parts.push(`${assignee} 담당`);
     if (parts.length === 0) return "전체 프로젝트";
     return parts.join(" · ");
-  }, [dept, statuses, urgentOnly, issuesOnly]);
+  }, [dept, statuses, urgentOnly, issuesOnly, assignee]);
 
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
