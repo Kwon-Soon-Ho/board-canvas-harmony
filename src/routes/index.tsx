@@ -147,10 +147,10 @@ function ControlCenter() {
 
   // Quarter range (inclusive) — shared between FilterBar (counts) and main filtering
   const { qStart, qEnd } = useMemo(() => {
-    const s = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
-    const e = quarter === "all" ? null : new Date(year, quarter * 3, 0);
-    if (s) s.setHours(0, 0, 0, 0);
-    if (e) e.setHours(23, 59, 59, 999);
+    const s = quarter === "all" ? new Date(year, 0, 1) : new Date(year, (quarter - 1) * 3, 1);
+    const e = quarter === "all" ? new Date(year, 11, 31) : new Date(year, quarter * 3, 0);
+    s.setHours(0, 0, 0, 0);
+    e.setHours(23, 59, 59, 999);
     return { qStart: s, qEnd: e };
   }, [year, quarter]);
 
