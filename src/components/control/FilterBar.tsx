@@ -45,6 +45,10 @@ export function FilterBar({
   onSubmitSearch,
   onLiveSearch,
   onResetAll,
+  urgentOnly,
+  setUrgentOnly,
+  issuesOnly,
+  setIssuesOnly,
 }: Props) {
   const [local, setLocal] = useState(searchValue);
   const debounceRef = useRef<number | null>(null);
