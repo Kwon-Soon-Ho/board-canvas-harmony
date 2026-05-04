@@ -298,8 +298,8 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
                     {dday}
                   </span>
                   <span className="inline-flex items-center gap-1 text-[12px] font-bold text-white/75">
-                    {project.deadline !== "상시" && <Calendar className="h-3 w-3 text-white/50" />}
-                    {project.deadline}
+                    {project.deadline && project.deadline !== "상시" && <Calendar className="h-3 w-3 text-white/50" />}
+                    {project.deadline || "일정 미정"}
                   </span>
                 </div>
                 {onDelete && (
