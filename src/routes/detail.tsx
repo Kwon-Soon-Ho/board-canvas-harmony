@@ -1275,7 +1275,15 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
           <button type="button" disabled={!!dateError} onClick={() => {
             const finalDeadline = status === "상시" ? "상시" : deadline;
             const finalStart = status === "상시" ? undefined : (startDate || undefined);
-            onSave({ startDate: finalStart, deadline: finalDeadline, pm, status, updatedAt: new Date().toISOString() });
+            const userChangedStart = finalStart !== project.startDate;
+            onSave({
+              startDate: finalStart,
+              startDateUserSet: userChangedStart ? true : project.startDateUserSet,
+              deadline: finalDeadline,
+              pm,
+              status,
+              updatedAt: new Date().toISOString(),
+            });
             onClose();
           }} className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white text-black hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition">저장</button>
         </div>
