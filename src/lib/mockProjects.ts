@@ -265,8 +265,14 @@ export const MOCK_PROJECTS: Project[] = (() => {
     
     const status = STATUSES[i % STATUSES.length];
     const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
-    // Spread start dates across Q1-Q3 2026 for richer quarter filtering demo
-    const startDate = new Date(2026, (i % 7), 1 + ((i * 3) % 28)).toISOString().slice(0, 10);
+    // 대기 projects have no start date. Others: random 14–75 days before deadline.
+    let startDate: string | undefined;
+    if (status !== "대기") {
+      const offsetDays = 14 + ((i * 7 + 11) % 62);
+      const sd = new Date(deadline);
+      sd.setDate(sd.getDate() - offsetDays);
+      startDate = sd.toISOString().slice(0, 10);
+    }
 
     // PM assignment: Must be Senior or higher
     const deptCandidates = TEAM_DATA[dept].filter(m => ["수석", "책임", "선임"].includes(m.rank));

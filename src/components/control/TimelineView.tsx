@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import type { Project } from "@/lib/mockProjects";
 import { DEPT_COLOR } from "@/lib/mockProjects";
-import { AlertCircle, CalendarIcon } from "lucide-react";
+import { AlertCircle, CalendarIcon, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -30,8 +31,8 @@ const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "custom", label: "직접 선택" },
 ];
 
-function parseDate(s: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+function parseDate(s?: string): Date | null {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -92,7 +93,8 @@ function rangeFor(preset: PresetKey, today: Date, custom?: { from?: Date; to?: D
 export function TimelineView({ projects, onOpen }: Props) {
   const [preset, setPreset] = useState<PresetKey>("thisMonth");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [fromOpen, setFromOpen] = useState(false);
+  const [toOpen, setToOpen] = useState(false);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -107,7 +109,6 @@ export function TimelineView({ projects, onOpen }: Props) {
     const totalMs = realEnd.getTime() - start.getTime();
     const days = Math.round(totalMs / 86400000);
 
-    // Tick step adapts to span
     let stepDays: number;
     if (days <= 14) stepDays = 1;
     else if (days <= 31) stepDays = 3;
@@ -126,15 +127,24 @@ export function TimelineView({ projects, onOpen }: Props) {
     return { rangeStart: start, rangeEnd: realEnd, totalMs, ticks };
   }, [today, preset, customRange]);
 
+  // Item: project that overlaps the visible range (uses startDate→deadline)
   const items = useMemo(() => {
     return projects
-      .map((p) => ({ p, d: parseDate(p.deadline) }))
-      .filter((x): x is { p: Project; d: Date } => !!x.d)
-      .filter(({ d }) => d >= rangeStart && d <= rangeEnd)
-      .sort((a, b) => a.d.getTime() - b.d.getTime());
+      .map((p) => ({
+        p,
+        s: parseDate(p.startDate),
+        e: parseDate(p.deadline),
+      }))
+      .filter((x) => x.s || x.e)
+      .map((x) => ({ ...x, s: x.s ?? x.e!, e: x.e ?? x.s! }))
+      .filter(({ s, e }) => e >= rangeStart && s <= rangeEnd)
+      .sort((a, b) => a.e.getTime() - b.e.getTime());
   }, [projects, rangeStart, rangeEnd]);
 
-  const ongoing = useMemo(() => projects.filter((p) => !parseDate(p.deadline)), [projects]);
+  const ongoing = useMemo(
+    () => projects.filter((p) => !parseDate(p.deadline) && !parseDate(p.startDate)),
+    [projects]
+  );
 
   const todayLeftPct =
     today >= rangeStart && today <= rangeEnd
@@ -147,22 +157,17 @@ export function TimelineView({ projects, onOpen }: Props) {
   return (
     <section aria-label="타임라인" className="pb-24">
       {/* Range filter */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-          기간
-        </span>
-        <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 backdrop-blur-md">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <span className="text-[12px] font-bold uppercase tracking-wider text-white/50">기간</span>
+        <div className="flex bg-white/5 border border-white/10 rounded-lg p-1 backdrop-blur-md">
           {PRESETS.map((p) => (
             <button
               key={p.key}
               type="button"
               aria-pressed={preset === p.key}
-              onClick={() => {
-                setPreset(p.key);
-                if (p.key === "custom") setPopoverOpen(true);
-              }}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition ${
-                preset === p.key ? "bg-white/20 text-white" : "text-white/50 hover:text-white"
+              onClick={() => setPreset(p.key)}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-bold transition ${
+                preset === p.key ? "bg-white/20 text-white" : "text-white/55 hover:text-white"
               }`}
             >
               {p.label}
@@ -171,48 +176,87 @@ export function TimelineView({ projects, onOpen }: Props) {
         </div>
 
         {preset === "custom" && (
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-white/80 hover:border-white/30 hover:text-white"
-              >
-                <CalendarIcon className="h-3 w-3" />
-                {customRange.from && customRange.to
-                  ? `${format(customRange.from, "MM.dd")} – ${format(customRange.to, "MM.dd")}`
-                  : "날짜 선택"}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={customRange as any}
-                onSelect={(r: any) => setCustomRange(r ?? {})}
-                numberOfMonths={2}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/[0.04] p-1">
+            <Popover open={fromOpen} onOpenChange={setFromOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] font-semibold text-white/85 hover:bg-white/10"
+                >
+                  <CalendarIcon className="h-3.5 w-3.5 text-white/60" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">시작</span>
+                  {customRange.from ? format(customRange.from, "yyyy.MM.dd") : "선택"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  locale={ko}
+                  selected={customRange.from}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setCustomRange((r) => ({
+                      from: d,
+                      to: r.to && r.to >= d ? r.to : d,
+                    }));
+                    setFromOpen(false);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <ArrowRight className="h-3.5 w-3.5 text-white/40" />
+
+            <Popover open={toOpen} onOpenChange={setToOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] font-semibold text-white/85 hover:bg-white/10"
+                >
+                  <CalendarIcon className="h-3.5 w-3.5 text-white/60" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">종료</span>
+                  {customRange.to ? format(customRange.to, "yyyy.MM.dd") : "선택"}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  locale={ko}
+                  selected={customRange.to}
+                  defaultMonth={customRange.from}
+                  disabled={customRange.from ? { before: customRange.from } : undefined}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setCustomRange((r) => ({ from: r.from ?? d, to: d }));
+                    setToOpen(false);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         )}
 
-        <span className="text-[11px] font-mono text-white/40">
+        <span className="text-[12px] font-mono text-white/50">
           {format(rangeStart, "yyyy.MM.dd")} → {format(displayEnd, "yyyy.MM.dd")}
         </span>
       </div>
 
       {/* Tick header */}
-      <div className="mb-3 grid border-b border-white/10" style={{ gridTemplateColumns: `220px 1fr` }}>
-        <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+      <div className="mb-3 grid border-b border-white/10" style={{ gridTemplateColumns: `260px 1fr` }}>
+        <div className="px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-white/50">
           프로젝트
         </div>
-        <div className="relative h-8">
+        <div className="relative h-9">
           {ticks.map((t, i) => {
             const left = ((t.date.getTime() - rangeStart.getTime()) / totalMs) * 100;
             return (
               <div
                 key={i}
-                className="absolute top-0 bottom-0 border-l border-white/10 pl-1 text-[10px] font-bold tabular-nums text-white/50"
+                className="absolute top-0 bottom-0 border-l border-white/10 pl-1.5 text-[12px] font-bold tabular-nums text-white/60"
                 style={{ left: `${left}%` }}
               >
                 {t.label}
@@ -225,7 +269,7 @@ export function TimelineView({ projects, onOpen }: Props) {
               style={{ left: `${todayLeftPct}%` }}
               aria-label="오늘"
             >
-              <span className="absolute -top-1 -left-3 rounded bg-red-500/90 px-1 text-[9px] font-bold text-white">
+              <span className="absolute -top-1 -left-4 rounded bg-red-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 TODAY
               </span>
             </div>
@@ -234,21 +278,20 @@ export function TimelineView({ projects, onOpen }: Props) {
       </div>
 
       {items.length === 0 && ongoing.length === 0 ? (
-        <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[13px] text-white/40">
+        <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[14px] text-white/50">
           이 기간에 표시할 프로젝트가 없습니다.
         </div>
       ) : (
         <div className="flex flex-col">
-          {items.map(({ p, d }) => {
-            const barStart = d < today ? d : today;
-            const startClamp = barStart < rangeStart ? rangeStart : barStart > rangeEnd ? rangeEnd : barStart;
-            const endClamp = d < rangeStart ? rangeStart : d > rangeEnd ? rangeEnd : d;
+          {items.map(({ p, s, e }) => {
+            const startClamp = s < rangeStart ? rangeStart : s > rangeEnd ? rangeEnd : s;
+            const endClamp = e < rangeStart ? rangeStart : e > rangeEnd ? rangeEnd : e;
             const leftPct = ((startClamp.getTime() - rangeStart.getTime()) / totalMs) * 100;
             const widthPct = Math.max(
               0.6,
               ((endClamp.getTime() - startClamp.getTime()) / totalMs) * 100
             );
-            const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
+            const diffDays = Math.round((e.getTime() - today.getTime()) / 86400000);
             const isInProgress = p.status === "진행";
             const isUrgent = isInProgress && diffDays <= 7 && p.progress < 100;
             const colorVar = STATUS_COLOR_VAR[p.status] ?? "var(--status-active)";
@@ -259,29 +302,29 @@ export function TimelineView({ projects, onOpen }: Props) {
                 key={p.id}
                 type="button"
                 onClick={() => onOpen(p.id)}
-                className="grid items-center border-b border-white/5 py-2 text-left transition hover:bg-white/[0.03]"
-                style={{ gridTemplateColumns: `220px 1fr` }}
+                className="grid items-center border-b border-white/5 py-2.5 text-left transition hover:bg-white/[0.03]"
+                style={{ gridTemplateColumns: `260px 1fr` }}
               >
                 <div className="flex min-w-0 items-center gap-2 px-3">
                   <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    className="h-2 w-2 shrink-0 rounded-full"
                     style={{
                       backgroundColor: DEPT_COLOR[p.department],
                       boxShadow: `0 0 6px ${DEPT_COLOR[p.department]}`,
                     }}
                   />
-                  <span className="truncate text-[12px] font-bold text-white">{p.title}</span>
+                  <span className="truncate text-[14px] font-bold text-white">{p.title}</span>
                   {openIssues > 0 && (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-red-500/15 px-1 py-0.5 font-mono text-[10px] font-bold text-red-300">
-                      <AlertCircle className="h-2.5 w-2.5" />
+                    <span className="inline-flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-red-300">
+                      <AlertCircle className="h-3 w-3" />
                       {openIssues}
                     </span>
                   )}
                 </div>
 
-                <div className="relative h-7">
+                <div className="relative h-8">
                   <div
-                    className={`absolute top-1 h-5 rounded-md border ${
+                    className={`absolute top-1 h-6 rounded-md border ${
                       isUrgent ? "border-amber-400/70 shadow-[0_0_12px_rgba(251,191,36,0.35)]" : "border-white/15"
                     } overflow-hidden`}
                     style={{
@@ -289,7 +332,7 @@ export function TimelineView({ projects, onOpen }: Props) {
                       width: `${widthPct}%`,
                       background: `color-mix(in srgb, ${colorVar} 18%, transparent)`,
                     }}
-                    title={`${p.title} · ${p.deadline} · ${p.progress}%`}
+                    title={`${p.title} · ${p.startDate ?? "?"} → ${p.deadline} · ${p.progress}%`}
                   >
                     <div
                       className="h-full"
@@ -299,9 +342,9 @@ export function TimelineView({ projects, onOpen }: Props) {
                         opacity: 0.85,
                       }}
                     />
-                    <span className="absolute inset-0 flex items-center justify-between px-1.5 font-mono text-[10px] font-bold text-white/90">
+                    <span className="absolute inset-0 flex items-center justify-between px-2 font-mono text-[12px] font-bold text-white/95">
                       <span>{p.progress}%</span>
-                      <span className={isUrgent ? "text-amber-200" : "text-white/70"}>
+                      <span className={isUrgent ? "text-amber-200" : "text-white/80"}>
                         {diffDays === 0 ? "D-day" : diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`}
                       </span>
                     </span>
@@ -315,7 +358,7 @@ export function TimelineView({ projects, onOpen }: Props) {
 
       {ongoing.length > 0 && (
         <div className="mt-6">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
+          <div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">
             상시 · 마감 미정
           </div>
           <div className="flex flex-wrap gap-2">
@@ -324,7 +367,7 @@ export function TimelineView({ projects, onOpen }: Props) {
                 key={p.id}
                 type="button"
                 onClick={() => onOpen(p.id)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[12px] text-white/80 hover:border-white/30 hover:text-white"
+                className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[13px] font-semibold text-white/85 hover:border-white/30 hover:text-white"
               >
                 <span
                   className="h-1.5 w-1.5 rounded-full"

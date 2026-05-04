@@ -68,18 +68,18 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
             }`}
           >
             <header
-              className="flex items-center justify-between border-b border-white/10 px-3 py-2.5"
+              className="flex items-center justify-between border-b border-white/10 px-3 py-3"
               style={{
                 background: `linear-gradient(to bottom, color-mix(in srgb, ${colorVar} 12%, transparent), transparent)`,
               }}
             >
               <div className="flex items-center gap-2">
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: colorVar, boxShadow: `0 0 8px ${colorVar}` }}
                 />
-                <span className="text-[13px] font-bold text-white">{s}</span>
-                <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums text-white/70">
+                <span className="text-[15px] font-bold text-white">{s}</span>
+                <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[12px] font-bold tabular-nums text-white/75">
                   {items.length}
                 </span>
               </div>
@@ -109,54 +109,54 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                         setOverCol(null);
                       }}
                       onClick={() => onOpen(p.id)}
-                      className={`group cursor-pointer rounded-lg border border-white/10 bg-[#141414] p-2.5 transition hover:border-white/30 hover:bg-[#1a1a1a] ${urgentRing} ${
+                      className={`group cursor-pointer rounded-lg border border-white/10 bg-[#141414] p-3 transition hover:border-white/30 hover:bg-[#1a1a1a] ${urgentRing} ${
                         draggingId === p.id ? "opacity-40" : ""
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        <GripVertical className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-white/30 group-hover:text-white/60" />
+                        <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-white/30 group-hover:text-white/60" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <span
-                              className="h-1.5 w-1.5 shrink-0 rounded-full"
+                              className="h-2 w-2 shrink-0 rounded-full"
                               style={{
                                 backgroundColor: DEPT_COLOR[p.department],
                                 boxShadow: `0 0 6px ${DEPT_COLOR[p.department]}`,
                               }}
                             />
-                            <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-white/45">
+                            <span className="truncate text-[12px] font-semibold uppercase tracking-wider text-white/55">
                               {p.department}
                             </span>
                           </div>
-                          <h3 className="mt-1 line-clamp-2 text-[13px] font-bold leading-snug text-white">
+                          <h3 className="mt-1.5 line-clamp-2 text-[15px] font-bold leading-snug text-white">
                             {p.title}
                           </h3>
 
-                          <div className="mt-2 flex items-center gap-2 text-[11px] text-white/55">
+                          <div className="mt-2.5 flex items-center gap-2 text-[13px] text-white/65">
                             {dd && (
                               <span
                                 className={`inline-flex items-center gap-1 font-mono font-bold tabular-nums ${
                                   isInProgress && dd.urgent && p.progress < 100
                                     ? "text-amber-300"
-                                    : "text-white/60"
+                                    : "text-white/70"
                                 }`}
                               >
-                                <Calendar className="h-3 w-3" />
+                                <Calendar className="h-3.5 w-3.5" />
                                 {dd.label}
                               </span>
                             )}
                             {openIssues > 0 && (
-                              <span className="inline-flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-red-300">
-                                <AlertCircle className="h-3 w-3" />
+                              <span className="inline-flex items-center gap-0.5 rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[12px] font-bold text-red-300">
+                                <AlertCircle className="h-3.5 w-3.5" />
                                 {openIssues}
                               </span>
                             )}
-                            <span className="ml-auto font-mono tabular-nums text-white/40">
+                            <span className="ml-auto font-mono tabular-nums text-white/55">
                               {p.progress}%
                             </span>
                           </div>
 
-                          <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/10">
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                             <div
                               className="h-full rounded-full transition-all"
                               style={{
@@ -169,7 +169,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                             />
                           </div>
 
-                          <div className="mt-2 flex items-center justify-between text-[11px] text-white/50">
+                          <div className="mt-2.5 flex items-center justify-between text-[13px] text-white/65">
                             <span className="truncate">PM · {p.pm}</span>
                             {onDelete && (
                               <button
