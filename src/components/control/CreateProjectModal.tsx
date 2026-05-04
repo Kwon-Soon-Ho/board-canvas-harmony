@@ -38,7 +38,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
       pm,
       members,
       image: imageUrls[0],
-      images: imageUrls,
+      images: imageUrls.map((url) => ({ url, memo: "" })),
       thumbnail: {
         coverIndex: 0,
         focal: { x: 0.5, y: 0.5 },
