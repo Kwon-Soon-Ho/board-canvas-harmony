@@ -88,6 +88,7 @@ export function ActiveFilterChips({
       )}
       {urgentOnly && <Chip label="마감 7일 이내" onRemove={onClearUrgent} tone="warn" />}
       {issuesOnly && <Chip label="이슈 있음" onRemove={onClearIssues} tone="danger" />}
+      {assignee && <Chip label={`담당자: ${assignee}`} onRemove={onClearAssignee} />}
       <button
         type="button"
         onClick={onResetAll}
