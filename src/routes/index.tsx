@@ -329,35 +329,42 @@ function ControlCenter() {
 
               <div className="flex items-center gap-4">
                 <ViewSwitcher view={view} setView={setView} />
-                {view === "grid" && (
-                  <div
-                    role="group"
-                    aria-label="정렬"
-                    className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                <div
+                  role="group"
+                  aria-label="정렬"
+                  className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+                >
+                  <button
+                    aria-pressed={sortBy === "updated"}
+                    onClick={() => { setSortBy("updated"); setSortDesc(true); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "updated" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    title="최근 수정 순"
                   >
-                    <button
-                      aria-pressed={sortBy === "recent"}
-                      onClick={() => { setSortBy("recent"); setSortDesc(true); }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    >
-                      최신순
-                    </button>
-                    <button
-                      aria-pressed={sortBy === "progress"}
-                      onClick={() => { setSortBy("progress"); setSortDesc(true); }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> 진행률순
-                    </button>
-                    <button
-                      aria-pressed={sortBy === "deadline"}
-                      onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    >
-                      <Clock className="w-4 h-4" /> 마감임박순
-                    </button>
-                  </div>
-                )}
+                    <Sparkles className="w-4 h-4" /> 최신순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "created"}
+                    onClick={() => { setSortBy("created"); setSortDesc(true); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "created" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    title="프로젝트 생성 순"
+                  >
+                    <FilePlus2 className="w-4 h-4" /> 생성순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "progress"}
+                    onClick={() => { setSortBy("progress"); setSortDesc(true); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> 진행률순
+                  </button>
+                  <button
+                    aria-pressed={sortBy === "deadline"}
+                    onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  >
+                    <Clock className="w-4 h-4" /> 마감임박순
+                  </button>
+                </div>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   aria-label="새 프로젝트 생성"
