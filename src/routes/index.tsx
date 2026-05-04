@@ -159,6 +159,7 @@ function ControlCenter() {
     if (!qStart || !qEnd) return projects;
     return projects.filter((p) => {
       if (p.deadline === "상시") return true;
+      if (p.status === "대기") return true; // 대기는 일정 미정 → 모든 기간에서 노출
       const sStr = p.startDate;
       const eStr = p.deadline;
       const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
