@@ -91,19 +91,29 @@ function ControlCenter() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       const migrationDone = localStorage.getItem(MIGRATION_KEY) === "1";
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const migrated = parsed.map((p: any) => backfillStartDate({
-          ...p,
-          images: migrateImages(p.images),
-          tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
-          issues: (p.issues || []).map((i: any) => ({ ...i, imageUrls: migrateImages(i.imageUrls) })),
-        }, !migrationDone));
-        const normalized = normalizeProgress(migrated);
-        setProjects(normalized);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        localStorage.setItem(MIGRATION_KEY, "1");
+      const force = !migrationDone;
+      // Snapshot pre-migration data once for safety.
+      if (force && saved && !localStorage.getItem(BACKUP_KEY)) {
+        localStorage.setItem(BACKUP_KEY, saved);
       }
+      // Merge: ensure every seed project exists, then overlay saved overrides.
+      const seedById = new Map(MOCK_PROJECTS.map((p) => [p.id, p]));
+      const savedList: any[] = saved ? JSON.parse(saved) : [];
+      for (const s of savedList) {
+        const merged = {
+          ...seedById.get(s.id),
+          ...s,
+          images: migrateImages(s.images),
+          tasks: (s.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
+          issues: (s.issues || []).map((i: any) => ({ ...i, imageUrls: migrateImages(i.imageUrls) })),
+        };
+        seedById.set(s.id, merged as Project);
+      }
+      const merged = Array.from(seedById.values()).map((p: any) => backfillStartDate(p, force));
+      const normalized = normalizeProgress(merged);
+      setProjects(normalized);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      localStorage.setItem(MIGRATION_KEY, "1");
     } catch (err) {
       console.error("Dashboard Migration failed", err);
     }
