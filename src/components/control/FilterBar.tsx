@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEPT_COLOR,
   type Department,
   type Status,
   type Project,
 } from "@/lib/mockProjects";
+import { RotateCcw } from "lucide-react";
 
 const DEPARTMENTS: Array<Department | "전체"> = ["전체", "공통", "영상", "편집", "UX"];
 const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -25,7 +26,8 @@ interface Props {
   searchValue: string;
   setSearchValue: (v: string) => void;
   onSubmitSearch: (v: string) => void;
-  onClearAll: () => void;
+  onLiveSearch: (v: string) => void;
+  onResetAll: () => void;
 }
 
 export function FilterBar({
@@ -37,18 +39,33 @@ export function FilterBar({
   searchValue,
   setSearchValue,
   onSubmitSearch,
-  onClearAll,
+  onLiveSearch,
+  onResetAll,
 }: Props) {
   const [local, setLocal] = useState(searchValue);
+  const debounceRef = useRef<number | null>(null);
 
   useEffect(() => {
     setLocal(searchValue);
   }, [searchValue]);
 
-  const handleClear = () => {
+  // Debounced live search (300ms)
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setSearchValue(local);
+      onLiveSearch(local);
+    }, 300);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local]);
+
+  const handleClearInput = () => {
     setLocal("");
     setSearchValue("");
-    onClearAll();
+    onLiveSearch("");
   };
 
   const deptCounts = useMemo(() => {
@@ -68,7 +85,10 @@ export function FilterBar({
       m[p.status] += 1;
     }
     return m;
-  }, [dept]);
+  }, [dept, projects]);
+
+  const isAnyActive =
+    dept !== "전체" || statuses.size > 0 || (searchValue?.trim().length ?? 0) > 0 || (local?.trim().length ?? 0) > 0;
 
   return (
     <div className="sticky top-16 z-40 border-b border-white/10 bg-black">
@@ -77,7 +97,7 @@ export function FilterBar({
           {/* Department */}
           <div className="flex items-center gap-3">
             <span className="text-[15px] font-medium text-gray-400">부서</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" role="group" aria-label="부서 필터">
               {DEPARTMENTS.map((d) => {
                 const active = dept === d;
                 const count = deptCounts[d] ?? 0;
@@ -85,6 +105,7 @@ export function FilterBar({
                 return (
                   <button
                     key={d}
+                    aria-pressed={active}
                     onClick={() => setDept(d)}
                     style={{
                       background: active
@@ -117,13 +138,14 @@ export function FilterBar({
           {/* Status */}
           <div className="flex items-center gap-3">
             <span className="text-[15px] font-medium text-gray-400">상태</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" role="group" aria-label="상태 필터">
               {STATUSES.map((s) => {
                 const active = statuses.has(s);
                 const colorVar = STATUS_COLOR_VAR[s];
                 return (
                   <button
                     key={s}
+                    aria-pressed={active}
                     onClick={() => toggleStatus(s)}
                     style={{
                       background: active
@@ -152,41 +174,59 @@ export function FilterBar({
           </div>
         </div>
 
-        {/* Search */}
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSearchValue(local);
-            onSubmitSearch(local);
-          }}
-        >
-          <div className="relative">
-            <input
-              value={local}
-              onChange={(e) => setLocal(e.target.value)}
-              placeholder="검색어 입력"
-              className="h-10 w-64 rounded-lg border border-white/10 bg-white/[0.03] px-3 pr-8 text-[14px] text-foreground placeholder:text-muted-foreground/40 focus:border-white/30 focus:outline-none"
-            />
-            {local && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-          <button
-            type="submit"
-            className="h-10 rounded-lg bg-foreground px-4 text-[14px] font-semibold text-background hover:opacity-90"
+        {/* Search + Reset */}
+        <div className="flex items-center gap-3">
+          {isAnyActive && (
+            <button
+              type="button"
+              onClick={() => {
+                setLocal("");
+                onResetAll();
+              }}
+              className="flex items-center gap-1.5 text-[13px] font-medium text-white/50 hover:text-white transition"
+              aria-label="모든 필터 및 검색 초기화"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              전체 초기화
+            </button>
+          )}
+          <form
+            className="flex items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearchValue(local);
+              onSubmitSearch(local);
+            }}
           >
-            검색
-          </button>
-        </form>
+            <div className="relative">
+              <input
+                value={local}
+                onChange={(e) => setLocal(e.target.value)}
+                placeholder="검색어 입력"
+                aria-label="프로젝트 검색"
+                className="h-10 w-64 rounded-lg border border-white/10 bg-white/[0.03] px-3 pr-8 text-[14px] text-foreground placeholder:text-muted-foreground/40 focus:border-white/30 focus:outline-none"
+              />
+              {local && (
+                <button
+                  type="button"
+                  onClick={handleClearInput}
+                  aria-label="검색어 지우기"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="h-10 rounded-lg bg-foreground px-4 text-[14px] font-semibold text-background hover:opacity-90"
+            >
+              검색
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
