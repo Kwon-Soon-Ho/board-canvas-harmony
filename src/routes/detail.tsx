@@ -291,7 +291,7 @@ function DetailWindow() {
             {(() => {
               // Match thumbnail card logic: done(>=100) → emerald, urgent(D-7 & in-progress) → amber, else neutral
               const ddayDiff = (() => {
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
+                if (!project.deadline || !/^\d{4}-\d{2}-\d{2}$/.test(project.deadline)) return null;
                 const t = new Date(); t.setHours(0,0,0,0);
                 const d = new Date(project.deadline); d.setHours(0,0,0,0);
                 return Math.round((d.getTime() - t.getTime()) / 86400000);
