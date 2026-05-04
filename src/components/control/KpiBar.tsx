@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Project, Status } from "@/lib/mockProjects";
-import { AlertTriangle, Clock3, BarChart3 } from "lucide-react";
+import { AlertTriangle, Clock3 } from "lucide-react";
 
 const STATUS_COLOR_VAR: Record<Status, string> = {
   진행: "var(--status-active)",
@@ -45,21 +45,14 @@ export function KpiBar({
     const statusCount: Record<Status, number> = { 진행: 0, 상시: 0, 대기: 0, 완료: 0 };
     let urgent = 0;
     let issues = 0;
-    let progressSum = 0;
-    let progressCount = 0;
     for (const p of projects) {
       statusCount[p.status] = (statusCount[p.status] ?? 0) + 1;
       const d = daysUntil(p.deadline);
       if (d !== null && d <= 7 && p.progress < 100) urgent += 1;
       const open = p.issues.filter((i) => !i.resolved).length;
       if (open > 0) issues += 1;
-      if (p.status !== "완료") {
-        progressSum += p.progress;
-        progressCount += 1;
-      }
     }
-    const avg = progressCount > 0 ? Math.round(progressSum / progressCount) : 0;
-    return { statusCount, urgent, issues, avg };
+    return { statusCount, urgent, issues };
   }, [projects]);
 
   const STATUSES: Status[] = ["진행", "상시", "대기", "완료"];
@@ -143,11 +136,6 @@ export function KpiBar({
           <span className="font-mono tabular-nums">{stats.issues}</span>
         </button>
 
-        <div className="ml-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[12px] font-semibold text-white/70">
-          <BarChart3 className="h-3.5 w-3.5 text-white/50" />
-          <span className="text-white/50">평균 진행률</span>
-          <span className="font-mono tabular-nums text-white">{stats.avg}%</span>
-        </div>
       </div>
     </section>
   );
