@@ -404,6 +404,7 @@ export function TimelineView({ projects, onOpen }: Props) {
               <button
                 key={p.id}
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onOpen(p.id)}
                 className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[13px] font-semibold text-white/85 hover:border-white/30 hover:text-white"
               >
