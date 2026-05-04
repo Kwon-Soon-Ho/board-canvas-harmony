@@ -327,31 +327,88 @@ function DetailWindow() {
                     <div className="flex-1 overflow-y-auto p-5 bg-[#0a0a0a]/50 backdrop-blur-xl relative z-10">
 
 
-                      <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
-                             <h4 className="text-[15px] font-black text-white/40 tracking-widest uppercase">상세 업무</h4>
-                             <span className="text-[14px] font-bold text-white/40">({project.tasks.length})</span>
-                          </div>
-                          {[...project.tasks].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(t => (
-                            <div key={t.id} id={`tracker-item-${t.id}`}>
-                              <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} onDelete={() => handleDeleteTask(t.id)} />
+                      {(() => {
+                        const taskStatusOrder: Record<string, number> = { 진행: 0, 검토중: 1, 대기: 2, 보류: 3, 승인됨: 4, 완료: 5, 취소: 6 };
+                        const sortFn = <T extends { startDate: string; progress?: number; status?: string; resolved?: boolean }>(a: T, b: T) => {
+                          let cmp = 0;
+                          if (trackerSort === 'startDate') cmp = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                          else if (trackerSort === 'progress') {
+                            const ap = (a as any).progress ?? ((a as any).resolved ? 100 : 0);
+                            const bp = (b as any).progress ?? ((b as any).resolved ? 100 : 0);
+                            cmp = ap - bp;
+                          } else if (trackerSort === 'status') {
+                            cmp = (taskStatusOrder[a.status ?? ''] ?? 99) - (taskStatusOrder[b.status ?? ''] ?? 99);
+                          }
+                          return trackerSortDesc ? -cmp : cmp;
+                        };
+                        const filteredTasks = project.tasks.filter(t => taskStatusFilter === '전체' || t.status === taskStatusFilter).sort(sortFn);
+                        const filteredIssues = project.issues.filter(i => issueStatusFilter === '전체' || i.status === issueStatusFilter).sort(sortFn);
+                        const sortBtn = (key: typeof trackerSort, label: string) => (
+                          <button
+                            key={key}
+                            onClick={() => { if (trackerSort === key) setTrackerSortDesc(d => !d); else { setTrackerSort(key); setTrackerSortDesc(false); } }}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition border ${trackerSort === key ? 'bg-orange-400/20 text-orange-200 border-orange-400/50' : 'bg-white/[0.03] text-white/50 border-white/10 hover:text-white/80 hover:border-white/20'}`}
+                          >{label}{trackerSort === key ? (trackerSortDesc ? ' ↓' : ' ↑') : ''}</button>
+                        );
+                        return (
+                          <>
+                            {/* Filter / sort toolbar */}
+                            <div className="mb-4 flex flex-wrap items-center gap-2 pb-3 border-b border-white/5">
+                              <span className="text-[10px] font-black text-white/35 uppercase tracking-widest mr-1">정렬</span>
+                              {sortBtn('startDate', '시작일')}
+                              {sortBtn('progress', '진행률')}
+                              {sortBtn('status', '상태')}
+                              <span className="mx-2 h-4 w-px bg-white/10" />
+                              <span className="text-[10px] font-black text-white/35 uppercase tracking-widest mr-1">업무</span>
+                              <select
+                                value={taskStatusFilter}
+                                onChange={(e) => setTaskStatusFilter(e.target.value as any)}
+                                className="bg-white/[0.04] border border-white/10 rounded-md px-2 py-1 text-[11px] font-bold text-white/80 focus:outline-none focus:border-orange-400/50"
+                              >
+                                <option value="전체">전체 상태</option>
+                                {(["대기","진행","검토중","승인됨","보류","취소","완료"] as TaskStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                              <span className="text-[10px] font-black text-rose-400/60 uppercase tracking-widest ml-1 mr-1">이슈</span>
+                              <select
+                                value={issueStatusFilter}
+                                onChange={(e) => setIssueStatusFilter(e.target.value as any)}
+                                className="bg-white/[0.04] border border-white/10 rounded-md px-2 py-1 text-[11px] font-bold text-white/80 focus:outline-none focus:border-orange-400/50"
+                              >
+                                <option value="전체">전체</option>
+                                <option value="Issue">이슈 발생</option>
+                                <option value="Resolved">해결됨</option>
+                              </select>
                             </div>
-                          ))}
-                        </div>
-                        <div className="space-y-3 pt-8 border-t border-white/10">
-                          <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
-                             <h4 className="text-[15px] font-black text-rose-500/50 tracking-widest">이슈 사항</h4>
-                             <span className="text-[15px] font-bold text-rose-500/50">({project.issues.length})</span>
-                          </div>
-                          {[...project.issues].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(iss => (
-                            <div key={iss.id} id={`tracker-item-${iss.id}`}>
-                              <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} onDelete={() => handleDeleteIssue(iss.id)} />
-                            </div>
-                          ))}
-                          {project.issues.length === 0 && <p className="text-base font-bold text-white/20 pl-1">등록된 이슈 사항이 없습니다.</p>}
-                        </div>
-                      </Accordion.Root>
+
+                            <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
+                                   <h4 className="text-[15px] font-black text-white/40 tracking-widest uppercase">상세 업무</h4>
+                                   <span className="text-[14px] font-bold text-white/40">({filteredTasks.length}/{project.tasks.length})</span>
+                                </div>
+                                {filteredTasks.map(t => (
+                                  <div key={t.id} id={`tracker-item-${t.id}`}>
+                                    <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} onDelete={() => handleDeleteTask(t.id)} />
+                                  </div>
+                                ))}
+                                {filteredTasks.length === 0 && <p className="text-sm font-bold text-white/20 pl-1">조건에 맞는 업무가 없습니다.</p>}
+                              </div>
+                              <div className="space-y-3 pt-8 border-t border-white/10">
+                                <div className="flex items-center gap-2 mb-3 pl-1 pr-1">
+                                   <h4 className="text-[15px] font-black text-rose-500/50 tracking-widest">이슈 사항</h4>
+                                   <span className="text-[15px] font-bold text-rose-500/50">({filteredIssues.length}/{project.issues.length})</span>
+                                </div>
+                                {filteredIssues.map(iss => (
+                                  <div key={iss.id} id={`tracker-item-${iss.id}`}>
+                                    <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} onDelete={() => handleDeleteIssue(iss.id)} />
+                                  </div>
+                                ))}
+                                {filteredIssues.length === 0 && <p className="text-base font-bold text-white/20 pl-1">등록된 이슈 사항이 없습니다.</p>}
+                              </div>
+                            </Accordion.Root>
+                          </>
+                        );
+                      })()}
                     </div>
                   </Panel>
                 </>
