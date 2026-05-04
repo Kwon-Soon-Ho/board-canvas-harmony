@@ -363,7 +363,7 @@ function ControlCenter() {
         setIssuesOnly={setIssuesOnly}
       />
 
-      <TeamWorkloadBar projects={projects} assignee={assignee} setAssignee={setAssignee} />
+      <TeamWorkloadBar projects={projectsInQuarter} assignee={assignee} setAssignee={setAssignee} />
 
       <main className="mx-auto max-w-[1920px] px-12 py-12">
         <div className="flex gap-8">
