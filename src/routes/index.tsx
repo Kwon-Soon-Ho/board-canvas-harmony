@@ -37,7 +37,6 @@ function migrateImages(imgs: any[]): any[] {
 }
 
 function backfillStartDate(p: any): any {
-  if (p.status === "상시") return p;
   if (p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
   // Derive a sensible startDate: earliest task startDate, else 30 days before deadline, else today
   let derived: string | undefined;
