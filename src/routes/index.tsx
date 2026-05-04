@@ -120,6 +120,7 @@ function ControlCenter() {
     if (typeof window === "undefined") return;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
+      const migrationDone = localStorage.getItem(MIGRATION_KEY) === "1";
       if (saved) {
         const parsed = JSON.parse(saved);
         const migrated = parsed.map((p: any) => backfillStartDate({
@@ -127,11 +128,11 @@ function ControlCenter() {
           images: migrateImages(p.images),
           tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
           issues: (p.issues || []).map((i: any) => ({ ...i, imageUrls: migrateImages(i.imageUrls) })),
-        }));
+        }, !migrationDone));
         const normalized = normalizeProgress(migrated);
         setProjects(normalized);
-        // Always persist after migration so backfilled startDate sticks
         localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        localStorage.setItem(MIGRATION_KEY, "1");
       }
     } catch (err) {
       console.error("Dashboard Migration failed", err);
