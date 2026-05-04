@@ -190,6 +190,19 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
             <div className="absolute left-3 top-3 z-[3] flex items-center gap-2 pointer-events-none">
               <DeptTag dept={project.department} />
               <StatusTag status={project.status} />
+              {overflow && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md bg-black/75 px-1.5 py-0.5 ring-1 ring-violet-400/60 backdrop-blur-md text-[10px] font-black text-violet-200 shadow-[0_0_10px_rgba(167,139,250,0.35)]"
+                  title={[
+                    overflow.carried ? `이전 분기에서 이월 (시작: ${project.startDate})` : null,
+                    overflow.extends_ ? `다음 분기로 연장 (마감: ${project.deadline})` : null,
+                  ].filter(Boolean).join(" · ")}
+                >
+                  {overflow.carried && <span>← 이월</span>}
+                  {overflow.carried && overflow.extends_ && <span className="text-violet-400/60">·</span>}
+                  {overflow.extends_ && <span>연장 →</span>}
+                </span>
+              )}
             </div>
 
             {/* Always-on issue badge — high contrast for any background */}
