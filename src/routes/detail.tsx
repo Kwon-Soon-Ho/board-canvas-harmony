@@ -1081,7 +1081,7 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
                       {d.getMonth()+1}월 {d.getDate()}일
                     </span>
                   )}
-                  <div className={`h-full absolute top-[68px] ${isNow ? 'w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'w-px bg-white/10'}`} />
+                  <div className={`h-full absolute ${isNow ? 'top-7 w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'top-[68px] w-px bg-white/10'}`} />
                 </div>
               );
             })}
