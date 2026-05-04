@@ -137,7 +137,7 @@ export function FilterBar({
                         : undefined,
                       borderColor: active ? color : undefined,
                       boxShadow: active ? `0 0 0 1px ${color}88, 0 0 18px ${color}55` : undefined,
-                      color: active ? "#000" : undefined,
+                      color: active ? "#fff" : undefined,
                     }}
                     className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
@@ -148,7 +148,7 @@ export function FilterBar({
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: active ? "#000" : (d === "전체" ? "rgba(255,255,255,0.35)" : color),
+                        backgroundColor: active ? "#fff" : (d === "전체" ? "rgba(255,255,255,0.35)" : color),
                         boxShadow: active ? "none" : (d === "전체" ? "none" : `0 0 6px ${color}`),
                       }}
                     />
@@ -157,7 +157,7 @@ export function FilterBar({
                       className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
                       style={{
                         background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
-                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
                       }}
                     >
                       {count}
@@ -190,7 +190,7 @@ export function FilterBar({
                       boxShadow: active
                         ? `0 0 0 1px color-mix(in srgb, ${colorVar} 70%, transparent), 0 0 18px color-mix(in srgb, ${colorVar} 45%, transparent)`
                         : undefined,
-                      color: active ? "#000" : undefined,
+                      color: active ? "#fff" : undefined,
                     }}
                     className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
@@ -201,7 +201,7 @@ export function FilterBar({
                     <span
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
-                        backgroundColor: active ? "#000" : colorVar,
+                        backgroundColor: active ? "#fff" : colorVar,
                         boxShadow: active ? "none" : `0 0 6px ${colorVar}`,
                       }}
                     />
@@ -210,7 +210,7 @@ export function FilterBar({
                       className="ml-0.5 rounded px-1.5 py-0.5 font-mono text-[12px] font-bold tabular-nums"
                       style={{
                         background: active ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.06)",
-                        color: active ? "#000" : "rgba(255,255,255,0.6)",
+                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
                       }}
                     >
                       {statusCounts[s] ?? 0}
