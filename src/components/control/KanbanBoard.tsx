@@ -68,18 +68,18 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
             }`}
           >
             <header
-              className="flex items-center justify-between border-b border-white/10 px-3 py-2.5"
+              className="flex items-center justify-between border-b border-white/10 px-3 py-3"
               style={{
                 background: `linear-gradient(to bottom, color-mix(in srgb, ${colorVar} 12%, transparent), transparent)`,
               }}
             >
               <div className="flex items-center gap-2">
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: colorVar, boxShadow: `0 0 8px ${colorVar}` }}
                 />
-                <span className="text-[13px] font-bold text-white">{s}</span>
-                <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums text-white/70">
+                <span className="text-[15px] font-bold text-white">{s}</span>
+                <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[12px] font-bold tabular-nums text-white/75">
                   {items.length}
                 </span>
               </div>
