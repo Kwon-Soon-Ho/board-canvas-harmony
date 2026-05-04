@@ -220,6 +220,7 @@ function ControlCenter() {
   };
 
   const handleStatusChange = (id: string, next: Status) => {
+    const now = new Date().toISOString();
     setProjects((prev) => {
       const updated = prev.map((p) => {
         if (p.id !== id) return p;
@@ -228,11 +229,12 @@ function ControlCenter() {
             ...p,
             status: next,
             progress: 100,
+            updatedAt: now,
             tasks: p.tasks.map((t) => ({ ...t, status: "완료" as const, progress: 100 })),
             issues: p.issues.map((i) => ({ ...i, status: "Resolved" as const, resolved: true })),
           };
         }
-        return { ...p, status: next };
+        return { ...p, status: next, updatedAt: now };
       });
       persist(updated);
       const changed = updated.find((p) => p.id === id);
