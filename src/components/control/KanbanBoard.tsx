@@ -92,7 +92,8 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                 </div>
               ) : (
                 items.map((p) => {
-                  const dd = ddayLabel(p.deadline);
+                  const isPending = p.status === "대기";
+                  const dd = isPending ? null : ddayLabel(p.deadline);
                   const isInProgress = p.status === "진행";
                   const urgentRing =
                     isInProgress && dd?.urgent && p.progress < 100
