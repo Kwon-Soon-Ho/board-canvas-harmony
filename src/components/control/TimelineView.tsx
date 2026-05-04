@@ -258,18 +258,18 @@ export function TimelineView({ projects, onOpen }: Props) {
         </span>
       </div>
 
-      {/* Timeline grid wrapper — overlay holds the today line spanning header + rows */}
-      <div className="relative">
+      {/* Timeline grid wrapper — extra top padding so the TODAY badge has breathing room above the header without overlapping the range filter */}
+      <div className="relative pt-10 mt-4">
         {/* TODAY overlay line spans the entire timeline column */}
         {todayLeftPct !== null && (
           <div
-            className="pointer-events-none absolute top-0 bottom-0 z-20"
+            className="pointer-events-none absolute top-10 bottom-0 z-20"
             style={{ left: `calc(260px + (100% - 260px) * ${todayLeftPct / 100})` }}
             aria-hidden
           >
             <div className="absolute inset-y-0 left-0 w-px bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
             <span
-              className="absolute -top-7 left-0 -translate-x-1/2 whitespace-nowrap rounded bg-red-500/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-md"
+              className="absolute -top-8 left-0 -translate-x-1/2 whitespace-nowrap rounded bg-red-500/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-md"
             >
               현재 ({format(today, "M월 d일")})
             </span>

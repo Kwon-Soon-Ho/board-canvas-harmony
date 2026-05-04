@@ -147,18 +147,29 @@ function ControlCenter() {
 
   // Quarter range (inclusive) — shared between FilterBar (counts) and main filtering
   const { qStart, qEnd } = useMemo(() => {
-    const s = quarter === "all" ? null : new Date(year, (quarter - 1) * 3, 1);
-    const e = quarter === "all" ? null : new Date(year, quarter * 3, 0);
-    if (s) s.setHours(0, 0, 0, 0);
-    if (e) e.setHours(23, 59, 59, 999);
+    const s = quarter === "all" ? new Date(year, 0, 1) : new Date(year, (quarter - 1) * 3, 1);
+    const e = quarter === "all" ? new Date(year, 11, 31) : new Date(year, quarter * 3, 0);
+    s.setHours(0, 0, 0, 0);
+    e.setHours(23, 59, 59, 999);
     return { qStart: s, qEnd: e };
   }, [year, quarter]);
 
   // Projects scoped to selected quarter — used by FilterBar so dept/status counts sync
+  // Year-scope: 상시/대기 should only appear in years that contain real project deadlines.
+  // (e.g. mock data lives in 2026 → selecting 2025/2027 should yield zero, both quarterly and yearly.)
+  const yearHasData = useMemo(() => {
+    return projects.some((p) => {
+      const eStr = p.deadline;
+      if (!eStr || !/^\d{4}-\d{2}-\d{2}$/.test(eStr)) return false;
+      return new Date(eStr).getFullYear() === year;
+    });
+  }, [projects, year]);
+
   const projectsInQuarter = useMemo(() => {
     if (!qStart || !qEnd) return projects;
     return projects.filter((p) => {
-      if (p.deadline === "상시") return true;
+      if (p.deadline === "상시") return yearHasData;
+      if (p.status === "대기") return yearHasData;
       const sStr = p.startDate;
       const eStr = p.deadline;
       const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
@@ -168,7 +179,7 @@ function ControlCenter() {
       const end = e ?? s!;
       return !(end < qStart || start > qEnd);
     });
-  }, [projects, qStart, qEnd]);
+  }, [projects, qStart, qEnd, yearHasData]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -199,9 +210,12 @@ function ControlCenter() {
         for (const a of assignees) if (involved.has(a)) { ok = true; break; }
         if (!ok) return false;
       }
-      // Quarter overlap: project is in scope if its [startDate, deadline] overlaps the quarter.
-      // 상시 (always-on) projects always pass. 대기 (no dates) excluded from quarter view.
-      if (qStart && qEnd && p.deadline !== "상시") {
+      // 상시 / 대기: 해당 연도에 실제 데이터가 있을 때만 노출.
+      if (p.deadline === "상시" || p.status === "대기") {
+        if (!yearHasData) return false;
+        return true;
+      }
+      if (qStart && qEnd) {
         const sStr = p.startDate;
         const eStr = p.deadline;
         const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
@@ -244,7 +258,7 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignees, qStart, qEnd]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignees, qStart, qEnd, yearHasData]);
 
   // Dynamic heading based on active filters
   const heading = useMemo(() => {

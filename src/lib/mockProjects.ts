@@ -405,7 +405,38 @@ export const MOCK_PROJECTS: Project[] = (() => {
     };
   });
 
-  return initialData;
+  // Extra 4 explicitly Pending demo projects (대기) — no dates, light task list.
+  const pendingExtras: Project[] = ([
+    { id: "p-pending-1", title: "신규 브랜드 캠페인 기획", department: "공통" as Department },
+    { id: "p-pending-2", title: "글로벌 SaaS 리서치", department: "UX" as Department },
+    { id: "p-pending-3", title: "신년 프로모션 영상 컨셉", department: "영상" as Department },
+    { id: "p-pending-4", title: "전시 그래픽 시스템 초안", department: "편집" as Department },
+  ]).map((seed, k) => {
+    const imgs = Array.from({ length: 3 }, (_, j) => ({ url: img((seed.id.length + k) * 3 + j + 11), memo: "" }));
+    const deptCandidates = TEAM_DATA[seed.department].filter((m) => ["수석", "책임", "선임"].includes(m.rank));
+    const pmInfo = deptCandidates[k % Math.max(1, deptCandidates.length)] ?? PM_CANDIDATES[k % PM_CANDIDATES.length];
+    const pool = TEAM_DATA[seed.department].filter((m) => m.name !== pmInfo.name);
+    const memberPool = pool.length ? pool : ALL_MEMBERS.filter((m) => m.name !== pmInfo.name);
+    const members = Array.from({ length: 3 }, (_, j) => memberPool[(k + j) % memberPool.length].name);
+    return {
+      id: seed.id,
+      title: seed.title,
+      department: seed.department,
+      status: "대기" as Status,
+      progress: 0,
+      startDate: undefined,
+      deadline: "",
+      pm: pmInfo.name,
+      members: Array.from(new Set(members)),
+      image: imgs[0].url,
+      images: imgs,
+      thumbnail: { coverIndex: 0, focal: { x: 0.5, y: 0.5 }, zoom: 1, sequence: [0, 1, 2] },
+      tasks: [],
+      issues: [],
+    };
+  });
+
+  return [...initialData, ...pendingExtras];
 })();
 
 // ──────────────────────────────────────────────────────────────────────
