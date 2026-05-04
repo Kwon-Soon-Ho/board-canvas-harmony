@@ -1249,11 +1249,11 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">시작일</span>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시"} />
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "대기"} />
               </div>
               <div className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">마감일</span>
-                <input type="date" value={deadline === "상시" ? "" : deadline} min={startDate || undefined} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시"} />
+                <input type="date" value={deadline === "상시" ? "" : deadline} min={startDate || undefined} onChange={e => setDeadline(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-orange-500 transition color-scheme-dark disabled:opacity-40" disabled={status === "상시" || status === "대기"} />
               </div>
             </div>
             {dateError && <p className="text-xs font-semibold text-amber-300">{dateError}</p>}
