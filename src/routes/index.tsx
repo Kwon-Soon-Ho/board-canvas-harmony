@@ -101,9 +101,8 @@ function ControlCenter() {
         }));
         const normalized = normalizeProgress(migrated);
         setProjects(normalized);
-        if (JSON.stringify(normalized) !== JSON.stringify(migrated)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        }
+        // Always persist after migration so backfilled startDate sticks
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
       }
     } catch (err) {
       console.error("Dashboard Migration failed", err);
