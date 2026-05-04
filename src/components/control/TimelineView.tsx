@@ -296,7 +296,7 @@ export function TimelineView({ projects, onOpen }: Props) {
         </div>
       ) : (
         <div className="flex flex-col">
-          {items.map(({ p, s, e }) => {
+          {items.map(({ p, s, e, isOngoing }) => {
             const startClamp = s < rangeStart ? rangeStart : s > rangeEnd ? rangeEnd : s;
             const endClamp = e < rangeStart ? rangeStart : e > rangeEnd ? rangeEnd : e;
             const leftPct = ((startClamp.getTime() - rangeStart.getTime()) / totalMs) * 100;
@@ -309,6 +309,9 @@ export function TimelineView({ projects, onOpen }: Props) {
             const isUrgent = isInProgress && diffDays <= 7 && p.progress < 100;
             const colorVar = STATUS_COLOR_VAR[p.status] ?? "var(--status-active)";
             const openIssues = p.issues.filter((i) => !i.resolved).length;
+            const elapsedDays = isOngoing && p.startDate
+              ? Math.max(0, Math.round((today.getTime() - new Date(p.startDate).getTime()) / 86400000))
+              : null;
 
             return (
               <button
@@ -345,7 +348,11 @@ export function TimelineView({ projects, onOpen }: Props) {
                       width: `${widthPct}%`,
                       background: `color-mix(in srgb, ${colorVar} 18%, transparent)`,
                     }}
-                    title={`${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`}
+                    title={
+                      isOngoing
+                        ? `${p.title}\n상시 · 시작 ${p.startDate ?? "?"} (${elapsedDays}일째)\n진행률 ${p.progress}%`
+                        : `${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`
+                    }
                   >
                     <div
                       className="h-full"
@@ -359,14 +366,23 @@ export function TimelineView({ projects, onOpen }: Props) {
                     {s < rangeStart && (
                       <span className="pointer-events-none absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-white/40 to-transparent" aria-hidden />
                     )}
-                    {/* Clipped-right indicator */}
-                    {e > rangeEnd && (
-                      <span className="pointer-events-none absolute inset-y-0 right-0 w-3 bg-gradient-to-l from-white/40 to-transparent" aria-hidden />
+                    {/* 상시: 우측 페이드아웃 (끝이 열려 있음을 표현). 일반 클립에도 사용. */}
+                    {(isOngoing || e > rangeEnd) && (
+                      <span
+                        className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/60 to-transparent"
+                        aria-hidden
+                      />
                     )}
                     <span className="absolute inset-0 flex items-center justify-between px-2 font-mono text-[12px] font-bold text-white/95">
                       <span>{p.progress}%</span>
                       <span className={isUrgent ? "text-amber-200" : "text-white/80"}>
-                        {diffDays === 0 ? "D-day" : diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`}
+                        {isOngoing
+                          ? "상시"
+                          : diffDays === 0
+                            ? "D-day"
+                            : diffDays > 0
+                              ? `D-${diffDays}`
+                              : `D+${Math.abs(diffDays)}`}
                       </span>
                     </span>
                   </div>
@@ -377,13 +393,13 @@ export function TimelineView({ projects, onOpen }: Props) {
         </div>
       )}
 
-      {ongoing.length > 0 && (
+      {pending.length > 0 && (
         <div className="mt-6">
           <div className="mb-2 text-[12px] font-bold uppercase tracking-wider text-white/50">
-            상시 · 마감 미정
+            대기 · 일정 미정
           </div>
           <div className="flex flex-wrap gap-2">
-            {ongoing.map((p) => (
+            {pending.map((p) => (
               <button
                 key={p.id}
                 type="button"
