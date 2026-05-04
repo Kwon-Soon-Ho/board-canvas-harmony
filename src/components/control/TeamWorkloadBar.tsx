@@ -110,7 +110,7 @@ export function TeamWorkloadBar({ projects, assignees, toggleAssignee, clearAssi
                   </span>
                   {s.urgent > 0 && (
                     <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[11px] font-bold text-red-200 ring-1 ring-red-500/40">
-                      !{s.urgent}
+                      {s.urgent}
                     </span>
                   )}
                 </button>
