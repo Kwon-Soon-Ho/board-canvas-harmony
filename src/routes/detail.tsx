@@ -139,17 +139,25 @@ function DetailWindow() {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    if (confirm("정말로 이 상세 업무를 삭제하시겠습니까?")) {
-      setProject(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== taskId) } : prev);
-      if (activeItemId === taskId) setActiveItemId(undefined);
-    }
+    const t = project?.tasks.find(x => x.id === taskId);
+    setPendingDelete({ kind: 'task', id: taskId, title: t?.name ?? '상세 업무' });
   };
 
   const handleDeleteIssue = (issueId: string) => {
-    if (confirm("정말로 이 이슈를 삭제하시겠습니까?")) {
-      setProject(prev => prev ? { ...prev, issues: prev.issues.filter(i => i.id !== issueId) } : prev);
-      if (activeItemId === issueId) setActiveItemId(undefined);
+    const i = project?.issues.find(x => x.id === issueId);
+    setPendingDelete({ kind: 'issue', id: issueId, title: i?.name ?? '이슈' });
+  };
+
+  const confirmPendingDelete = () => {
+    if (!pendingDelete) return;
+    const { kind, id } = pendingDelete;
+    if (kind === 'task') {
+      setProject(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== id) } : prev);
+    } else {
+      setProject(prev => prev ? { ...prev, issues: prev.issues.filter(i => i.id !== id) } : prev);
     }
+    if (activeItemId === id) setActiveItemId(undefined);
+    setPendingDelete(null);
   };
 
   const handleToggleStar = (imgUrl: string) => {
