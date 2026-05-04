@@ -514,6 +514,7 @@ function ControlCenter() {
                     project={p}
                     onOpen={handleOpen}
                     onDelete={() => setPendingDeleteId(p.id)}
+                    quarterRange={quarter === "all" ? null : { year, quarter }}
                   />
                 ))}
               </section>
