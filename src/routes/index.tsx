@@ -225,13 +225,38 @@ function ControlCenter() {
         onResetAll={handleResetAll}
       />
 
+      <KpiBar
+        projects={projects}
+        urgentOnly={urgentOnly}
+        setUrgentOnly={setUrgentOnly}
+        issuesOnly={issuesOnly}
+        setIssuesOnly={setIssuesOnly}
+        statuses={statuses}
+        toggleStatus={toggleStatus}
+      />
+
       <main className="mx-auto max-w-[1600px] px-10 py-12">
         <div className="mb-8 flex items-end justify-between border-b border-white/10 pb-6">
-          <div>
-            <h1 className="text-[32px] font-black tracking-tighter text-white">전체 프로젝트</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[32px] font-black tracking-tighter text-white">
+              {heading}
+            </h1>
             <p className="mt-2 text-[15px] font-medium text-white/40">
               총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
             </p>
+            <ActiveFilterChips
+              dept={dept}
+              statuses={statuses}
+              query={query}
+              urgentOnly={urgentOnly}
+              issuesOnly={issuesOnly}
+              onClearDept={() => setDept("전체")}
+              onClearStatus={(s) => toggleStatus(s)}
+              onClearQuery={() => { setSearchValue(""); setQuery(""); }}
+              onClearUrgent={() => setUrgentOnly(false)}
+              onClearIssues={() => setIssuesOnly(false)}
+              onResetAll={handleResetAll}
+            />
           </div>
 
           <div className="flex items-center gap-4">
