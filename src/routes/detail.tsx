@@ -1067,17 +1067,17 @@ function GanttChart({ tasks, issues, activeId, setActiveId, onUpdateEndDate }: {
               
               return (
                 <div key={i} className="absolute top-0 flex flex-col items-center -translate-x-1/2 h-full z-10" style={{ left: i * dayWidth }}>
-                  {isNow && (
-                    <div className="bg-teal-500 text-[#FFFFFF] text-[12px] font-black px-3 py-1 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] absolute -top-2 whitespace-nowrap z-20">
-                      현재({d.getMonth()+1}월 {d.getDate()}일)
-                    </div>
-                  )}
                   {(i % step === 0) && (
                     <span className={`text-[20px] font-black mt-4 bg-[#0f0f0f] px-3 whitespace-nowrap overflow-visible drop-shadow-md flex-shrink-0 min-w-max ${isNow ? 'text-teal-300' : 'text-[#FFFFFF]'}`}>
                       {d.getMonth()+1}월 {d.getDate()}일
                     </span>
                   )}
-                  <div className={`h-full absolute top-12 ${isNow ? 'w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'w-px bg-white/10'}`} />
+                  {isNow && (
+                    <div className="bg-teal-500 text-[#FFFFFF] text-[12px] font-black px-3 py-1 rounded-full shadow-[0_0_20px_rgba(20,184,166,0.6)] mt-1 whitespace-nowrap z-20">
+                      현재({d.getMonth()+1}월 {d.getDate()}일)
+                    </div>
+                  )}
+                  <div className={`h-full absolute top-16 ${isNow ? 'w-[2px] bg-teal-500/80 shadow-[0_0_10px_rgba(20,184,166,0.8)]' : 'w-px bg-white/10'}`} />
                 </div>
               );
             })}
