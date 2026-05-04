@@ -262,10 +262,12 @@ function DetailWindow() {
             {/* Expanded Info - Enlarged for better visibility */}
             <div className="ml-4 flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-base">
               <div className="flex items-center gap-2.5">
-                <span className="text-[11px] font-black text-orange-400 uppercase tracking-widest opacity-80">마감일</span>
+                <span className="text-[11px] font-black text-orange-400 uppercase tracking-widest opacity-80">일정</span>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4.5 h-4.5 text-white/90" />
-                  <span className="font-mono text-white/90 font-bold">{project.deadline}</span>
+                  <span className="text-white/90 font-bold tabular-nums">
+                    {project.startDate ? `${project.startDate} ~ ${project.deadline}` : project.deadline}
+                  </span>
                 </div>
               </div>
               <div className="w-px h-4 bg-white/20" />
