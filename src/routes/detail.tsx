@@ -34,6 +34,12 @@ function DetailWindow() {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(() => {
     if (!id) return null;
+    const normalize = (p: Project): Project => p.status === "완료" ? {
+      ...p,
+      progress: 100,
+      tasks: (p.tasks || []).map((t) => ({ ...t, status: "완료" as TaskStatus, progress: 100 })),
+      issues: (p.issues || []).map((i) => ({ ...i, status: "Resolved" as IssueStatus, resolved: true })),
+    } : p;
     const saved = localStorage.getItem('design-projects-store');
     if (saved) {
       try {
@@ -50,13 +56,14 @@ function DetailWindow() {
             tasks: (raw.tasks || []).map((t: any) => ({ ...t, imageUrls: migrate(t.imageUrls) })),
             issues: (raw.issues || []).map((i: any) => ({ ...i, imageUrls: migrate(i.imageUrls) })),
           };
-          return project;
+          return normalize(project);
         }
       } catch (err) {
         console.error("Migration failed", err);
       }
     }
-    return MOCK_PROJECTS.find((p) => p.id === id) ?? null;
+    const found = MOCK_PROJECTS.find((p) => p.id === id);
+    return found ? normalize(found) : null;
   });
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [isImageViewerFull, setIsImageViewerFull] = useState(false);
