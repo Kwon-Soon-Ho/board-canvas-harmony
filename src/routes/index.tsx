@@ -210,8 +210,12 @@ function ControlCenter() {
         for (const a of assignees) if (involved.has(a)) { ok = true; break; }
         if (!ok) return false;
       }
-      // 상시 (always-on) projects always pass. 대기 (일정 미정) 도 항상 노출.
-      if (qStart && qEnd && p.deadline !== "상시" && p.status !== "대기") {
+      // 상시 / 대기: 해당 연도에 실제 데이터가 있을 때만 노출.
+      if (p.deadline === "상시" || p.status === "대기") {
+        if (!yearHasData) return false;
+        return true;
+      }
+      if (qStart && qEnd) {
         const sStr = p.startDate;
         const eStr = p.deadline;
         const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
