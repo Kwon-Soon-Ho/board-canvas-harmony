@@ -61,22 +61,22 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
       aria-label="팀 워크로드"
       className="border-b border-white/10 bg-[#0A0A0A]"
     >
-      <div className="mx-auto max-w-[1920px] px-10 py-3">
+      <div className="mx-auto max-w-[1920px] px-12 py-3">
         <div className="flex items-center gap-3">
           <div className="flex shrink-0 items-center gap-1.5">
-            <Users className="h-3.5 w-3.5 text-white/40" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
+            <Users className="h-4 w-4 text-white/50" />
+            <span className="text-[13px] font-semibold uppercase tracking-wider text-white/55">
               담당자
             </span>
           </div>
 
           {/* Legend */}
-          <div className="flex shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-2 py-1 text-[10px] text-white/50">
-            <span className="font-semibold uppercase tracking-wider text-white/35">범례</span>
+          <div className="flex shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-2.5 py-1 text-[12px] text-white/65">
+            <span className="font-semibold uppercase tracking-wider text-white/50">범례</span>
             <span className="font-mono">N</span>
-            = 진행 중인 프로젝트 수
+            = 진행·상시 프로젝트 수
             <span className="text-white/30">|</span>
-            <span className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[9px] font-bold text-red-200 ring-1 ring-red-500/40">
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[11px] font-bold text-red-200 ring-1 ring-red-500/40">
               !N
             </span>
             = D-7 이내 긴급 건수
@@ -87,7 +87,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
               <button
                 type="button"
                 onClick={() => setAssignee(null)}
-                className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-1 text-[11px] font-bold text-white"
+                className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-bold text-white"
               >
                 전체 보기
               </button>
@@ -102,23 +102,23 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
                   disabled={isDisabled}
                   aria-pressed={active}
                   onClick={() => setAssignee(active ? null : s.name)}
-                  title={`${s.name} (${s.rank}) · 진행 ${s.active}${
+                  title={`${s.name} (${s.rank}) · 진행·상시 ${s.active}${
                     s.urgent ? ` · 긴급 ${s.urgent}` : ""
                   }`}
-                  className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                  className={`group inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-semibold transition ${
                     active
                       ? "border-white/40 bg-white/15 text-white"
                       : isDisabled
                       ? "cursor-not-allowed border-white/5 bg-white/[0.02] text-white/25"
-                      : "border-white/10 bg-white/[0.03] text-white/70 hover:border-white/25 hover:text-white"
+                      : "border-white/10 bg-white/[0.03] text-white/85 hover:border-white/25 hover:text-white"
                   }`}
                 >
                   <span>{s.name}</span>
-                  <span className={`font-mono tabular-nums ${active ? "text-white" : "text-white/60"}`}>
+                  <span className={`font-mono tabular-nums ${active ? "text-white" : "text-white/80"}`}>
                     {s.active}
                   </span>
                   {s.urgent > 0 && (
-                    <span className="ml-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[9px] font-bold text-red-200 ring-1 ring-red-500/40">
+                    <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[11px] font-bold text-red-200 ring-1 ring-red-500/40">
                       !{s.urgent}
                     </span>
                   )}
@@ -131,8 +131,9 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-semibold text-white/60 hover:text-white"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[13px] font-semibold text-white/70 hover:text-white"
             >
+
               {expanded ? (
                 <>
                   <ChevronUp className="h-3 w-3" /> 접기
