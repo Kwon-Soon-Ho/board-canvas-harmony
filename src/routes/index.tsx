@@ -290,7 +290,8 @@ function ControlCenter() {
               </div>
 
               <div className="flex items-center gap-4">
-                <div
+                <ViewSwitcher view={view} setView={setView} />
+                {view === "grid" && (
                   role="group"
                   aria-label="정렬"
                   className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
