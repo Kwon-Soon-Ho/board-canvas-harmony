@@ -86,6 +86,13 @@ function ControlCenter() {
   const [assignee, setAssignee] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("grid");
 
+  // Quarter filter — defaults to current quarter
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = (Math.floor(now.getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+  const [year, setYear] = useState<number>(currentYear);
+  const [quarter, setQuarter] = useState<1 | 2 | 3 | 4 | "all">(currentQuarter);
+
   // Hydrate from localStorage on client only
   useEffect(() => {
     if (typeof window === "undefined") return;
