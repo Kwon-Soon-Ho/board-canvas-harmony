@@ -108,13 +108,15 @@ export function FilterBar({
                     onClick={() => setDept(d)}
                     style={{
                       background: active
-                        ? `linear-gradient(to bottom, ${color}33, ${color}11)`
+                        ? `linear-gradient(to bottom, ${color}55, ${color}22)`
                         : undefined,
-                      borderColor: active ? `${color}66` : undefined,
+                      borderColor: active ? color : undefined,
+                      boxShadow: active ? `0 0 0 1px ${color}88, 0 0 18px ${color}55` : undefined,
+                      color: active ? "#000" : undefined,
                     }}
-                    className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-medium transition-all ${
+                    className={`group flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[14px] font-semibold transition-all ${
                       active
-                        ? "text-foreground shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                        ? ""
                         : "border-white/10 bg-[#1A1A1A] text-gray-400 hover:border-white/25 hover:bg-[#222] hover:text-foreground"
                     }`}
                   >
