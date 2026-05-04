@@ -116,7 +116,7 @@ export function FilterBar({
 
   return (
     <div className="sticky top-16 z-40 border-b border-white/10 bg-black">
-      <div className="mx-auto flex max-w-[1600px] flex-nowrap items-center justify-between gap-4 px-10 py-3">
+      <div className="mx-auto flex max-w-[1920px] flex-nowrap items-center justify-between gap-6 px-12 py-3">
         <div className="flex flex-nowrap items-center gap-5 min-w-0">
           {/* Department */}
           <div className="flex shrink-0 items-center gap-2">
