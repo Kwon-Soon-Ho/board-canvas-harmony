@@ -347,7 +347,7 @@ function ControlCenter() {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <FilterBar
-        projects={projects}
+        projects={projectsInQuarter}
         dept={dept}
         setDept={setDept}
         statuses={statuses}
