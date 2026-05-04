@@ -19,57 +19,94 @@ export function getSyncChannel(): BroadcastChannel | null {
   return new BroadcastChannel(SYNC_CHANNEL);
 }
 
+// ---- Multi-screen target cache --------------------------------------------
+// We must call window.open() SYNCHRONOUSLY inside the user gesture, otherwise
+// browsers detach the popup from the gesture and (on permission prompt close)
+// auto-scroll the clicked element into view — causing the page to jump.
+//
+// To open Window B on the right-side monitor at full size from the very first
+// click, we resolve the target screen ONCE (lazily, at the first user gesture)
+// and cache it. Subsequent openDetailWindow() calls use the cached features
+// and run fully synchronously.
+
+type ScreenRect = { left: number; top: number; width: number; height: number };
+let cachedTarget: ScreenRect | null = null;
+let resolveInFlight: Promise<void> | null = null;
+
+function currentScreenRect(): ScreenRect {
+  return {
+    left: 0,
+    top: 0,
+    width: window.screen.availWidth,
+    height: window.screen.availHeight,
+  };
+}
+
 /**
- * Open Window B targeting the right-side monitor when available.
- * Falls back to fullscreen on the current screen.
+ * Lazily resolve the right-side monitor (if any) and cache the target rect.
+ * Safe to call multiple times — only the first call does work.
+ * Triggers the multi-screen permission prompt at most once.
  */
-export async function openDetailWindow(projectId: string): Promise<Window | null> {
+export function ensureScreenDetails(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (cachedTarget) return Promise.resolve();
+  if (resolveInFlight) return resolveInFlight;
+
+  resolveInFlight = (async () => {
+    // Default fallback: current screen, full size.
+    cachedTarget = currentScreenRect();
+
+    try {
+      // @ts-expect-error — Window Management API (experimental)
+      if (window.getScreenDetails) {
+        // @ts-expect-error
+        const details = await window.getScreenDetails();
+        const current = details.currentScreen;
+        const right = details.screens.find(
+          (s: any) => s.left >= current.left + current.width,
+        );
+        if (right) {
+          cachedTarget = {
+            left: right.availLeft,
+            top: right.availTop,
+            width: right.availWidth,
+            height: right.availHeight,
+          };
+        }
+      }
+    } catch {
+      /* keep current-screen fallback */
+    }
+  })();
+
+  return resolveInFlight;
+}
+
+/**
+ * Open Window B at the cached target rect (right monitor if available,
+ * otherwise current screen full size). Fully synchronous so the popup stays
+ * attached to the user gesture — no permission prompt, no scroll jump.
+ */
+export function openDetailWindow(projectId: string): Window | null {
   if (typeof window === "undefined") return null;
 
   const url = `/detail?id=${encodeURIComponent(projectId)}`;
-
-  // Default: maximize on current screen
-  let left = 0;
-  let top = 0;
-  let width = window.screen.availWidth;
-  let height = window.screen.availHeight;
-
-  // CRITICAL: open the window FIRST, synchronously inside the user gesture.
-  // Awaiting getScreenDetails() before window.open() detaches it from the
-  // gesture, triggers a permission prompt, and on prompt-close the browser
-  // restores focus to the clicked element via scrollIntoView — which causes
-  // the page to jump to the bottom or to the next card row.
-  const features = `left=${left},top=${top},width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no`;
+  const target = cachedTarget ?? currentScreenRect();
+  const features = `left=${target.left},top=${target.top},width=${target.width},height=${target.height},menubar=no,toolbar=no,location=no,status=no`;
   const win = window.open(url, "WindowB_Detail", features);
 
-  // Best-effort multi-screen positioning AFTER the window is open.
-  try {
-    // @ts-expect-error — Window Management API (experimental)
-    if (window.getScreenDetails) {
-      // @ts-expect-error
-      const details = await window.getScreenDetails();
-      const current = details.currentScreen;
-      const right = details.screens.find(
-        (s: any) => s.left >= current.left + current.width,
-      );
-      if (right) {
-        left = right.availLeft;
-        top = right.availTop;
-        width = right.availWidth;
-        height = right.availHeight;
-        if (win) {
-          try {
-            win.moveTo(left, top);
-            win.resizeTo(width, height);
-          } catch {
-            /* ignore */
-          }
-        }
-      }
+  // Best-effort reposition for browsers that ignore left/top in features.
+  if (win && cachedTarget) {
+    try {
+      win.moveTo(cachedTarget.left, cachedTarget.top);
+      win.resizeTo(cachedTarget.width, cachedTarget.height);
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* fall back to current-screen maximize */
   }
+
+  // Kick off resolution for NEXT click if we haven't yet.
+  if (!cachedTarget) void ensureScreenDetails();
 
   return win;
 }

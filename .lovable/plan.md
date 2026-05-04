@@ -1,54 +1,82 @@
-## 1. 칸반에서 진행/상시/완료 → 대기 이동 시 발생하는 오류
+## 원인 분석 및 해결 방안
 
-### 원인
-`src/routes/index.tsx`의 `handleStatusChange`(294~319)는 **status만 바꾸고 날짜(startDate/deadline)는 손대지 않습니다.** 하지만 데이터 모델 규칙(`backfillStartDate`)상 대기는 시작일/마감일이 모두 비어 있어야 합니다. 이 불일치 때문에 다음 증상이 발생합니다.
+### 1. 프리뷰에서는 멀쩡한데 배포 URL에서 카드 클릭 시 페이지가 아래로 점프
 
-- **진행 → 대기**: 옛 deadline(yyyy-mm-dd)이 그대로 남아 칸반/그리드 카드에 D-day 배지·캘린더 아이콘이 계속 보입니다. 대기 컬럼인데 "D-3" 같은 표시가 남는 시각 버그.
-- **상시 → 대기**: deadline 값이 `"상시"` 문자열로 남습니다. 카드/칸반에서 "일정: 상시" 텍스트가 대기 컬럼에 그대로 노출됩니다. 또한 `projectsInQuarter`(159)에서 `p.deadline === "상시"` 분기를 타고 모든 분기에 무조건 포함되어, 대기인데도 분기 카운트에 누락 없이 잡힙니다.
-- **완료 → 대기**: 완료 시 100%로 강제됐던 progress/tasks/issues가 그대로 남아 대기 카드가 100% + 모든 task "완료"로 표시됩니다.
-- **타임라인**: 대기는 원래 하단 칩 섹션으로 빠져야 하는데 옛 날짜가 남아있으면 메인 타임라인 바로 그려집니다(대기 라벨 + 일반 바 동시 노출). 또한 quarter 필터 통과 여부가 옛 날짜에 의존해 들쭉날쭉.
-- **Kanban 카드 자체 오류**: `KanbanBoard.ddayLabel`은 `"상시"` 문자열이 들어오면 정규식 검사에서 null 반환하니 throw는 안 나지만, 진행 → 대기로 옮긴 카드의 deadline이 yyyy-mm-dd면 "마감 임박" 황색 링이 대기 컬럼에 남는 시각 오류.
+**원인**
+- 프리뷰는 iframe 안에서 앱이 실행되어, iframe 내부 body의 스크롤이 상위 페이지로 전파되지 않습니다. 그래서 포커스/스크롤 부작용이 가려져 보이지 않습니다.
+- 배포 URL은 top-level 문서이기 때문에 다음 두 가지가 함께 작동합니다:
+  1. `openDetailWindow`가 동기로 `window.open`을 호출하긴 하지만, 그 직후 `getScreenDetails()`가 **권한 프롬프트**를 띄우고, 프롬프트가 닫힐 때 브라우저가 클릭한 카드(activeElement)를 `scrollIntoView`로 강제로 보이게 만듭니다. 이때 카드가 hover로 1.25배 확대된 상태라 "scroll-into-view 위치"가 화면 아래쪽이 되어 페이지가 점프합니다.
+  2. `onMouseDown preventDefault`가 적용되어도, popup open 자체가 일부 브라우저(특히 Chromium)에서 opener 문서에 focus 이벤트를 다시 발생시키고, 활성 요소가 카드라면 동일한 자동 스크롤이 일어납니다.
 
-### 해결
-`handleStatusChange`에서 status 변경과 동시에 정규화 적용:
-- `next === "대기"` → `startDate: undefined`, `deadline: ""`로 강제.
-- `next === "상시"` → `deadline: "상시"`로 강제(시작일이 없으면 오늘 날짜로 채움 — 무한바 렌더링 시 시작점 필요).
-- `next === "진행"`이고 이전이 대기였던 경우(=날짜가 비어 있음) → 시작일을 오늘로 채움. 마감일은 비워두고 사용자에게 편집 안내(또는 그대로 빈 채로 둠).
-- `next === "완료"` 분기는 기존 로직 유지(이미 100% 정규화).
-
-추가로 `src/components/control/KanbanBoard.tsx`에서 대기 컬럼 카드는 D-day 배지/마감임박 링을 아예 숨기는 가드 한 줄을 넣어 시각적 일관성 보강.
+**해결 방안**
+- `openDetailWindow` 호출 직전에 `const savedY = window.scrollY`를 저장하고, `requestAnimationFrame` 두 번 후에 `window.scrollTo({ top: savedY, behavior: "instant" })`로 복원합니다. 이렇게 하면 브라우저의 자동 scroll-into-view를 무력화할 수 있습니다.
+- 카드 클릭 핸들러에서 `(e.currentTarget as HTMLElement).blur()`를 호출해 활성 요소를 카드에서 떼어냅니다(현재는 hover state만 false로 바꾸고 focus는 그대로).
+- `getScreenDetails()` 권한 프롬프트가 점프의 직접적인 유발자이므로, 권한 요청을 **앱 진입 시 1회**만 수행하고 결과(우측 모니터 좌표)를 모듈 변수에 캐시합니다. 이후 `openDetailWindow`는 캐시된 좌표로 동기 `window.open`만 수행하고 `getScreenDetails`를 다시 호출하지 않습니다.
 
 ---
 
-## 2. 그리드/칸반/타임라인에서 카드 클릭 시 페이지가 최하단/아래칸으로 점프
+### 2. 타임라인의 TODAY 배지가 날짜를 가림 / 빨간 선이 차트 영역까지 이어지지 않음 / 라벨 변경
 
-### 원인 (두 요인이 겹침)
+**원인**
+- `TimelineView.tsx` 279~289줄: TODAY 배지는 tick header(높이 36px) 안에 `-top-1 -left-4`로 절대 배치되어, tick 라벨(`5/4` 등)과 동일한 가로 위치에 겹쳐서 텍스트를 덮습니다.
+- 빨간 세로선 또한 tick header div의 `top-0 bottom-0` 안쪽에만 그려져 있어, 그 아래 프로젝트 행 영역까지 이어지지 않습니다.
 
-**(A) `openDetailWindow`의 `await getScreenDetails()` (src/lib/sync.ts 38~53)**
-`handleOpen`은 `async`이고 내부에서 `await window.getScreenDetails()`를 호출합니다. 이 API는 **Window Management 권한이 없으면 권한 프롬프트를 띄우고, 프롬프트가 뜨는 동안 `window.open` 호출이 사용자 제스처에서 분리되어 팝업 차단되거나 지연**됩니다. 프롬프트가 닫히면 브라우저가 직전에 포커스됐던 요소(클릭한 카드 버튼)를 `scrollIntoView`로 화면에 다시 끌어옵니다. 카드가 확대(scale 1.25)되어 원래 위치보다 아래로 늘어나 있는 상태에서 이 스크롤 보정이 일어나면 **"바로 아래 칸으로 점프"** 하는 것처럼 보입니다.
-
-**(B) ProjectCard 확대(scale-[1.25]) + transformOrigin "center top"**
-그리드 카드는 hover 시 1.25배 확대되며 `<article>` 자체 크기는 그대로(absolute 자식). 클릭 시점에 hover가 유지되어 카드가 확대된 채로 있습니다. 클릭 → 버튼에 포커스 → 새 창 열림 → 부모 창이 포커스 잃음 → 다시 부모로 돌아오면 브라우저가 포커스 요소를 가시 영역으로 스크롤합니다. 카드가 화면 하단부에 있을 때 확대된 부분이 viewport 밖으로 나가 있으면 브라우저가 페이지를 아래로 스크롤해 맞추므로 "최하단으로 넘어간 듯" 보입니다. 칸반/타임라인은 확대가 없어 폭은 작지만, (A) 요인 + 포커스 스크롤만으로도 약간의 점프가 생깁니다.
-
-### 해결
-1. **`openDetailWindow`에서 동기 `window.open`을 먼저 호출**하고, 그 후에 `getScreenDetails`로 위치만 보정(`win.moveTo`/`resizeTo`). 즉 호출 순서를 뒤집어 사용자 제스처와 `window.open`을 분리하지 않습니다. 권한 프롬프트는 기존 창 위치 보정 시도에서만 발생하고, 프롬프트가 떠도 부모 페이지 포커스가 그대로 유지되어 스크롤 보정이 일어나지 않습니다.
-2. **클릭 핸들러에서 포커스로 인한 스크롤 차단**: 카드/칸반 카드/타임라인 바의 클릭 트리거에 `onMouseDown={(e) => e.preventDefault()}`를 추가해 클릭 시 버튼이 포커스를 가져가지 않도록 합니다(키보드 접근성은 `onKeyDown` Enter/Space 분기로 별도 유지).
-3. **ProjectCard hover 해제 보정**: 클릭 직후 `setHover(false)`를 호출해 카드가 확대된 채 새 창이 열리지 않도록 합니다. 새 창 닫고 돌아왔을 때 카드가 원위치라 브라우저 포커스 스크롤 보정도 영향 없음.
-4. (옵션) `handleOpen`에서 `await openDetailWindow(...)` 대신 `void openDetailWindow(...)`로 fire-and-forget. 부모 컴포넌트가 await 동안 다른 상태 변화로 리렌더되는 것을 막습니다.
+**해결 방안**
+- 타임라인 영역을 하나의 grid 컨테이너로 묶고, 그 안에 헤더 + 행 목록을 두며, 그 위에 **`absolute inset-0`로 깔리는 오버레이 div**를 따로 만들어 그 안에 빨간 세로선을 한 번만 그립니다. 선이 헤더부터 마지막 행까지 자연스럽게 관통됩니다.
+- TODAY 배지는 tick header 위쪽으로 빼서 음수 top으로 띄우거나(예: `-top-7`), 헤더와 별도의 얇은 라벨 행을 추가합니다. 위치는 `transform: translateX(-50%)`로 선 중앙에 정렬합니다.
+- 라벨 텍스트는 "TODAY" → `현재 (M월 D일)`로 변경 (`format(today, "M월 d일")`). 상세페이지의 워크플랜과 동일한 톤으로 통일.
 
 ---
 
-## 수정 파일
+### 3. Window B가 같은 화면에 열림(예전엔 두 번째 모니터 풀스크린)
 
-- `src/routes/index.tsx` — `handleStatusChange`에 상태별 날짜 정규화 추가, `handleOpen`을 fire-and-forget로 변경.
-- `src/lib/sync.ts` — `openDetailWindow`에서 `window.open`을 먼저 호출 후 위치 보정.
-- `src/components/control/ProjectCard.tsx` — 클릭 시 `onMouseDown` preventDefault, 클릭 직후 hover 해제.
-- `src/components/control/KanbanBoard.tsx` — 카드 클릭 `onMouseDown` preventDefault, 대기 컬럼에서 D-day/임박 링 숨김.
-- `src/components/control/TimelineView.tsx` — 바 클릭 요소에 `onMouseDown` preventDefault.
+**원인**
+- 이전 수정에서 "사용자 제스처 분리로 인한 페이지 점프"를 막기 위해 `window.open`을 **동기**로 먼저 호출하도록 바꿨고, `getScreenDetails()`는 그 뒤로 미뤘습니다(`src/lib/sync.ts` 36~70줄).
+- 이때 동기 open은 항상 현재 화면 좌표(left=0, top=0, availWidth/Height)를 features 문자열로 사용합니다. 이후 `moveTo/resizeTo`로 두 번째 모니터로 옮기려 하지만, 다수 브라우저는 popup의 `moveTo/resizeTo`를 이미 표시 중인 창에 대해 **무시**(특히 Chrome의 multi-screen 정책)하기 때문에 결과적으로 항상 현재 화면에서 열립니다.
+
+**해결 방안 (1번 해결책과 함께 자연스럽게 해결됨)**
+- 권한 요청과 우측 모니터 좌표 탐색을 **앱 마운트 시점**(혹은 사용자가 처음으로 카드 hover/click한 직후)에 한 번만 수행해 모듈 변수에 캐싱합니다.
+- 캐시된 좌표가 있으면 `window.open(url, name, "left=...,top=...,width=...,height=...")`를 곧바로 그 좌표로 호출 → 처음부터 두 번째 모니터에서 풀스크린으로 열립니다. 동기 호출이라 사용자 제스처도 유지됩니다.
+- 캐시가 없으면(권한 미부여/단일 모니터) 현재 화면 풀스크린으로 fallback.
 
 ---
 
-## 확인 부탁
+### 4. 진행률 바에 "37%" 같은 텍스트가 잘릴 때
 
-1. 대기로 이동 시 **이전 시작일을 보존**해뒀다가 다시 진행/상시로 돌아왔을 때 복원할까요, 아니면 그냥 **항상 비우고 사용자가 다시 입력**하게 둘까요? (권장: 항상 비움 — 단순하고 v5 규칙과 일치)
-2. 클릭 시 **새 창 자동 위치 정렬(getScreenDetails 보정)** 자체를 제거할까요? 멀티모니터 환경에서만 의미 있고, 단일 모니터에서는 권한 프롬프트 비용만 큽니다. (권장: 제거하고 단순 `window.open`만 사용)
+**원인**
+- `TimelineView`의 진행률 바, 그리고 `KpiBar`/카드 등의 게이지는 너비가 좁아도 항상 텍스트를 렌더합니다. 작은 너비 + `overflow: hidden`이 만나 글자가 잘립니다(업로드한 두 번째 이미지의 "37%[" 처럼).
+
+**해결 방안**
+- 공통 규칙: **바 내부 가용폭이 텍스트 최소폭(대략 28~32px)보다 작으면 텍스트를 숨김**.
+- 구현: `widthPct`(또는 픽셀)를 계산해 임계값 미만일 때 `<span>%</span>`를 렌더하지 않는 조건을 추가합니다. 필요한 곳:
+  - `TimelineView.tsx`: 377~388줄의 progress/D-day 라벨. `widthPct`로 분기.
+  - `KpiBar.tsx`: 진행률 게이지 텍스트. 컴포넌트 내부에서 ref로 px 너비 측정 후 분기(또는 부모가 전달한 percent 기준).
+  - `ProjectCard.tsx`의 진행률 표시는 카드 본문이라 잘릴 일은 없지만, 동일 헬퍼 함수로 통일 가능.
+- 헬퍼 추가 제안: `src/lib/utils.ts`에 `shouldShowBarLabel(widthPx, minPx = 32)` 같은 함수.
+
+---
+
+## 기술적 변경 요약 (구현 시)
+
+```text
+src/lib/sync.ts
+  + 모듈 변수 cachedRightScreen: { left, top, width, height } | null
+  + ensureScreenDetails(): 1회 권한 요청, 결과 캐시
+  ~ openDetailWindow(): 캐시 사용 → 동기 window.open만, getScreenDetails 제거
+
+src/routes/index.tsx (또는 __root.tsx)
+  + 마운트 시 ensureScreenDetails() 호출 (사용자 제스처 직후가 안전)
+  ~ 카드 onClick에서 savedY 저장 → openDetailWindow → rAF×2 후 scrollTo 복원
+  ~ onClick 핸들러 내부에서 currentTarget.blur()
+
+src/components/control/TimelineView.tsx
+  ~ 컨테이너 구조 재배치: 헤더와 행을 감싸는 wrapper + absolute overlay
+  ~ 빨간 세로선: overlay에 한 번만, top-0 bottom-0
+  ~ TODAY 배지: 헤더 위쪽으로 분리, "현재 (M월 d일)" 텍스트
+  ~ 진행률/D-day 라벨: widthPct < threshold면 숨김
+
+src/components/control/KpiBar.tsx
+  ~ 진행률 텍스트: 바 너비가 충분할 때만 렌더
+```
+
+질문 없이 그대로 진행해도 되는지, 또는 4번을 "텍스트는 항상 바 외부(우측)에 표시"로 바꾸고 싶은지만 알려주시면 바로 구현하겠습니다.

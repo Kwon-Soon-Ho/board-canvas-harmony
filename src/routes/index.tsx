@@ -13,7 +13,7 @@ import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2, Sparkles, FilePlus2 } from "lucide-react";
 import { MOCK_PROJECTS, backfillStartDate, type Department, type Status, type Project } from "@/lib/mockProjects";
-import { getSyncChannel, openDetailWindow } from "@/lib/sync";
+import { getSyncChannel, openDetailWindow, ensureScreenDetails } from "@/lib/sync";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -282,15 +282,35 @@ function ControlCenter() {
     return () => ch.close();
   }, [lastOpenedId, projects, hydrated]);
 
+  // Resolve right-monitor target once after first user gesture (lazy permission prompt).
+  useEffect(() => {
+    if (!hydrated) return;
+    const handler = () => {
+      void ensureScreenDetails();
+      window.removeEventListener("pointerdown", handler);
+    };
+    window.addEventListener("pointerdown", handler, { once: true });
+    return () => window.removeEventListener("pointerdown", handler);
+  }, [hydrated]);
+
   const handleOpen = (id: string) => {
     setLastOpenedId(id);
     const project = projects.find((p) => p.id === id);
     const ch = getSyncChannel();
     ch?.postMessage({ type: "OPEN_PROJECT", projectId: id, project });
     ch?.close();
-    // Fire-and-forget: do not await — keeps the click in the same user-gesture frame
-    // and prevents focus-restore scroll jumps when the new window steals focus.
-    void openDetailWindow(id);
+
+    // Anti-jump: snapshot scroll, drop focus, restore scroll on next frames.
+    const savedY = window.scrollY;
+    const active = document.activeElement as HTMLElement | null;
+    active?.blur?.();
+
+    openDetailWindow(id);
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: savedY, behavior: "auto" });
+      requestAnimationFrame(() => window.scrollTo({ top: savedY, behavior: "auto" }));
+    });
   };
 
   const handleStatusChange = (id: string, next: Status) => {
