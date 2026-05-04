@@ -58,7 +58,7 @@ function ControlCenter() {
   const [searchValue, setSearchValue] = useState("");
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<"deadline" | "progress" | "recent">("recent");
+  const [sortBy, setSortBy] = useState<"updated" | "created" | "progress" | "deadline">("updated");
   const [sortDesc, setSortDesc] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
