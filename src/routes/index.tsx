@@ -200,8 +200,9 @@ function ControlCenter() {
         if (p) ch.postMessage({ type: "OPEN_PROJECT", projectId: p.id, project: p });
       }
       if (msg?.type === "PROJECT_UPDATE" && msg.project) {
+        const incoming = { ...msg.project, updatedAt: msg.project.updatedAt ?? new Date().toISOString() };
         setProjects((prev) => {
-          const next = prev.map((p) => (p.id === msg.project.id ? msg.project : p));
+          const next = prev.map((p) => (p.id === incoming.id ? incoming : p));
           persist(next);
           return next;
         });
