@@ -374,6 +374,8 @@ function ControlCenter() {
                 onDelete={(id) => setPendingDeleteId(id)}
                 onStatusChange={handleStatusChange}
               />
+            ) : view === "timeline" ? (
+              <TimelineView projects={filtered} onOpen={handleOpen} />
             ) : (
               <section
                 aria-label="프로젝트 목록"
