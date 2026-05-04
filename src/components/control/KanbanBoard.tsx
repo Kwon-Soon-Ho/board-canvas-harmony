@@ -163,7 +163,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                                 width: `${p.progress}%`,
                                 background:
                                   isInProgress && dd?.urgent && p.progress < 100
-                                    ? "var(--status-active)"
+                                    ? "oklch(0.82 0.17 85)"
                                     : colorVar,
                               }}
                             />
