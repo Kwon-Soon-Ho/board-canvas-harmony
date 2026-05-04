@@ -82,7 +82,15 @@ function ControlCenter() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [issuesOnly, setIssuesOnly] = useState(false);
-  const [assignee, setAssignee] = useState<string | null>(null);
+  const [assignees, setAssignees] = useState<Set<string>>(new Set());
+  const toggleAssignee = (name: string) => {
+    setAssignees((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
   const [view, setView] = useState<ViewMode>("grid");
 
   // Quarter filter — defaults to current quarter
@@ -138,7 +146,7 @@ function ControlCenter() {
     setStatuses(new Set());
     setUrgentOnly(false);
     setIssuesOnly(false);
-    setAssignee(null);
+    setAssignees(new Set());
   };
 
   // Quarter range (inclusive) — shared between FilterBar (counts) and main filtering
