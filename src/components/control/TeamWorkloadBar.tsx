@@ -5,8 +5,9 @@ import { Users, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Props {
   projects: Project[];
-  assignee: string | null;
-  setAssignee: (name: string | null) => void;
+  assignees: Set<string>;
+  toggleAssignee: (name: string) => void;
+  clearAssignees: () => void;
 }
 
 type MemberStat = {
@@ -27,7 +28,7 @@ function dDayDiff(deadline: string): number | null {
   return Math.round((d.getTime() - today.getTime()) / 86400000);
 }
 
-export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
+export function TeamWorkloadBar({ projects, assignees, toggleAssignee, clearAssignees }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const stats = useMemo<MemberStat[]>(() => {
@@ -82,17 +83,8 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             = D-7 이내 긴급 건수
           </div>
           <div className="flex flex-1 flex-wrap items-center gap-1.5">
-            {assignee && (
-              <button
-                type="button"
-                onClick={() => setAssignee(null)}
-                className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[13px] font-bold text-white"
-              >
-                전체 보기
-              </button>
-            )}
             {visible.map((s) => {
-              const active = assignee === s.name;
+              const active = assignees.has(s.name);
               const isDisabled = s.total === 0;
               return (
                 <button
@@ -100,7 +92,7 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
                   type="button"
                   disabled={isDisabled}
                   aria-pressed={active}
-                  onClick={() => setAssignee(active ? null : s.name)}
+                  onClick={() => toggleAssignee(s.name)}
                   title={`${s.name} (${s.rank}) · 진행·상시 ${s.active}${
                     s.urgent ? ` · 긴급 ${s.urgent}` : ""
                   }`}
@@ -124,6 +116,15 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
                 </button>
               );
             })}
+            {assignees.size > 0 && (
+              <button
+                type="button"
+                onClick={clearAssignees}
+                className="ml-1 text-[12px] font-medium text-white/45 underline-offset-4 hover:text-white hover:underline"
+              >
+                선택 해제
+              </button>
+            )}
           </div>
 
           {stats.length > 12 && (
