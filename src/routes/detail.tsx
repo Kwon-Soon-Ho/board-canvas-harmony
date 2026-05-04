@@ -140,12 +140,12 @@ function DetailWindow() {
 
   const handleDeleteTask = (taskId: string) => {
     const t = project?.tasks.find(x => x.id === taskId);
-    setPendingDelete({ kind: 'task', id: taskId, title: t?.name ?? '상세 업무' });
+    setPendingDelete({ kind: 'task', id: taskId, title: t?.title ?? '상세 업무' });
   };
 
   const handleDeleteIssue = (issueId: string) => {
     const i = project?.issues.find(x => x.id === issueId);
-    setPendingDelete({ kind: 'issue', id: issueId, title: i?.name ?? '이슈' });
+    setPendingDelete({ kind: 'issue', id: issueId, title: i?.title ?? '이슈' });
   };
 
   const confirmPendingDelete = () => {
