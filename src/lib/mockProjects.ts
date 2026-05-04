@@ -351,7 +351,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
       department: dept,
       status,
       progress: totalProgress,
-      startDate: status === "상시" ? undefined : startDate,
+      startDate,
       deadline: status === "상시" ? "상시" : deadline,
       pm,
       members: membersList,
