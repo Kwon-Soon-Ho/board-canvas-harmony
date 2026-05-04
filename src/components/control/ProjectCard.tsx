@@ -189,7 +189,7 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
                   <div
-                    className="h-full rounded-full bg-white transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                    className={`h-full rounded-full transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] ${tierBarClass}`}
                     style={{ width: hover ? `${progress}%` : "0%" }}
                   />
                 </div>
@@ -198,7 +198,7 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
               {/* Deadline & D-Day */}
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded bg-red-500/10 px-1.5 py-0.5 text-[11px] font-black text-red-500 ring-1 ring-inset ring-red-500/20">
+                  <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black ring-1 ring-inset ${tierBadgeClass}`}>
                     {dday}
                   </span>
                   <span className="text-[11px] text-white/40 font-medium">{project.deadline}</span>
