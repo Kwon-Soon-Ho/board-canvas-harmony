@@ -332,7 +332,7 @@ export function TimelineView({ projects, onOpen }: Props) {
                       width: `${widthPct}%`,
                       background: `color-mix(in srgb, ${colorVar} 18%, transparent)`,
                     }}
-                    title={`${p.title} · ${p.startDate ?? "?"} → ${p.deadline} · ${p.progress}%`}
+                    title={`${p.title}\n시작 ${p.startDate ?? "?"} → 마감 ${p.deadline}\n진행률 ${p.progress}%`}
                   >
                     <div
                       className="h-full"
@@ -342,6 +342,14 @@ export function TimelineView({ projects, onOpen }: Props) {
                         opacity: 0.85,
                       }}
                     />
+                    {/* Clipped-left indicator */}
+                    {s < rangeStart && (
+                      <span className="pointer-events-none absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-white/40 to-transparent" aria-hidden />
+                    )}
+                    {/* Clipped-right indicator */}
+                    {e > rangeEnd && (
+                      <span className="pointer-events-none absolute inset-y-0 right-0 w-3 bg-gradient-to-l from-white/40 to-transparent" aria-hidden />
+                    )}
                     <span className="absolute inset-0 flex items-center justify-between px-2 font-mono text-[12px] font-bold text-white/95">
                       <span>{p.progress}%</span>
                       <span className={isUrgent ? "text-amber-200" : "text-white/80"}>

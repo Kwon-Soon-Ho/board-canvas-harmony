@@ -12,7 +12,7 @@ import { TimelineView } from "@/components/control/TimelineView";
 import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2, Sparkles, FilePlus2 } from "lucide-react";
-import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, backfillStartDate, type Department, type Status, type Project } from "@/lib/mockProjects";
 import { getSyncChannel, openDetailWindow } from "@/lib/sync";
 import {
   AlertDialog,
@@ -28,46 +28,16 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: ControlCenter,
+  // Dashboard is localStorage-driven; SSR adds no value and causes hydration mismatch.
+  ssr: false,
 });
 
 const STORAGE_KEY = "design-projects-store";
-const MIGRATION_KEY = "design-projects-migration-v3";
+const BACKUP_KEY = "design-projects-store-backup-v3";
+const MIGRATION_KEY = "design-projects-migration-v4";
 
 function migrateImages(imgs: any[]): any[] {
   return (imgs || []).map((img) => (typeof img === "string" ? { url: img, memo: "" } : img));
-}
-
-// Seeded pseudo-random so each project gets a stable random offset
-function seededRand(seed: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return ((h >>> 0) % 10000) / 10000;
-}
-
-function backfillStartDate(p: any, force = false): any {
-  // 대기 (pending) projects intentionally have no startDate
-  if (p.status === "대기") return { ...p, startDate: undefined };
-  if (!force && p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
-
-  let derived: string | undefined;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
-    // Random offset 14–75 days BEFORE deadline (seeded by project id for stability)
-    const r = seededRand(String(p.id));
-    const offset = 14 + Math.floor(r * 62);
-    const d = new Date(p.deadline);
-    d.setDate(d.getDate() - offset);
-    derived = d.toISOString().slice(0, 10);
-  } else {
-    // 상시 / no deadline: random start in last 90 days
-    const r = seededRand(String(p.id));
-    const d = new Date();
-    d.setDate(d.getDate() - Math.floor(r * 90));
-    derived = d.toISOString().slice(0, 10);
-  }
-  return { ...p, startDate: derived };
 }
 
 function normalizeProgress(list: Project[]): Project[] {
@@ -121,19 +91,29 @@ function ControlCenter() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       const migrationDone = localStorage.getItem(MIGRATION_KEY) === "1";
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const migrated = parsed.map((p: any) => backfillStartDate({
-          ...p,
-          images: migrateImages(p.images),
-          tasks: (p.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
-          issues: (p.issues || []).map((i: any) => ({ ...i, imageUrls: migrateImages(i.imageUrls) })),
-        }, !migrationDone));
-        const normalized = normalizeProgress(migrated);
-        setProjects(normalized);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-        localStorage.setItem(MIGRATION_KEY, "1");
+      const force = !migrationDone;
+      // Snapshot pre-migration data once for safety.
+      if (force && saved && !localStorage.getItem(BACKUP_KEY)) {
+        localStorage.setItem(BACKUP_KEY, saved);
       }
+      // Merge: ensure every seed project exists, then overlay saved overrides.
+      const seedById = new Map(MOCK_PROJECTS.map((p) => [p.id, p]));
+      const savedList: any[] = saved ? JSON.parse(saved) : [];
+      for (const s of savedList) {
+        const merged = {
+          ...seedById.get(s.id),
+          ...s,
+          images: migrateImages(s.images),
+          tasks: (s.tasks || []).map((t: any) => ({ ...t, imageUrls: migrateImages(t.imageUrls) })),
+          issues: (s.issues || []).map((i: any) => ({ ...i, imageUrls: migrateImages(i.imageUrls) })),
+        };
+        seedById.set(s.id, merged as Project);
+      }
+      const merged = Array.from(seedById.values()).map((p: any) => backfillStartDate(p, force));
+      const normalized = normalizeProgress(merged);
+      setProjects(normalized);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      localStorage.setItem(MIGRATION_KEY, "1");
     } catch (err) {
       console.error("Dashboard Migration failed", err);
     }

@@ -48,6 +48,8 @@ export interface Project {
   status: Status;
   progress: number;
   startDate?: string;
+  /** True when startDate was explicitly set by a user (preserved across migrations). */
+  startDateUserSet?: boolean;
   deadline: string;
   updatedAt?: string;
   pm: string;
@@ -57,6 +59,44 @@ export interface Project {
   thumbnail: ThumbnailConfig;
   tasks: Task[];
   issues: Issue[];
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Deterministic helpers
+// ──────────────────────────────────────────────────────────────────────
+export function seededRand(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+/**
+ * Ensures every non-pending project has a sensible randomized startDate.
+ * - 대기 (Pending): startDate forcibly cleared.
+ * - User-set values: preserved when `force` is true unless `startDateUserSet` is false.
+ * - Otherwise: 14–75 days before deadline, seeded by id (stable across reloads).
+ * - 상시 / no deadline: random start in last 90 days, seeded.
+ */
+export function backfillStartDate<T extends Partial<Project> & { id: string; status?: string; deadline?: string; startDate?: string; startDateUserSet?: boolean }>(p: T, force = false): T {
+  if (p.status === "대기") return { ...p, startDate: undefined };
+  if (p.startDateUserSet && p.startDate) return p;
+  if (!force && p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
+
+  let derived: string;
+  if (p.deadline && /^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+    const offset = 14 + Math.floor(seededRand(String(p.id)) * 62);
+    const d = new Date(p.deadline);
+    d.setDate(d.getDate() - offset);
+    derived = d.toISOString().slice(0, 10);
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() - Math.floor(seededRand(String(p.id)) * 90));
+    derived = d.toISOString().slice(0, 10);
+  }
+  return { ...p, startDate: derived };
 }
 
 export const DEPT_COLOR: Record<Department, string> = {
@@ -248,8 +288,6 @@ const TITLES: Record<Department, string[]> = {
 };
 
 export const MOCK_PROJECTS: Project[] = (() => {
-  // Try to load from localStorage first for persistence
-  const saved = typeof window !== 'undefined' ? localStorage.getItem('design-projects-store') : null;
   const initialData = Array.from({ length: 48 }, (_, i) => {
     const isCommon = i < 5;
     const dept = isCommon ? "공통" : DEPTS[(i - 5) % DEPTS.length];
@@ -265,12 +303,13 @@ export const MOCK_PROJECTS: Project[] = (() => {
     
     const status = STATUSES[i % STATUSES.length];
     const deadline = new Date(2026, 4, 1 + (i % 30)).toISOString().slice(0, 10);
-    // 대기 projects have no start date. Others: random 14–75 days before deadline.
+    const projectId = `p-${String(i + 1).padStart(3, "0")}`;
+    // Deterministic startDate (14–75 days before deadline). 대기 excluded.
     let startDate: string | undefined;
     if (status !== "대기") {
-      const offsetDays = 14 + ((i * 7 + 11) % 62);
+      const offset = 14 + Math.floor(seededRand(projectId) * 62);
       const sd = new Date(deadline);
-      sd.setDate(sd.getDate() - offsetDays);
+      sd.setDate(sd.getDate() - offset);
       startDate = sd.toISOString().slice(0, 10);
     }
 
@@ -284,40 +323,32 @@ export const MOCK_PROJECTS: Project[] = (() => {
     const pm = pmInfo.name;
     const pmRankValue = RANK_VALUE[pmInfo.rank];
 
-    // Assign 3-4 members, EXCLUDING the PM AND members with rank > PM
     const isEligibleMember = (m: {name: string, rank: string}) => m.name !== pm && RANK_VALUE[m.rank] <= pmRankValue;
-    
     const memberPool = ALL_MEMBERS.filter(isEligibleMember);
     const deptMemberPool = TEAM_DATA[dept].filter(isEligibleMember);
-    
-    // For Common projects, or as fallback, use the whole eligible pool. Ensure at least 3 members.
     const sourcePool = (isCommon || deptMemberPool.length < 3) ? memberPool : deptMemberPool;
-    
-    // Safety check if sourcePool is empty
     const safeSourcePool = sourcePool.length > 0 ? sourcePool : memberPool;
 
     const members = Array.from({ length: 3 + (i % 2) }, (_, j) => {
       return safeSourcePool[(i + j) % safeSourcePool.length].name;
     });
-
     const membersList = Array.from(new Set(members)).filter(Boolean);
 
-    // Generate Tasks
-    const taskCount = 3 + (i % 4); // 3 to 6 tasks
-    const taskStatuses: TaskStatus[] = ["대기", "진행", "검토중", "승인됨", "보류", "취소", "완료"];
+    // Generate Tasks (deterministic progress; no Math.random)
+    const taskCount = 3 + (i % 4);
     const tasks: Task[] = Array.from({ length: taskCount }, (_, t) => {
       const tStart = new Date(2026, 3 + (t % 2), 10 + (t * 2));
       const tEnd = new Date(tStart);
       tEnd.setDate(tEnd.getDate() + 7 + (t * 3));
-      const rawProgress = Math.floor(Math.random() * 10) * 10;
-      const taskStatus = rawProgress === 100 ? "완료" : (rawProgress > 0 ? "진행" : "대기");
+      const rawProgress = Math.floor(seededRand(`${projectId}-task-${t}`) * 11) * 10;
+      const taskStatus: TaskStatus = rawProgress >= 100 ? "완료" : (rawProgress > 0 ? "진행" : "대기");
       
       return {
         id: `t-${i}-${t}`,
         title: `${title} - 단계 ${t + 1}`,
         content: `이 작업은 ${title}의 주요 마일스톤 중 하나로, 프로젝트 성공에 필수적인 단계입니다. 담당자는 정해진 기한 내에 산출물을 제출해야 합니다.`,
         status: taskStatus,
-        progress: rawProgress,
+        progress: Math.min(100, rawProgress),
         startDate: tStart.toISOString().slice(0, 10),
         endDate: tEnd.toISOString().slice(0, 10),
         assignee: membersList[t % membersList.length] || pm,
@@ -329,8 +360,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
       ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
       : 0;
 
-    // Generate Issues
-    const issueCount = i % 3; // 0 to 2 issues
+    const issueCount = i % 3;
     const issues: Issue[] = Array.from({ length: issueCount }, (_, is) => {
       const isResolved = is % 2 === 0;
       const iStart = new Date(2026, 4, 15 + is);
@@ -347,12 +377,12 @@ export const MOCK_PROJECTS: Project[] = (() => {
         imageUrls: [{ url: images[(is + 1) % images.length].url, memo: "" }],
         resolved: isResolved,
         memo: isResolved ? "피드백 반영 완료: 색상 대비 및 타이포그래피 여백 수정 확인됨." : undefined,
-        timestamp: isResolved ? new Date().toISOString() : undefined,
+        timestamp: isResolved ? "2026-05-01T00:00:00.000Z" : undefined,
       };
     });
 
     return {
-      id: `p-${String(i + 1).padStart(3, "0")}`,
+      id: projectId,
       title,
       department: dept,
       status,
@@ -374,17 +404,5 @@ export const MOCK_PROJECTS: Project[] = (() => {
     };
   });
 
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      // Merge saved data with initial data to ensure all projects exist but modifications are kept
-      return initialData.map(p => {
-        const found = parsed.find((x: any) => x.id === p.id);
-        return found || p;
-      });
-    } catch {
-      return initialData;
-    }
-  }
   return initialData;
 })();
