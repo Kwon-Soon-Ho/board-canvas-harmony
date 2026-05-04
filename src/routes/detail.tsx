@@ -105,28 +105,36 @@ function DetailWindow() {
   }, []);
 
   // Broadcast changes to other windows (Window A)
+  const initialProjectRef = useRef(project);
   useEffect(() => {
     if (!project) return;
-    
+
+    // Stamp updatedAt automatically when meaningful state changes (skip first render)
+    let outgoing = project;
+    if (initialProjectRef.current && initialProjectRef.current !== project) {
+      outgoing = { ...project, updatedAt: new Date().toISOString() };
+    }
+    initialProjectRef.current = project;
+
     // Update the in-memory MOCK_PROJECTS array so it persists during the session
-    const idx = MOCK_PROJECTS.findIndex(p => p.id === project.id);
+    const idx = MOCK_PROJECTS.findIndex(p => p.id === outgoing.id);
     if (idx !== -1) {
-      MOCK_PROJECTS[idx] = project;
+      MOCK_PROJECTS[idx] = outgoing;
     }
 
     const ch = getSyncChannel();
     if (!ch) return;
-    ch.postMessage({ type: "PROJECT_UPDATE", project });
-    
+    ch.postMessage({ type: "PROJECT_UPDATE", project: outgoing });
+
     // Persist to localStorage
     const saved = localStorage.getItem('design-projects-store');
     let allProjects = MOCK_PROJECTS;
     if (saved) {
       try {
         allProjects = JSON.parse(saved);
-        const pIdx = allProjects.findIndex(p => p.id === project.id);
-        if (pIdx !== -1) allProjects[pIdx] = project;
-        else allProjects.push(project);
+        const pIdx = allProjects.findIndex(p => p.id === outgoing.id);
+        if (pIdx !== -1) allProjects[pIdx] = outgoing;
+        else allProjects.push(outgoing);
       } catch { /* ignore */ }
     }
     localStorage.setItem('design-projects-store', JSON.stringify(allProjects));
