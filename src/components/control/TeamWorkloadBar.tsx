@@ -126,11 +126,11 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             })}
           </div>
 
-          {stats.length > 8 && (
+          {stats.length > 12 && (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[13px] font-semibold text-white/70 hover:text-white"
+              className="inline-flex h-[30px] shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 text-[13px] font-semibold text-white/70 hover:text-white"
             >
 
               {expanded ? (
