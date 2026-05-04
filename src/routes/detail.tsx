@@ -1279,8 +1279,13 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
         <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
           <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold text-white/70 hover:text-white hover:bg-white/10 transition">취소</button>
           <button type="button" disabled={!!dateError} onClick={() => {
-            const finalDeadline = status === "상시" ? "상시" : deadline;
-            const finalStart = status === "상시" ? undefined : (startDate || undefined);
+            const finalDeadline =
+              status === "상시" ? "상시" :
+              status === "대기" ? "" :
+              deadline;
+            const finalStart =
+              status === "대기" ? undefined :
+              (startDate || undefined);
             const userChangedStart = finalStart !== project.startDate;
             onSave({
               startDate: finalStart,
