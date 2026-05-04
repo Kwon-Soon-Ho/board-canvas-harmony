@@ -11,7 +11,7 @@ import { KanbanBoard } from "@/components/control/KanbanBoard";
 import { TimelineView } from "@/components/control/TimelineView";
 import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
-import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
+import { Plus, ArrowUpDown, Clock, CheckCircle2, Sparkles, FilePlus2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
 import { getSyncChannel, openDetailWindow } from "@/lib/sync";
 import {
