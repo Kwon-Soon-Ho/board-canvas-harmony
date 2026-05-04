@@ -48,6 +48,8 @@ export interface Project {
   status: Status;
   progress: number;
   startDate?: string;
+  /** True when startDate was explicitly set by a user (preserved across migrations). */
+  startDateUserSet?: boolean;
   deadline: string;
   updatedAt?: string;
   pm: string;
@@ -57,6 +59,44 @@ export interface Project {
   thumbnail: ThumbnailConfig;
   tasks: Task[];
   issues: Issue[];
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Deterministic helpers
+// ──────────────────────────────────────────────────────────────────────
+export function seededRand(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+/**
+ * Ensures every non-pending project has a sensible randomized startDate.
+ * - 대기 (Pending): startDate forcibly cleared.
+ * - User-set values: preserved when `force` is true unless `startDateUserSet` is false.
+ * - Otherwise: 14–75 days before deadline, seeded by id (stable across reloads).
+ * - 상시 / no deadline: random start in last 90 days, seeded.
+ */
+export function backfillStartDate<T extends Partial<Project> & { id: string; status?: string; deadline?: string; startDate?: string; startDateUserSet?: boolean }>(p: T, force = false): T {
+  if (p.status === "대기") return { ...p, startDate: undefined };
+  if (p.startDateUserSet && p.startDate) return p;
+  if (!force && p.startDate && /^\d{4}-\d{2}-\d{2}$/.test(p.startDate)) return p;
+
+  let derived: string;
+  if (p.deadline && /^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) {
+    const offset = 14 + Math.floor(seededRand(String(p.id)) * 62);
+    const d = new Date(p.deadline);
+    d.setDate(d.getDate() - offset);
+    derived = d.toISOString().slice(0, 10);
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() - Math.floor(seededRand(String(p.id)) * 90));
+    derived = d.toISOString().slice(0, 10);
+  }
+  return { ...p, startDate: derived };
 }
 
 export const DEPT_COLOR: Record<Department, string> = {
