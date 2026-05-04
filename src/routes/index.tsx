@@ -217,7 +217,7 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly, assignee, year, quarter]);
 
   // Dynamic heading based on active filters
   const heading = useMemo(() => {
