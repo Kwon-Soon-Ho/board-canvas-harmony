@@ -347,37 +347,47 @@ function DetailWindow() {
                           <button
                             key={key}
                             onClick={() => { if (trackerSort === key) setTrackerSortDesc(d => !d); else { setTrackerSort(key); setTrackerSortDesc(false); } }}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition border ${trackerSort === key ? 'bg-orange-400/20 text-orange-200 border-orange-400/50' : 'bg-white/[0.03] text-white/50 border-white/10 hover:text-white/80 hover:border-white/20'}`}
+                            className={`px-3 py-1.5 rounded-md text-[12px] font-bold transition border ${trackerSort === key ? 'bg-orange-400/20 text-orange-200 border-orange-400/50' : 'bg-white/[0.03] text-white/60 border-white/10 hover:text-white/90 hover:border-white/20'}`}
                           >{label}{trackerSort === key ? (trackerSortDesc ? ' ↓' : ' ↑') : ''}</button>
+                        );
+                        const selectClass = "appearance-none bg-[#0F0F0F] border border-white/15 rounded-md pl-3 pr-8 py-1.5 text-[12px] font-bold text-white/90 focus:outline-none focus:border-orange-400/60 hover:border-white/30 transition cursor-pointer [&>option]:bg-[#0F0F0F] [&>option]:text-white/90";
+                        const ChevronIcon = (
+                          <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
                         );
                         return (
                           <>
                             {/* Filter / sort toolbar */}
                             <div className="mb-4 flex flex-wrap items-center gap-2 pb-3 border-b border-white/5">
-                              <span className="text-[10px] font-black text-white/35 uppercase tracking-widest mr-1">정렬</span>
+                              <span className="text-[11px] font-black text-white/50 uppercase tracking-widest mr-1">정렬</span>
                               {sortBtn('startDate', '시작일')}
                               {sortBtn('progress', '진행률')}
                               {sortBtn('status', '상태')}
                               <span className="mx-2 h-4 w-px bg-white/10" />
-                              <span className="text-[10px] font-black text-white/35 uppercase tracking-widest mr-1">업무</span>
-                              <select
-                                value={taskStatusFilter}
-                                onChange={(e) => setTaskStatusFilter(e.target.value as any)}
-                                className="bg-white/[0.04] border border-white/10 rounded-md px-2 py-1 text-[11px] font-bold text-white/80 focus:outline-none focus:border-orange-400/50"
-                              >
-                                <option value="전체">전체 상태</option>
-                                {(["대기","진행","검토중","승인됨","보류","취소","완료"] as TaskStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
-                              </select>
-                              <span className="text-[10px] font-black text-rose-400/60 uppercase tracking-widest ml-1 mr-1">이슈</span>
-                              <select
-                                value={issueStatusFilter}
-                                onChange={(e) => setIssueStatusFilter(e.target.value as any)}
-                                className="bg-white/[0.04] border border-white/10 rounded-md px-2 py-1 text-[11px] font-bold text-white/80 focus:outline-none focus:border-orange-400/50"
-                              >
-                                <option value="전체">전체</option>
-                                <option value="Issue">이슈 발생</option>
-                                <option value="Resolved">해결됨</option>
-                              </select>
+                              <span className="text-[11px] font-black text-white/50 uppercase tracking-widest mr-1">업무</span>
+                              <div className="relative">
+                                <select
+                                  value={taskStatusFilter}
+                                  onChange={(e) => setTaskStatusFilter(e.target.value as any)}
+                                  className={selectClass}
+                                >
+                                  <option value="전체">전체 상태</option>
+                                  {(["대기","진행","검토중","승인됨","보류","취소","완료"] as TaskStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                {ChevronIcon}
+                              </div>
+                              <span className="text-[11px] font-black text-rose-400/80 uppercase tracking-widest ml-1 mr-1">이슈</span>
+                              <div className="relative">
+                                <select
+                                  value={issueStatusFilter}
+                                  onChange={(e) => setIssueStatusFilter(e.target.value as any)}
+                                  className={selectClass}
+                                >
+                                  <option value="전체">전체</option>
+                                  <option value="Issue">이슈 발생</option>
+                                  <option value="Resolved">해결됨</option>
+                                </select>
+                                {ChevronIcon}
+                              </div>
                             </div>
 
                             <Accordion.Root type="single" value={activeItemId || ""} onValueChange={(val) => { if (val && !isAutoScrolling.current) handleFocusItem(val, 'tracker'); else if (!val && !isAutoScrolling.current) setActiveItemId(undefined); }} collapsible className="space-y-4">
