@@ -7,6 +7,8 @@ import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
 import { ActivityFeed } from "@/components/control/ActivityFeed";
 import { TeamWorkloadBar } from "@/components/control/TeamWorkloadBar";
+import { KanbanBoard } from "@/components/control/KanbanBoard";
+import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
