@@ -8,6 +8,7 @@ import { ProjectCard } from "@/components/control/ProjectCard";
 import { ActivityFeed } from "@/components/control/ActivityFeed";
 import { TeamWorkloadBar } from "@/components/control/TeamWorkloadBar";
 import { KanbanBoard } from "@/components/control/KanbanBoard";
+import { TimelineView } from "@/components/control/TimelineView";
 import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
@@ -373,6 +374,8 @@ function ControlCenter() {
                 onDelete={(id) => setPendingDeleteId(id)}
                 onStatusChange={handleStatusChange}
               />
+            ) : view === "timeline" ? (
+              <TimelineView projects={filtered} onOpen={handleOpen} />
             ) : (
               <section
                 aria-label="프로젝트 목록"
