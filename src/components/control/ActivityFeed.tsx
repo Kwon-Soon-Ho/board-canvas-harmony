@@ -24,8 +24,8 @@ interface Props {
   onOpen: (id: string) => void;
 }
 
-function dDayDiff(deadline: string): number | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline)) return null;
+function dDayDiff(deadline?: string): number | null {
+  if (!deadline || !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) return null;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const d = new Date(deadline);
