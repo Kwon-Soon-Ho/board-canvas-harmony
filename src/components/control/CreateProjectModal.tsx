@@ -42,6 +42,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
       status,
       progress: 0,
       startDate: status === "상시" ? undefined : (startDate || today),
+      startDateUserSet: status !== "상시",
       deadline: status === "상시" ? "상시" : deadline || today,
       updatedAt: new Date().toISOString(),
       pm,
