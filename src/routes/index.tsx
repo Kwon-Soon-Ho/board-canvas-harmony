@@ -162,7 +162,7 @@ function ControlCenter() {
       const sStr = p.startDate;
       const eStr = p.deadline;
       const s = sStr && /^\d{4}-\d{2}-\d{2}$/.test(sStr) ? new Date(sStr) : null;
-      const e = /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
+      const e = eStr && /^\d{4}-\d{2}-\d{2}$/.test(eStr) ? new Date(eStr) : null;
       if (!s && !e) return false;
       const start = s ?? e!;
       const end = e ?? s!;
