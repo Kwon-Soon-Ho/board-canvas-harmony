@@ -1,6 +1,6 @@
-import { LayoutGrid, Columns3 } from "lucide-react";
+import { LayoutGrid, Columns3, GanttChart } from "lucide-react";
 
-export type ViewMode = "grid" | "kanban";
+export type ViewMode = "grid" | "kanban" | "timeline";
 
 interface Props {
   view: ViewMode;
@@ -11,6 +11,7 @@ export function ViewSwitcher({ view, setView }: Props) {
   const items: Array<{ key: ViewMode; label: string; Icon: typeof LayoutGrid }> = [
     { key: "grid", label: "그리드", Icon: LayoutGrid },
     { key: "kanban", label: "칸반", Icon: Columns3 },
+    { key: "timeline", label: "타임라인", Icon: GanttChart },
   ];
   return (
     <div
