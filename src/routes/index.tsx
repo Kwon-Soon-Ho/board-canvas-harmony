@@ -7,6 +7,8 @@ import { ActiveFilterChips } from "@/components/control/ActiveFilterChips";
 import { ProjectCard } from "@/components/control/ProjectCard";
 import { ActivityFeed } from "@/components/control/ActivityFeed";
 import { TeamWorkloadBar } from "@/components/control/TeamWorkloadBar";
+import { KanbanBoard } from "@/components/control/KanbanBoard";
+import { ViewSwitcher, type ViewMode } from "@/components/control/ViewSwitcher";
 import { CreateProjectModal } from "@/components/control/CreateProjectModal";
 import { Plus, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react";
 import { MOCK_PROJECTS, type Department, type Status, type Project } from "@/lib/mockProjects";
@@ -49,6 +51,7 @@ function ControlCenter() {
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [issuesOnly, setIssuesOnly] = useState(false);
   const [assignee, setAssignee] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>("grid");
 
   // Hydrate from localStorage on client only
   useEffect(() => {
@@ -184,6 +187,19 @@ function ControlCenter() {
     await openDetailWindow(id);
   };
 
+  const handleStatusChange = (id: string, next: Status) => {
+    setProjects((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, status: next } : p));
+      persist(updated);
+      const changed = updated.find((p) => p.id === id);
+      const ch = getSyncChannel();
+      if (changed) ch?.postMessage({ type: "PROJECT_UPDATE", project: changed });
+      ch?.close();
+      return updated;
+    });
+    toast.success(`상태가 "${next}"(으)로 변경되었습니다.`);
+  };
+
   const confirmDelete = () => {
     if (!pendingDeleteId) return;
     const id = pendingDeleteId;
@@ -274,33 +290,36 @@ function ControlCenter() {
               </div>
 
               <div className="flex items-center gap-4">
-                <div
-                  role="group"
-                  aria-label="정렬"
-                  className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
-                >
-                  <button
-                    aria-pressed={sortBy === "recent"}
-                    onClick={() => { setSortBy("recent"); setSortDesc(true); }}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                <ViewSwitcher view={view} setView={setView} />
+                {view === "grid" && (
+                  <div
+                    role="group"
+                    aria-label="정렬"
+                    className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
                   >
-                    최신순
-                  </button>
-                  <button
-                    aria-pressed={sortBy === "progress"}
-                    onClick={() => { setSortBy("progress"); setSortDesc(true); }}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> 진행률순
-                  </button>
-                  <button
-                    aria-pressed={sortBy === "deadline"}
-                    onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                  >
-                    <Clock className="w-4 h-4" /> 마감임박순
-                  </button>
-                </div>
+                    <button
+                      aria-pressed={sortBy === "recent"}
+                      onClick={() => { setSortBy("recent"); setSortDesc(true); }}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${sortBy === "recent" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      최신순
+                    </button>
+                    <button
+                      aria-pressed={sortBy === "progress"}
+                      onClick={() => { setSortBy("progress"); setSortDesc(true); }}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> 진행률순
+                    </button>
+                    <button
+                      aria-pressed={sortBy === "deadline"}
+                      onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      <Clock className="w-4 h-4" /> 마감임박순
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   aria-label="새 프로젝트 생성"
@@ -347,6 +366,13 @@ function ControlCenter() {
                   </button>
                 )}
               </div>
+            ) : view === "kanban" ? (
+              <KanbanBoard
+                projects={filtered}
+                onOpen={handleOpen}
+                onDelete={(id) => setPendingDeleteId(id)}
+                onStatusChange={handleStatusChange}
+              />
             ) : (
               <section
                 aria-label="프로젝트 목록"
