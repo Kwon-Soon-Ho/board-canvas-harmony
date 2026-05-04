@@ -44,6 +44,8 @@ function ControlCenter() {
   const [sortBy, setSortBy] = useState<"deadline" | "progress" | "recent">("recent");
   const [sortDesc, setSortDesc] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [urgentOnly, setUrgentOnly] = useState(false);
+  const [issuesOnly, setIssuesOnly] = useState(false);
 
   // Hydrate from localStorage on client only
   useEffect(() => {
@@ -86,16 +88,32 @@ function ControlCenter() {
     setQuery("");
     setDept("전체");
     setStatuses(new Set());
+    setUrgentOnly(false);
+    setIssuesOnly(false);
   };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const baseFiltered = projects.filter((p) => {
       if (dept !== "전체" && p.department !== dept) return false;
       if (statuses.size > 0 && !statuses.has(p.status)) return false;
       if (q) {
         const hay = [p.title, p.pm, ...p.members].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
+      }
+      if (urgentOnly) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(p.deadline)) return false;
+        const d = new Date(p.deadline);
+        d.setHours(0, 0, 0, 0);
+        const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+        if (!(diff <= 7 && p.progress < 100)) return false;
+      }
+      if (issuesOnly) {
+        const open = p.issues.filter((i) => !i.resolved).length;
+        if (open === 0) return false;
       }
       return true;
     });
@@ -113,7 +131,18 @@ function ControlCenter() {
       }
       return sortDesc ? -cmp : cmp;
     });
-  }, [dept, statuses, query, projects, sortBy, sortDesc]);
+  }, [dept, statuses, query, projects, sortBy, sortDesc, urgentOnly, issuesOnly]);
+
+  // Dynamic heading based on active filters
+  const heading = useMemo(() => {
+    const parts: string[] = [];
+    if (dept !== "전체") parts.push(`${dept} 부서`);
+    if (statuses.size > 0) parts.push([...statuses].join("·") + " 상태");
+    if (urgentOnly) parts.push("마감 7일 이내");
+    if (issuesOnly) parts.push("이슈 있음");
+    if (parts.length === 0) return "전체 프로젝트";
+    return parts.join(" · ");
+  }, [dept, statuses, urgentOnly, issuesOnly]);
 
   const [lastOpenedId, setLastOpenedId] = useState<string | null>(null);
 
