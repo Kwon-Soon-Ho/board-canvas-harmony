@@ -373,121 +373,123 @@ function ControlCenter() {
         setIssuesOnly={setIssuesOnly}
       />
 
-      <TeamWorkloadBar projects={projectsInQuarter} assignee={assignee} setAssignee={setAssignee} />
+      <TeamWorkloadBar projects={projectsInQuarter} assignees={assignees} toggleAssignee={toggleAssignee} clearAssignees={() => setAssignees(new Set())} />
 
       <main className="mx-auto max-w-[1920px] px-12 py-12">
         <div className="flex gap-8">
           <div className="min-w-0 flex-1">
             <div className="mb-8 border-b border-white/10 pb-6">
-              {/* Row 1 — Controls (always on a stable line) */}
-              <div className="mb-5 flex flex-wrap items-center justify-end gap-3">
-                <div
-                  role="group"
-                  aria-label="기간"
-                  className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
-                >
-                  <select
-                    value={year}
-                    onChange={(e) => setYear(Number(e.target.value))}
-                    aria-label="연도 선택"
-                    className="bg-transparent text-white text-sm font-bold px-2 py-2 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer appearance-none tabular-nums"
+              {/* Heading row — title left, controls right */}
+              <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-[32px] font-black tracking-tighter text-white break-keep leading-tight">
+                    {heading}
+                  </h1>
+                  <p className="mt-1.5 text-[14px] font-medium text-white/40">
+                    총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2.5 shrink-0">
+                  <div
+                    role="group"
+                    aria-label="기간"
+                    className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
                   >
-                    {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
-                      <option key={y} value={y} className="bg-neutral-900 text-white">{y}년</option>
-                    ))}
-                  </select>
-                  <div className="h-5 w-px bg-white/15" />
-                  {([1, 2, 3, 4] as const).map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      aria-pressed={quarter === q}
-                      onClick={() => setQuarter(q)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    <select
+                      value={year}
+                      onChange={(e) => setYear(Number(e.target.value))}
+                      aria-label="연도 선택"
+                      className="bg-transparent text-white text-sm font-bold px-2 py-2 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer appearance-none tabular-nums"
                     >
-                      {q}분기
+                      {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                        <option key={y} value={y} className="bg-neutral-900 text-white">{y}년</option>
+                      ))}
+                    </select>
+                    <div className="h-5 w-px bg-white/15" />
+                    {([1, 2, 3, 4] as const).map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        aria-pressed={quarter === q}
+                        onClick={() => setQuarter(q)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                      >
+                        {q}분기
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      aria-pressed={quarter === "all"}
+                      onClick={() => setQuarter("all")}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === "all" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      연간
                     </button>
-                  ))}
-                  <button
-                    type="button"
-                    aria-pressed={quarter === "all"}
-                    onClick={() => setQuarter("all")}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === "all" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                  </div>
+                  <ViewSwitcher view={view} setView={setView} />
+                  <div
+                    role="group"
+                    aria-label="정렬"
+                    className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
                   >
-                    연간
+                    <button
+                      aria-pressed={sortBy === "updated"}
+                      onClick={() => { setSortBy("updated"); setSortDesc(true); }}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "updated" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                      title="최근 수정 순"
+                    >
+                      <Sparkles className="w-4 h-4" /> 최신순
+                    </button>
+                    <button
+                      aria-pressed={sortBy === "created"}
+                      onClick={() => { setSortBy("created"); setSortDesc(true); }}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "created" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                      title="프로젝트 생성 순"
+                    >
+                      <FilePlus2 className="w-4 h-4" /> 생성순
+                    </button>
+                    <button
+                      aria-pressed={sortBy === "progress"}
+                      onClick={() => { setSortBy("progress"); setSortDesc(true); }}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> 진행률순
+                    </button>
+                    <button
+                      aria-pressed={sortBy === "deadline"}
+                      onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+                    >
+                      <Clock className="w-4 h-4" /> 마감임박순
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    aria-label="새 프로젝트 생성"
+                    className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl font-bold hover:bg-white/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                  >
+                    <Plus className="w-4 h-4" />
+                    새 프로젝트
                   </button>
                 </div>
-                <ViewSwitcher view={view} setView={setView} />
-                <div
-                  role="group"
-                  aria-label="정렬"
-                  className="flex bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
-                >
-                  <button
-                    aria-pressed={sortBy === "updated"}
-                    onClick={() => { setSortBy("updated"); setSortDesc(true); }}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "updated" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    title="최근 수정 순"
-                  >
-                    <Sparkles className="w-4 h-4" /> 최신순
-                  </button>
-                  <button
-                    aria-pressed={sortBy === "created"}
-                    onClick={() => { setSortBy("created"); setSortDesc(true); }}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "created" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                    title="프로젝트 생성 순"
-                  >
-                    <FilePlus2 className="w-4 h-4" /> 생성순
-                  </button>
-                  <button
-                    aria-pressed={sortBy === "progress"}
-                    onClick={() => { setSortBy("progress"); setSortDesc(true); }}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "progress" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> 진행률순
-                  </button>
-                  <button
-                    aria-pressed={sortBy === "deadline"}
-                    onClick={() => { setSortBy("deadline"); setSortDesc(false); }}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 ${sortBy === "deadline" ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-                  >
-                    <Clock className="w-4 h-4" /> 마감임박순
-                  </button>
-                </div>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  aria-label="새 프로젝트 생성"
-                  className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-white/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-                >
-                  <Plus className="w-5 h-5" />
-                  새 프로젝트
-                </button>
               </div>
 
-              {/* Row 2 — Heading + count + active filter chips (free to wrap) */}
-              <div className="min-w-0">
-                <h1 className="text-[32px] font-black tracking-tighter text-white break-keep">
-                  {heading}
-                </h1>
-                <p className="mt-2 text-[15px] font-medium text-white/40">
-                  총 <strong className="text-white">{filtered.length}</strong>개의 프로젝트가 조건에 일치합니다
-                </p>
-                <ActiveFilterChips
-                  dept={dept}
-                  statuses={statuses}
-                  query={query}
-                  urgentOnly={urgentOnly}
-                  issuesOnly={issuesOnly}
-                  assignee={assignee}
-                  onClearDept={() => setDept("전체")}
-                  onClearStatus={(s) => toggleStatus(s)}
-                  onClearQuery={() => { setSearchValue(""); setQuery(""); }}
-                  onClearUrgent={() => setUrgentOnly(false)}
-                  onClearIssues={() => setIssuesOnly(false)}
-                  onClearAssignee={() => setAssignee(null)}
-                  onResetAll={handleResetAll}
-                />
-              </div>
+              {/* Active filter chips */}
+              <ActiveFilterChips
+                dept={dept}
+                statuses={statuses}
+                query={query}
+                urgentOnly={urgentOnly}
+                issuesOnly={issuesOnly}
+                assignees={assignees}
+                onClearDept={() => setDept("전체")}
+                onClearStatus={(s) => toggleStatus(s)}
+                onClearQuery={() => { setSearchValue(""); setQuery(""); }}
+                onClearUrgent={() => setUrgentOnly(false)}
+                onClearIssues={() => setIssuesOnly(false)}
+                onClearAssignee={(name) => toggleAssignee(name)}
+                onResetAll={handleResetAll}
+              />
             </div>
 
             {filtered.length === 0 ? (
