@@ -366,6 +366,13 @@ function ControlCenter() {
                   </button>
                 )}
               </div>
+            ) : view === "kanban" ? (
+              <KanbanBoard
+                projects={filtered}
+                onOpen={handleOpen}
+                onDelete={(id) => setPendingDeleteId(id)}
+                onStatusChange={handleStatusChange}
+              />
             ) : (
               <section
                 aria-label="프로젝트 목록"
