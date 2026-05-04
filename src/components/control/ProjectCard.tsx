@@ -171,25 +171,25 @@ export function ProjectCard({ project, onOpen, onDelete }: Props) {
               <StatusTag status={project.status} />
             </div>
 
-            {/* Always-on issue badge */}
+            {/* Always-on issue badge — high contrast for any background */}
             {activeIssues > 0 && (
               <div
-                className="absolute right-3 top-3 z-[3] flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 ring-1 ring-red-500/40 backdrop-blur-sm pointer-events-none"
+                className="absolute right-3 top-3 z-[3] flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 ring-1 ring-red-500/70 shadow-[0_2px_8px_rgba(0,0,0,0.5)] backdrop-blur-md pointer-events-none"
                 title={`미해결 이슈 ${activeIssues}건`}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,1)]" />
                 <span className="font-mono text-[11px] font-bold text-red-300 tabular-nums">
                   {activeIssues}
                 </span>
               </div>
             )}
 
-            {/* Always-on urgency D-day badge (only when urgent/overdue, since hover hides it otherwise) */}
-            {(isUrgent || isOverdue) && (
+            {/* Always-on urgency D-day badge — unified red, high contrast */}
+            {showDday && (isUrgent || isOverdue) && (
               <div
-                className={`absolute right-3 z-[3] inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black ring-1 ring-inset backdrop-blur-sm pointer-events-none ${
+                className={`absolute right-3 z-[3] inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-black bg-black/75 text-red-300 ring-1 ring-red-500/70 shadow-[0_2px_8px_rgba(0,0,0,0.5)] backdrop-blur-md pointer-events-none ${
                   activeIssues > 0 ? "top-10" : "top-3"
-                } ${isOverdue ? "bg-red-500/20 text-red-300 ring-red-500/40" : "bg-amber-500/20 text-amber-200 ring-amber-500/40"}`}
+                }`}
                 title={`마감 ${dday}`}
               >
                 {dday}
