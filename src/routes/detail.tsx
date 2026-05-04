@@ -423,6 +423,16 @@ function ImageViewer({ images, projectImages, onToggleStar, onEditThumbnails }: 
     handleFit();
   }, [idx]);
 
+  // Auto-refit when the viewer container resizes (e.g. toggling 시안 확대 / 기본 화면)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      handleFit();
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   const handleFit = () => {
     if (!containerRef.current || !imgRef.current) {
        setScale(1); setPosition({ x: 0, y: 0 });
