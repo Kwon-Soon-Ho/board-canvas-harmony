@@ -79,6 +79,30 @@ export function TeamWorkloadBar({ projects, assignee, setAssignee }: Props) {
             </span>
           </div>
 
+          {/* Legend */}
+          <div className="flex shrink-0 items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-2 py-1 text-[10px] text-white/50">
+            <span className="font-semibold uppercase tracking-wider text-white/35">범례</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-3 rounded-full bg-emerald-400/60" />
+              여유
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-3 rounded-full bg-amber-400/70" />
+              보통
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-3 rounded-full bg-red-400/70" />
+              과부하
+            </span>
+            <span className="text-white/30">|</span>
+            <span className="font-mono">숫자</span>= 진행 중인 프로젝트 수
+            <span className="text-white/30">|</span>
+            <span className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-red-500/25 px-1 font-mono text-[9px] font-bold text-red-200 ring-1 ring-red-500/40">
+              !N
+            </span>
+            = D-7 이내 긴급 건수
+          </div>
+
           <div className="flex flex-1 flex-wrap items-center gap-1.5">
             {assignee && (
               <button

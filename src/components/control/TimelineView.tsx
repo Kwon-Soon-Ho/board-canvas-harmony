@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Project } from "@/lib/mockProjects";
 import { DEPT_COLOR } from "@/lib/mockProjects";
 import { AlertCircle } from "lucide-react";
@@ -15,6 +15,9 @@ const STATUS_COLOR_VAR: Record<string, string> = {
   완료: "var(--status-done)",
 };
 
+const WEEK_OPTIONS = [2, 4, 6, 8, 10, 12] as const;
+type WeekOption = (typeof WEEK_OPTIONS)[number];
+
 function parseDate(s: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(s);
@@ -23,41 +26,46 @@ function parseDate(s: string): Date | null {
 }
 
 export function TimelineView({ projects, onOpen }: Props) {
+  const [weeks, setWeeks] = useState<WeekOption>(8);
+
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
 
-  // Build a 6-month window starting from this month
-  const months = useMemo(() => {
-    const arr: { y: number; m: number; label: string; start: Date; end: Date }[] = [];
-    const base = new Date(today.getFullYear(), today.getMonth(), 1);
-    for (let i = 0; i < 6; i++) {
-      const start = new Date(base.getFullYear(), base.getMonth() + i, 1);
-      const end = new Date(base.getFullYear(), base.getMonth() + i + 1, 1);
-      arr.push({
-        y: start.getFullYear(),
-        m: start.getMonth(),
-        label: `${start.getFullYear()}.${String(start.getMonth() + 1).padStart(2, "0")}`,
-        start,
-        end,
+  // Build a window of N weeks starting from this week's start (Mon)
+  const { rangeStart, rangeEnd, totalMs, ticks } = useMemo(() => {
+    const start = new Date(today);
+    // Start from beginning of current week (Mon)
+    const day = (start.getDay() + 6) % 7; // 0 = Mon
+    start.setDate(start.getDate() - day);
+    const end = new Date(start);
+    end.setDate(end.getDate() + weeks * 7);
+    const totalMs = end.getTime() - start.getTime();
+
+    // Tick every 1 or 2 weeks depending on span
+    const tickStepWeeks = weeks <= 6 ? 1 : 2;
+    const ticks: { date: Date; label: string }[] = [];
+    for (let w = 0; w <= weeks; w += tickStepWeeks) {
+      const t = new Date(start);
+      t.setDate(t.getDate() + w * 7);
+      ticks.push({
+        date: t,
+        label: `${t.getMonth() + 1}/${t.getDate()}`,
       });
     }
-    return arr;
-  }, [today]);
+    return { rangeStart: start, rangeEnd: end, totalMs, ticks };
+  }, [today, weeks]);
 
-  const rangeStart = months[0].start;
-  const rangeEnd = months[months.length - 1].end;
-  const totalMs = rangeEnd.getTime() - rangeStart.getTime();
-
-  // Sort by deadline asc; show only dated, non-완료
+  // Sort by deadline asc; show only dated, within window
   const items = useMemo(() => {
     return projects
       .map((p) => ({ p, d: parseDate(p.deadline) }))
       .filter((x): x is { p: Project; d: Date } => !!x.d)
+      .filter(({ d }) => d >= rangeStart && d <= rangeEnd)
       .sort((a, b) => a.d.getTime() - b.d.getTime());
-  }, [projects]);
+  }, [projects, rangeStart, rangeEnd]);
 
   const ongoing = useMemo(() => projects.filter((p) => !parseDate(p.deadline)), [projects]);
 
@@ -68,20 +76,55 @@ export function TimelineView({ projects, onOpen }: Props) {
 
   return (
     <section aria-label="타임라인" className="pb-24">
-      {/* Month header */}
+      {/* Range filter */}
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
+          기간
+        </span>
+        <div className="flex bg-white/5 border border-white/10 rounded-lg p-0.5 backdrop-blur-md">
+          {WEEK_OPTIONS.map((w) => (
+            <button
+              key={w}
+              type="button"
+              aria-pressed={weeks === w}
+              onClick={() => setWeeks(w)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition ${
+                weeks === w ? "bg-white/20 text-white" : "text-white/50 hover:text-white"
+              }`}
+            >
+              {w}주
+            </button>
+          ))}
+        </div>
+        <span className="text-[11px] font-mono text-white/40">
+          {`${rangeStart.getFullYear()}.${String(rangeStart.getMonth() + 1).padStart(2, "0")}.${String(rangeStart.getDate()).padStart(2, "0")}`}
+          {" → "}
+          {(() => {
+            const e = new Date(rangeEnd);
+            e.setDate(e.getDate() - 1);
+            return `${e.getFullYear()}.${String(e.getMonth() + 1).padStart(2, "0")}.${String(e.getDate()).padStart(2, "0")}`;
+          })()}
+        </span>
+      </div>
+
+      {/* Tick header */}
       <div className="mb-3 grid border-b border-white/10" style={{ gridTemplateColumns: `220px 1fr` }}>
         <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
           프로젝트
         </div>
-        <div className="relative grid" style={{ gridTemplateColumns: `repeat(${months.length}, 1fr)` }}>
-          {months.map((m) => (
-            <div
-              key={m.label}
-              className="border-l border-white/10 px-2 py-2 text-[11px] font-bold tabular-nums text-white/60"
-            >
-              {m.label}
-            </div>
-          ))}
+        <div className="relative h-8">
+          {ticks.map((t, i) => {
+            const left = ((t.date.getTime() - rangeStart.getTime()) / totalMs) * 100;
+            return (
+              <div
+                key={i}
+                className="absolute top-0 bottom-0 border-l border-white/10 pl-1 text-[10px] font-bold tabular-nums text-white/50"
+                style={{ left: `${left}%` }}
+              >
+                {t.label}
+              </div>
+            );
+          })}
           {todayLeftPct !== null && (
             <div
               className="pointer-events-none absolute top-0 bottom-0 w-px bg-red-400/70"
@@ -98,12 +141,11 @@ export function TimelineView({ projects, onOpen }: Props) {
 
       {items.length === 0 && ongoing.length === 0 ? (
         <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 text-[13px] text-white/40">
-          타임라인에 표시할 프로젝트가 없습니다.
+          이 기간에 표시할 프로젝트가 없습니다.
         </div>
       ) : (
         <div className="flex flex-col">
           {items.map(({ p, d }) => {
-            // Bar from today (or rangeStart if past) to deadline
             const barStart = d < today ? d : today;
             const startClamp = barStart < rangeStart ? rangeStart : barStart > rangeEnd ? rangeEnd : barStart;
             const endClamp = d < rangeStart ? rangeStart : d > rangeEnd ? rangeEnd : d;
