@@ -37,7 +37,15 @@ function migrateImages(imgs: any[]): any[] {
 }
 
 function normalizeProgress(list: Project[]): Project[] {
-  return list.map((p) => (p.status === "완료" && p.progress !== 100 ? { ...p, progress: 100 } : p));
+  return list.map((p) => {
+    if (p.status !== "완료") return p;
+    return {
+      ...p,
+      progress: 100,
+      tasks: (p.tasks || []).map((t) => ({ ...t, status: "완료", progress: 100 })),
+      issues: (p.issues || []).map((i) => ({ ...i, status: "Resolved", resolved: true })),
+    };
+  });
 }
 
 function ControlCenter() {
