@@ -96,7 +96,7 @@ export function KanbanBoard({ projects, onOpen, onDelete, onStatusChange }: Prop
                   const isInProgress = p.status === "진행";
                   const urgentRing =
                     isInProgress && dd?.urgent && p.progress < 100
-                      ? "ring-1 ring-red-500/60"
+                      ? "ring-1 ring-amber-400/70 shadow-[0_0_18px_rgba(251,191,36,0.25)]"
                       : "";
                   const openIssues = p.issues.filter((i) => !i.resolved).length;
                   return (
