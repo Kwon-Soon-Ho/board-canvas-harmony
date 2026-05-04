@@ -379,6 +379,28 @@ function DetailWindow() {
       {modalConfig?.type === 'design-hub' && (
         <DesignHubModal project={project} onClose={() => setModalConfig(null)} />
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === 'task' ? '상세 업무를 삭제할까요?' : '이슈를 삭제할까요?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.title ?? ''}" 항목이 제거됩니다. 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPendingDelete}
+              className="bg-rose-600 hover:bg-rose-500 text-white"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
