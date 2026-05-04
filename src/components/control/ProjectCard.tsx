@@ -156,7 +156,8 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
         }}
       >
         <button
-          onClick={() => onOpen(project.id)}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { setHover(false); onOpen(project.id); }}
           onKeyDown={handleKeyOpen}
           aria-label={`${project.title} 프로젝트 열기${activeIssues > 0 ? `, 미해결 이슈 ${activeIssues}건` : ""}`}
           className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-t-xl"
