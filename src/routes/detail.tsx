@@ -600,7 +600,7 @@ function ThumbnailEditorModal({ images, onClose, onUpdateImages }: { images: Pro
 
 function TaskAccordionItem({ task, isActive, onEdit, onDelete }: { task: Task, isActive: boolean, onEdit: () => void, onDelete: () => void }) {
   return (
-    <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
+    <Accordion.Item value={task.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-400 bg-gradient-to-br from-orange-500/[0.18] to-[#111] ring-2 ring-orange-400/70 shadow-[0_0_0_1px_rgba(251,146,60,0.5),0_0_32px_rgba(251,146,60,0.45)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
         <Accordion.Trigger className="flex w-full flex-col p-5 pb-6 focus:outline-none gap-3 relative z-10 bg-transparent">
           <div className="flex items-center justify-between w-full relative z-10">
@@ -644,7 +644,7 @@ function TaskAccordionItem({ task, isActive, onEdit, onDelete }: { task: Task, i
 function IssueAccordionItem({ issue, isActive, onEdit, onDelete }: { issue: Issue, isActive: boolean, onEdit: () => void, onDelete: () => void }) {
   const progress = issue.resolved ? 100 : 0;
   return (
-    <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-500/60 bg-[#111] ring-2 ring-orange-500/20 shadow-[0_0_20px_rgba(249,115,22,0.15)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
+    <Accordion.Item value={issue.id} className={`rounded-xl border transition-all overflow-hidden ${isActive ? "border-orange-400 bg-gradient-to-br from-orange-500/[0.18] to-[#111] ring-2 ring-orange-400/70 shadow-[0_0_0_1px_rgba(251,146,60,0.5),0_0_32px_rgba(251,146,60,0.45)]" : "border-white/10 bg-[#111] hover:border-white/20"}`}>
       <Accordion.Header>
         <Accordion.Trigger className="flex w-full flex-col p-5 pb-6 focus:outline-none gap-3 relative z-10 bg-transparent">
           <div className="flex items-center justify-between w-full relative z-10">
@@ -1063,7 +1063,7 @@ function GanttBar({ item, type, left, width, dayWidth, isActive, onClick, onUpda
         data-gantt-target={item.id}
         onClick={onClick} 
         style={{ left, width: activeWidth }} 
-        className={`absolute top-0 h-full rounded-2xl scroll-ml-[100px] shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-none bg-[#1a1a1a] border border-white/5 overflow-visible ${isActive ? 'ring-4 ring-orange-500 ring-offset-2 ring-offset-[#0f0f0f] z-20' : ''}`}
+        className={`absolute top-0 h-full rounded-2xl scroll-ml-[100px] shadow-2xl cursor-pointer flex items-center justify-between px-5 transition-none bg-[#1a1a1a] border overflow-visible ${isActive ? 'border-orange-400 ring-4 ring-orange-400/80 ring-offset-2 ring-offset-[#0f0f0f] shadow-[0_0_28px_rgba(251,146,60,0.7)] z-20 scale-[1.02]' : 'border-white/5'}`}
       >
         <div 
           className={`absolute top-0 left-0 bottom-0 ${gradientClass} transition-none`} 
