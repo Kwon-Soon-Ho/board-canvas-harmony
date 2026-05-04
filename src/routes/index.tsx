@@ -221,9 +221,11 @@ function ControlCenter() {
       if (urgentOnly || sortBy === "deadline") {
         const so = statusOrder[a.status] - statusOrder[b.status];
         if (so !== 0) return so;
-        if (a.deadline === "상시" && b.deadline !== "상시") return 1;
-        if (b.deadline === "상시" && a.deadline !== "상시") return -1;
-        if (a.deadline === "상시" && b.deadline === "상시") return 0;
+        const aHas = !!a.deadline && a.deadline !== "상시";
+        const bHas = !!b.deadline && b.deadline !== "상시";
+        if (!aHas && bHas) return 1;
+        if (aHas && !bHas) return -1;
+        if (!aHas && !bHas) return a.id.localeCompare(b.id);
         return a.deadline.localeCompare(b.deadline);
       }
 
