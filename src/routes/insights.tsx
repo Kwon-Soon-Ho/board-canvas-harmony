@@ -4,7 +4,7 @@ import { z } from "zod";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend as RLegend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, Legend as RLegend,
 } from "recharts";
 import { Header } from "@/components/control/Header";
 import { MOCK_PROJECTS, DEPT_COLOR, type Project, type Department } from "@/lib/mockProjects";
