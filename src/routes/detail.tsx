@@ -1292,9 +1292,10 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
   const [pm, setPm] = useState(project.pm);
   const [status, setStatus] = useState<any>(project.status);
 
+  const liveMembers = useLiveTeam();
   const availableMembers = useMemo(() => {
-    return department === "공통" ? ALL_MEMBERS : TEAM_DATA[department] || ALL_MEMBERS;
-  }, [department]);
+    return department === "공통" ? liveMembers : liveMembers.filter((m) => m.department === department);
+  }, [department, liveMembers]);
 
   const dateError = status !== "상시" && startDate && deadline && deadline !== "상시" && startDate > deadline
     ? "시작일이 마감일보다 늦을 수 없습니다."
