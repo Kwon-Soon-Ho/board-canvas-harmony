@@ -23,6 +23,7 @@ export function AddMemberModal({ defaultDepartment = "영상", onClose, onCreate
   const [form, setForm] = useState({
     department: defaultDepartment,
     rank: "선임",
+    role: "팀원",
     name: "",
     phone: "",
     email: "",
@@ -38,6 +39,7 @@ export function AddMemberModal({ defaultDepartment = "영상", onClose, onCreate
     const res = await addMember({
       name: form.name,
       rank: form.rank,
+      role: form.role,
       department: form.department,
       phone: form.phone,
       email: form.email,
