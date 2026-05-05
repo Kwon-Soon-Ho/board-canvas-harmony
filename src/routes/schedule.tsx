@@ -11,7 +11,8 @@ import { EventChip, type CalendarEvent } from "@/components/schedule/EventChip";
 import { RiskBanner } from "@/components/schedule/RiskBanner";
 import { DayDetailPanel } from "@/components/schedule/DayDetailPanel";
 import { AddLeaveModal } from "@/components/schedule/AddLeaveModal";
-import { MOCK_PROJECTS, ALL_MEMBERS, DEPT_COLOR, DEPTS, type Project } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, DEPT_COLOR, DEPTS, type Project } from "@/lib/mockProjects";
+import { useLiveTeam } from "@/lib/useLiveTeam";
 import {
   buildMonthGrid,
   dayKey,
