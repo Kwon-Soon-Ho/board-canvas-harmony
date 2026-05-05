@@ -363,11 +363,18 @@ function SchedulePage() {
               const overflow = dayEvents.length - visible.length;
 
               return (
-                <button
+                <div
                   key={k}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedDay(k)}
-                  className={`flex flex-col items-stretch text-left border-r border-b border-white/[0.06] p-1.5 overflow-hidden transition-colors ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedDay(k);
+                    }
+                  }}
+                  className={`flex flex-col items-stretch text-left border-r border-b border-white/[0.06] p-1.5 overflow-hidden transition-colors cursor-pointer ${
                     inMonth ? "bg-[#0a0a0a]" : "bg-[#060606]"
                   } ${
                     isHoliday && inMonth ? "bg-red-950/20" : ""
@@ -412,7 +419,7 @@ function SchedulePage() {
                       <p className="text-[11px] text-gray-500 px-1">+{overflow}건 더보기</p>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
