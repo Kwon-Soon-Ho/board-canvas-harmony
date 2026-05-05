@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const searchSchema = z.object({ id: z.string().optional() });
+const searchSchema = z.object({ id: z.string().optional(), focus: z.string().optional() });
 export const Route = createFileRoute("/detail")({
   validateSearch: (s) => searchSchema.parse(s),
   component: DetailWindow,
@@ -40,7 +40,8 @@ function DndProvider({ children }: { children: React.ReactNode }) {
 }
 
 function DetailWindow() {
-  const { id } = Route.useSearch();
+  const { id, focus } = Route.useSearch();
+  const [focusPulse, setFocusPulse] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(() => {
     if (!id) return null;
