@@ -85,10 +85,11 @@ export async function loadOrSeedTeamMembers(): Promise<TeamMemberRow[]> {
  * ───────────────────────────────────────────────────────────────── */
 export async function updateMemberFields(
   id: string,
-  patch: Partial<Pick<TeamMemberRow, "rank" | "department" | "phone" | "email">>,
+  patch: Partial<Pick<TeamMemberRow, "rank" | "role" | "department" | "phone" | "email">>,
 ): Promise<{ error?: string }> {
-  const cleaned: { rank?: string; department?: string; phone?: string; email?: string | null } = {};
+  const cleaned: { rank?: string; role?: string; department?: string; phone?: string; email?: string | null } = {};
   if (patch.rank !== undefined) cleaned.rank = patch.rank;
+  if (patch.role !== undefined) cleaned.role = patch.role;
   if (patch.department !== undefined) cleaned.department = patch.department;
   if (patch.phone !== undefined) cleaned.phone = formatPhone(patch.phone ?? "");
   if (patch.email !== undefined) cleaned.email = patch.email?.trim() ? patch.email.trim() : null;
