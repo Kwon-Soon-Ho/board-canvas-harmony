@@ -28,9 +28,10 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }: Props) {
     ? "시작일이 마감일보다 늦을 수 없습니다."
     : "";
 
+  const liveMembers = useLiveTeam();
   const availableMembers = useMemo(() => {
-    return department === "공통" ? ALL_MEMBERS : TEAM_DATA[department];
-  }, [department]);
+    return department === "공통" ? liveMembers : liveMembers.filter((m) => m.department === department);
+  }, [department, liveMembers]);
 
   if (!isOpen) return null;
 
