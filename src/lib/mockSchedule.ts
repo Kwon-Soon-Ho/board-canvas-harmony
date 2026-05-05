@@ -1,7 +1,7 @@
 import { ALL_MEMBERS, TEAM_DATA, type Department } from "./mockProjects";
 
 // ─── Types ────────────────────────────────────────────────────────────
-export type LeaveType = "전일" | "오전반차" | "오후반차" | "병가";
+export type LeaveType = "연차" | "시차";
 
 export interface Leave {
   id: string;
@@ -9,6 +9,8 @@ export interface Leave {
   department: Department;
   leave_type: LeaveType;
   leave_date: string; // YYYY-MM-DD
+  start_time?: string | null; // "HH:MM" — only when leave_type === "시차"
+  end_time?: string | null;
   reason?: string | null;
 }
 
@@ -36,6 +38,16 @@ export const KR_HOLIDAYS: Holiday[] = [
   { date: "2026-12-25", name: "성탄절" },
 ];
 
+// ─── Time slots (06:00 ~ 22:00, 30-min step) ──────────────────────────
+export const TIME_SLOTS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 6; h <= 22; h++) {
+    out.push(`${String(h).padStart(2, "0")}:00`);
+    if (h < 22) out.push(`${String(h).padStart(2, "0")}:30`);
+  }
+  return out;
+})();
+
 // ─── Member → department lookup ───────────────────────────────────────
 export const MEMBER_DEPT: Record<string, Department> = (() => {
   const map: Record<string, Department> = {};
@@ -58,22 +70,23 @@ function ymd(d: Date) {
 export function buildSeedLeaves(): Omit<Leave, "id">[] {
   const today = new Date();
   const seeds: Omit<Leave, "id">[] = [];
-  const types: LeaveType[] = ["전일", "오전반차", "오후반차", "전일", "병가"];
 
-  // For each member, sprinkle 2 leaves across the next 60 days
   ALL_MEMBERS.forEach((m, idx) => {
     for (let k = 0; k < 2; k++) {
       const offset = ((idx * 7 + k * 19) % 55) + 3;
       const d = new Date(today);
       d.setDate(d.getDate() + offset);
-      // Skip weekends
       if (d.getDay() === 0) d.setDate(d.getDate() + 1);
       if (d.getDay() === 6) d.setDate(d.getDate() + 2);
+      // every 3rd entry is 시차 for variety
+      const isShift = (idx + k) % 3 === 0;
       seeds.push({
         member_name: m.name,
         department: MEMBER_DEPT[m.name],
-        leave_type: types[(idx + k) % types.length],
+        leave_type: isShift ? "시차" : "연차",
         leave_date: ymd(d),
+        start_time: isShift ? "10:00" : null,
+        end_time: isShift ? "19:00" : null,
         reason: null,
       });
     }
@@ -89,7 +102,6 @@ export function endOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
 }
 export function buildMonthGrid(monthAnchor: Date): Date[] {
-  // Sunday-start 6×7 grid
   const first = startOfMonth(monthAnchor);
   const startWeekday = first.getDay();
   const start = new Date(first);

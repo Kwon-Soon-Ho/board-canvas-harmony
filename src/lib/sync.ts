@@ -110,3 +110,27 @@ export function openDetailWindow(projectId: string): Window | null {
 
   return win;
 }
+
+/**
+ * Convenience: open Window B for a project AND broadcast OPEN_PROJECT
+ * so an already-open Window B can simply switch project (no duplicate window).
+ * Reads the latest project snapshot from localStorage so listeners get fresh data.
+ */
+export function openProjectWindow(projectId: string): void {
+  if (typeof window === "undefined") return;
+  let project: Project | undefined;
+  try {
+    const raw = localStorage.getItem("design-projects-store");
+    if (raw) {
+      const parsed = JSON.parse(raw) as Project[];
+      project = parsed.find((p) => p.id === projectId);
+    }
+  } catch {
+    /* ignore */
+  }
+  const ch = getSyncChannel();
+  ch?.postMessage({ type: "OPEN_PROJECT", projectId, project });
+  ch?.close();
+  openDetailWindow(projectId);
+  if (!cachedTarget) void ensureScreenDetails();
+}

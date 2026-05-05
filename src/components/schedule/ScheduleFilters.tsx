@@ -1,7 +1,7 @@
 import { DEPT_COLOR, DEPTS, type Department } from "@/lib/mockProjects";
 import { X } from "lucide-react";
 
-export type EventTypeKey = "deadline" | "milestone" | "leave" | "holiday";
+export type EventTypeKey = "deadline" | "leave" | "holiday";
 
 export interface ScheduleFilters {
   types: Set<EventTypeKey>;
@@ -12,7 +12,7 @@ export interface ScheduleFilters {
 }
 
 export const DEFAULT_FILTERS: ScheduleFilters = {
-  types: new Set<EventTypeKey>(["deadline", "milestone", "leave", "holiday"]),
+  types: new Set<EventTypeKey>(["deadline", "leave", "holiday"]),
   depts: new Set<Department>(DEPTS),
   members: new Set<string>(),
   search: "",
@@ -21,8 +21,7 @@ export const DEFAULT_FILTERS: ScheduleFilters = {
 
 const TYPE_LABEL: Record<EventTypeKey, string> = {
   deadline: "프로젝트 마감",
-  milestone: "마일스톤",
-  leave: "연차/휴가",
+  leave: "연차/시차",
   holiday: "공휴일",
 };
 
@@ -45,10 +44,10 @@ export function ScheduleFilters({ filters, onChange, allMembers }: Props) {
   return (
     <aside className="w-64 shrink-0 border-r border-white/10 bg-[#0a0a0a] p-4 overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-foreground">필터</h3>
+        <h3 className="text-[15px] font-semibold text-foreground">필터</h3>
         <button
           onClick={reset}
-          className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-foreground"
+          className="flex items-center gap-1 text-[12px] text-gray-400 hover:text-foreground"
         >
           <X className="h-3 w-3" /> 초기화
         </button>
@@ -59,7 +58,7 @@ export function ScheduleFilters({ filters, onChange, allMembers }: Props) {
         value={filters.search}
         onChange={(e) => onChange({ ...filters, search: e.target.value })}
         placeholder="프로젝트·담당자 검색"
-        className="w-full mb-5 px-3 py-2 text-xs bg-white/5 border border-white/10 rounded-md text-foreground placeholder:text-gray-500 focus:outline-none focus:border-white/30"
+        className="w-full mb-5 px-3 py-2 text-[13px] bg-white/5 border border-white/10 rounded-md text-foreground placeholder:text-gray-500 focus:outline-none focus:border-white/30"
       />
 
       <Section title="이벤트 종류">
@@ -104,7 +103,7 @@ export function ScheduleFilters({ filters, onChange, allMembers }: Props) {
             />
           ))}
         </div>
-        <p className="text-[10px] text-gray-500 mt-1">선택 없음 = 전체 표시</p>
+        <p className="text-[11px] text-gray-500 mt-1">선택 없음 = 전체 표시</p>
       </Section>
     </aside>
   );
@@ -113,7 +112,7 @@ export function ScheduleFilters({ filters, onChange, allMembers }: Props) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
-      <p className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{title}</p>
+      <p className="text-[12px] uppercase tracking-wider text-gray-500 mb-2">{title}</p>
       <div className="space-y-1.5">{children}</div>
     </div>
   );
@@ -131,7 +130,7 @@ function Check({
   color?: string;
 }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-300 hover:text-foreground">
+    <label className="flex items-center gap-2 cursor-pointer text-[13px] text-gray-300 hover:text-foreground">
       <input
         type="checkbox"
         checked={checked}
