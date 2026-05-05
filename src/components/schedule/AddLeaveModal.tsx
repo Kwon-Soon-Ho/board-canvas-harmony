@@ -7,12 +7,13 @@ import { X } from "lucide-react";
 
 interface Props {
   defaultDate: string;
+  defaultMember?: string;
   onClose: () => void;
   onCreated: () => void;
 }
 
-export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
-  const [member, setMember] = useState(ALL_MEMBERS[0].name);
+export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }: Props) {
+  const [member, setMember] = useState(defaultMember ?? ALL_MEMBERS[0].name);
   const [date, setDate] = useState(defaultDate);
   const [type, setType] = useState<LeaveType>("연차");
   const [startTime, setStartTime] = useState("10:00");
