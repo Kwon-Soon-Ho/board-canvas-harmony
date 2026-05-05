@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { X, Calendar, Users, Image as ImageIcon } from "lucide-react";
-import { TEAM_DATA, ALL_MEMBERS, DEPTS, STATUSES, makePlaceholderImage, type Project, type Department, type Status } from "@/lib/mockProjects";
+import { DEPTS, STATUSES, makePlaceholderImage, type Project, type Department, type Status } from "@/lib/mockProjects";
+import { useLiveTeam } from "@/lib/useLiveTeam";
 
 interface Props {
   isOpen: boolean;
