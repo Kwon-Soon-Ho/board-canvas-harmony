@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Crown, ExternalLink, Plus, Pencil, Save, XCircle } from "lucide-react";
+import { X, ExternalLink, Plus, Pencil, Save, XCircle } from "lucide-react";
 import { type MemberStats, deptColorFor, formatRank } from "@/lib/teamStats";
 import { dDay } from "@/lib/mockSchedule";
 import { openProjectWindow } from "@/lib/sync";
 import { useNavigate } from "@tanstack/react-router";
-import { renameMember, updateMemberFields, formatPhone } from "@/lib/teamSync";
+import { renameMember, updateMemberFields, formatPhone, ROLES } from "@/lib/teamSync";
 import type { Department } from "@/lib/mockProjects";
 import { toast } from "sonner";
 
@@ -19,6 +19,12 @@ interface Props {
 
 const DEPTS: (Department | "공통")[] = ["영상", "편집", "UX", "공통"];
 const RANKS = ["수석", "책임", "선임", "연구원"];
+
+const ROLE_TONE: Record<string, string> = {
+  팀장: "bg-amber-500/15 text-amber-200 border-amber-400/30",
+  셀장: "bg-teal-500/15 text-teal-200 border-teal-400/30",
+  팀원: "bg-white/5 text-gray-300 border-white/10",
+};
 
 export function MemberDrawer({
   stats,
