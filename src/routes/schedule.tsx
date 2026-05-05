@@ -167,6 +167,7 @@ function SchedulePage() {
         leaveType: l.leave_type,
         startTime: l.start_time,
         endTime: l.end_time,
+        reason: l.reason,
       });
     });
 
