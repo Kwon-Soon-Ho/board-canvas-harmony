@@ -60,6 +60,7 @@ export type Database = {
           original_name: string
           phone: string | null
           rank: string
+          role: string
           sort_order: number
           updated_at: string
         }
@@ -72,6 +73,7 @@ export type Database = {
           original_name: string
           phone?: string | null
           rank: string
+          role?: string
           sort_order?: number
           updated_at?: string
         }
@@ -84,6 +86,7 @@ export type Database = {
           original_name?: string
           phone?: string | null
           rank?: string
+          role?: string
           sort_order?: number
           updated_at?: string
         }
