@@ -162,7 +162,7 @@ export function deptAvgProgress(projects: Project[]): { name: Department; value:
   }));
 }
 
-export function leaveHeatmap(leaves: Leave[], range: DateRange): { member: string; months: number[]; labels: string[] } {
+export function leaveHeatmap(leaves: Leave[], range: DateRange): { rows: { member: string; months: number[] }[]; labels: string[] } {
   const months: { ym: string; label: string }[] = [];
   const cur = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
   const end = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
@@ -180,9 +180,9 @@ export function leaveHeatmap(leaves: Leave[], range: DateRange): { member: strin
     map[l.member_name][idx]++;
   }
   const rows = Object.entries(map)
-    .map(([member, m]) => ({ member, months: m, labels }))
+    .map(([member, m]) => ({ member, months: m }))
     .sort((a, b) => b.months.reduce((s, n) => s + n, 0) - a.months.reduce((s, n) => s + n, 0));
-  return rows as any;
+  return { rows, labels };
 }
 
 export function recentResolvedIssues(projects: Project[], limit = 10) {
