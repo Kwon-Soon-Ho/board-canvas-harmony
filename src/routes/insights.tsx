@@ -28,9 +28,10 @@ import {
   deptStatusMatrix,
 } from "@/lib/insights";
 
+const currentQuarter = () => (Math.floor(new Date().getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
 const searchSchema = z.object({
   y: fallback(z.number(), new Date().getFullYear()).default(new Date().getFullYear()),
-  q: fallback(z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(0)]), 0).default(0),
+  q: fallback(z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(0)]), currentQuarter()).default(currentQuarter()),
 });
 
 export const Route = createFileRoute("/insights")({
