@@ -173,12 +173,14 @@ function TeamPage() {
 
       {/* Toolbar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-[#080808]">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <h1 className="text-[19px] font-semibold">팀 관리</h1>
-          <div className="hidden md:flex items-center gap-4 text-[13px] ml-2">
-            <Kpi label="총원" value={kpi.total} />
-            <Kpi label="오늘 연차" value={kpi.onLeave} tone="text-blue-300" />
-          </div>
+        </div>
+
+        {/* KPI mini bar (centered, matches /schedule) */}
+        <div className="hidden md:flex items-center gap-4 text-[13px]">
+          <Kpi label="총원" value={kpi.total} />
+          <Kpi label="오늘 휴가" value={kpi.onLeave} tone="text-blue-300" />
         </div>
 
         <div className="flex items-center gap-2">
