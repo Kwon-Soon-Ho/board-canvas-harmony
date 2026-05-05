@@ -223,6 +223,7 @@ export function applyRenameToProjects(
 export async function addMember(input: {
   name: string;
   rank: string;
+  role?: string;
   department: string;
   phone?: string;
   email?: string | null;
@@ -252,6 +253,7 @@ export async function addMember(input: {
     name,
     original_name: name,
     rank: input.rank,
+    role: input.role ?? "팀원",
     department: input.department,
     phone: input.phone ? formatPhone(input.phone) : "000-0000-0000",
     email: input.email?.trim() ? input.email.trim() : null,
