@@ -174,6 +174,7 @@ export function MemberDrawer({
               <dt className="text-gray-500">이름</dt><dd className="text-foreground">{stats.name}</dd>
               <dt className="text-gray-500">부서</dt><dd className="text-foreground">{stats.department}</dd>
               <dt className="text-gray-500">직급</dt><dd className="text-foreground">{formatRank(stats.rank)}</dd>
+              <dt className="text-gray-500">역할</dt><dd className="text-foreground">{stats.role}</dd>
               <dt className="text-gray-500">연락처</dt>
               <dd className="text-foreground">{stats.phone || "—"}</dd>
               <dt className="text-gray-500">이메일</dt>
