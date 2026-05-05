@@ -149,12 +149,17 @@ function InsightsPage() {
   const setQuarter = (newQ: 0 | 1 | 2 | 3 | 4) =>
     navigate({ search: (prev: any) => ({ ...prev, q: newQ }), replace: true });
 
-  const openIssueWindow = (projectId: string, focusId: string) => {
-    window.open(`/detail?id=${projectId}&focus=${focusId}`, "_blank", "noopener");
+  const openDetailWindow = (qs: string) => {
+    const w = window.screen.availWidth;
+    const h = window.screen.availHeight;
+    const features = `popup=yes,width=${w},height=${h},left=0,top=0,noreferrer`;
+    const win = window.open(`/detail?${qs}`, "design-detail-window", features);
+    win?.focus();
   };
-  const openProjectWindow = (projectId: string) => {
-    window.open(`/detail?id=${projectId}`, "_blank", "noopener");
-  };
+  const openIssueWindow = (projectId: string, focusId: string) =>
+    openDetailWindow(`id=${projectId}&focus=${focusId}`);
+  const openProjectWindow = (projectId: string) =>
+    openDetailWindow(`id=${projectId}`);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white">
