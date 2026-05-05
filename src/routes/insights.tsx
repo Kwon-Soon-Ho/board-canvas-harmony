@@ -416,7 +416,7 @@ function InsightsPage() {
                   <XAxis type="number" stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={70} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Bar dataKey="value" fill="#3B82F6" radius={[0, 8, 8, 0]} />
+                  <Bar dataKey="value" fill="url(#workload-grad)" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
