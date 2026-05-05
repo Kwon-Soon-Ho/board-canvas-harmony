@@ -235,29 +235,51 @@ function InsightsPage() {
         {/* ── Project Analysis ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card title="부서별 프로젝트 분포">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2} stroke="none">
-                  {deptDist.map((d) => (
-                    <Cell key={d.name} fill={DEPT_COLOR[d.name]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <defs>
+                    {deptDist.map((d) => (
+                      <radialGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor={DEPT_COLOR[d.name]} stopOpacity={1} />
+                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.55} />
+                      </radialGradient>
+                    ))}
+                  </defs>
+                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88} paddingAngle={3} stroke="none">
+                    {deptDist.map((d) => (
+                      <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-[10px] uppercase tracking-widest text-white/40">총</div>
+                <div className="text-2xl font-black tabular-nums">{deptDist.reduce((s, d) => s + d.value, 0)}</div>
+              </div>
+            </div>
             <Legend items={deptDist.map((d) => ({ label: `${d.name} ${d.value}`, color: DEPT_COLOR[d.name] }))} />
           </Card>
 
           <Card title="상태별 분포">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={statusDist}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <BarChart data={statusDist} barCategoryGap="32%">
+                <defs>
+                  {statusDist.map((s) => (
+                    <linearGradient key={`sg-${s.name}`} id={`status-grad-${s.name}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={STATUS_COLOR[s.name]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={STATUS_COLOR[s.name]} stopOpacity={0.3} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="name" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="value" radius={[10, 10, 0, 0]}>
                   {statusDist.map((s) => (
-                    <Cell key={s.name} fill={STATUS_COLOR[s.name]} />
+                    <Cell key={s.name} fill={`url(#status-grad-${s.name})`} />
                   ))}
                 </Bar>
               </BarChart>
@@ -266,24 +288,36 @@ function InsightsPage() {
 
           <Card title="월별 완료 추이">
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={monthly}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <AreaChart data={monthly}>
+                <defs>
+                  <linearGradient id="area-monthly" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22C55E" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="month" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2.5} dot={{ fill: "#22C55E", r: 3 }} />
-              </LineChart>
+                <Area type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2.5} fill="url(#area-monthly)" activeDot={{ r: 5, fill: "#22C55E", stroke: "#0a0a0a", strokeWidth: 2 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </Card>
 
           <Card title="진행률 구간 분포">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={buckets}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <defs>
+                  <linearGradient id="bucket-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.5} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="range" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" fill="#10B981" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="value" fill="url(#bucket-grad)" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -293,55 +327,72 @@ function InsightsPage() {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="부서 × 상태 매트릭스" className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={matrix}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <BarChart data={matrix} barCategoryGap="28%">
+                <defs>
+                  {(["진행", "상시", "대기", "완료"] as const).map((s) => (
+                    <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={STATUS_COLOR[s]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.4} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
                 <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF" }} />
-                <Bar dataKey="진행" stackId="a" fill={STATUS_COLOR["진행"]} radius={[0, 0, 0, 0]} />
-                <Bar dataKey="상시" stackId="a" fill={STATUS_COLOR["상시"]} />
-                <Bar dataKey="대기" stackId="a" fill={STATUS_COLOR["대기"]} />
-                <Bar dataKey="완료" stackId="a" fill={STATUS_COLOR["완료"]} radius={[8, 8, 0, 0]} />
+                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" />
+                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" />
+                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" />
+                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
           <Card title="마감 임박 (30일 내)">
             <div className="grid grid-cols-3 gap-2 mb-4">
-              {urgency.buckets.map((b, i) => (
-                <div key={b.range} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-center">
-                  <div
-                    className="text-2xl font-bold tabular-nums"
-                    style={{ color: ["#F43F5E", "#F97316", "#FACC15"][i] }}
-                  >{b.value}</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">{b.range}</div>
-                </div>
-              ))}
+              {urgency.buckets.map((b, i) => {
+                const grads = [
+                  "linear-gradient(135deg, rgba(244,63,94,0.25), rgba(249,115,22,0.10))",
+                  "linear-gradient(135deg, rgba(249,115,22,0.22), rgba(250,204,21,0.10))",
+                  "linear-gradient(135deg, rgba(250,204,21,0.20), rgba(16,185,129,0.10))",
+                ];
+                const colors = ["#F43F5E", "#F97316", "#FACC15"];
+                return (
+                  <div key={b.range} className="rounded-xl border border-white/10 p-3 text-center" style={{ background: grads[i] }}>
+                    <div className="text-2xl font-black tabular-nums" style={{ color: colors[i] }}>{b.value}</div>
+                    <div className="mt-1 text-[11px] text-white/60">{b.range}</div>
+                  </div>
+                );
+              })}
             </div>
             {urgency.items.length === 0 ? (
               <Empty>임박한 마감이 없습니다.</Empty>
             ) : (
               <ul className="divide-y divide-white/5 max-h-[180px] overflow-y-auto">
-                {urgency.items.map((it) => (
-                  <li key={it.id}>
-                    <button
-                      type="button"
-                      onClick={() => openProjectWindow(it.id)}
-                      className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:bg-white/5 px-2 rounded transition"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{it.title}</div>
-                        <div className="truncate text-xs text-muted-foreground" style={{ color: DEPT_COLOR[it.department] }}>
-                          {it.department}
+                {urgency.items.map((it) => {
+                  const dColor = it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15";
+                  return (
+                    <li key={it.id}>
+                      <button
+                        type="button"
+                        onClick={() => openProjectWindow(it.id)}
+                        className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:bg-white/5 px-2 rounded transition"
+                      >
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: dColor, boxShadow: `0 0 10px ${dColor}` }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{it.title}</div>
+                          <div className="truncate text-xs" style={{ color: DEPT_COLOR[it.department] }}>
+                            {it.department}
+                          </div>
                         </div>
-                      </div>
-                      <div className="shrink-0 text-xs tabular-nums" style={{ color: it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15" }}>
-                        D-{it.daysLeft}
-                      </div>
-                    </button>
-                  </li>
-                ))}
+                        <div className="shrink-0 text-xs font-bold tabular-nums" style={{ color: dColor }}>
+                          D-{it.daysLeft}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Card>
@@ -349,13 +400,19 @@ function InsightsPage() {
 
         {/* ── Workload ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="담당자별 활성 태스크 TOP 10" className="lg:col-span-2">
+          <Card title="담당자별 활성 업무 TOP 10" className="lg:col-span-2">
             {workload.length === 0 ? (
-              <Empty>활성 태스크가 없습니다.</Empty>
+              <Empty>활성 업무가 없습니다.</Empty>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(220, workload.length * 32)}>
                 <BarChart data={workload} layout="vertical" margin={{ left: 20 }}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                  <defs>
+                    <linearGradient id="workload-grad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.35} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.04)" horizontal={false} />
                   <XAxis type="number" stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={70} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
