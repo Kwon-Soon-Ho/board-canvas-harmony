@@ -293,6 +293,7 @@ function tableHead(editing: boolean) {
         {editing && <th className="w-8" />}
         <th className="text-left px-3 py-2">부서</th>
         <th className="text-left px-3 py-2">직급</th>
+        <th className="text-left px-3 py-2">역할</th>
         <th className="text-left px-3 py-2">이름</th>
         <th className="text-left px-3 py-2">연락처</th>
         <th className="text-right px-3 py-2">진행</th>
