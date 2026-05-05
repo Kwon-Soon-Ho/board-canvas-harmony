@@ -45,6 +45,7 @@ function SchedulePage() {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [refreshTick, setRefreshTick] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const liveMembers = useLiveTeam();
 
   // Load projects from same localStorage as the main board
   const loadProjects = () => {
