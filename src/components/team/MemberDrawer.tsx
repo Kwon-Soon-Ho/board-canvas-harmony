@@ -1,8 +1,12 @@
-import { X, Crown, ExternalLink, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Crown, ExternalLink, Plus, Pencil, Save, XCircle } from "lucide-react";
 import { type MemberStats, deptColorFor } from "@/lib/teamStats";
 import { dDay } from "@/lib/mockSchedule";
 import { openProjectWindow } from "@/lib/sync";
 import { useNavigate } from "@tanstack/react-router";
+import { renameMember, updateMemberFields, formatPhone } from "@/lib/teamSync";
+import type { Department } from "@/lib/mockProjects";
+import { toast } from "sonner";
 
 interface Props {
   stats: MemberStats;
@@ -10,11 +14,78 @@ interface Props {
   onAddLeave: () => void;
   onLeaveDeleted: () => void;
   onDeleteLeave: (id: string) => void;
+  onMemberChanged: () => void;
 }
 
-export function MemberDrawer({ stats, onClose, onAddLeave, onDeleteLeave }: Props) {
+const DEPTS: (Department | "공통")[] = ["영상", "편집", "UX", "공통"];
+const RANKS = ["수석", "책임", "선임", "연구원"];
+
+export function MemberDrawer({
+  stats,
+  onClose,
+  onAddLeave,
+  onDeleteLeave,
+  onMemberChanged,
+}: Props) {
   const color = deptColorFor(stats.department);
   const navigate = useNavigate();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    name: stats.name,
+    rank: stats.rank,
+    department: stats.department,
+    phone: stats.phone,
+    email: stats.email,
+  });
+  const [saving, setSaving] = useState(false);
+
+  // Reset form whenever a different member is selected.
+  useEffect(() => {
+    setForm({
+      name: stats.name,
+      rank: stats.rank,
+      department: stats.department,
+      phone: stats.phone,
+      email: stats.email,
+    });
+    setEditing(false);
+  }, [stats.id, stats.name]);
+
+  const save = async () => {
+    if (!stats.id) {
+      toast.error("팀원 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    setSaving(true);
+    try {
+      // Field updates first (rank/dept/phone/email)
+      const fieldRes = await updateMemberFields(stats.id, {
+        rank: form.rank,
+        department: form.department,
+        phone: form.phone,
+        email: form.email,
+      });
+      if (fieldRes.error) {
+        toast.error("저장 실패: " + fieldRes.error);
+        setSaving(false);
+        return;
+      }
+      // Rename last (touches projects + leaves)
+      if (form.name.trim() !== stats.name) {
+        const renameRes = await renameMember(stats.id, stats.name, form.name);
+        if (renameRes.error) {
+          toast.error("이름 변경 실패: " + renameRes.error);
+          setSaving(false);
+          return;
+        }
+      }
+      toast.success("저장되었습니다.");
+      setEditing(false);
+      onMemberChanged();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <aside className="w-[380px] shrink-0 border-l border-white/10 bg-[#0a0a0a] flex flex-col overflow-hidden">
@@ -47,34 +118,107 @@ export function MemberDrawer({ stats, onClose, onAddLeave, onDeleteLeave }: Prop
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
-        {/* Workload */}
+        {/* Profile / edit */}
         <section>
-          <p className="text-[12px] uppercase tracking-wider text-gray-500 mb-2">워크로드</p>
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className={`text-[28px] font-bold ${stats.workloadColor}`}>{stats.workload}%</span>
-            <span className="text-[12px] text-gray-500">
-              진행 {stats.activeProjects.length} · 대기 {stats.pendingProjects.length} · 완료{" "}
-              {stats.doneProjects.length}
-            </span>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[12px] uppercase tracking-wider text-gray-500">팀원 정보</p>
+            {!editing ? (
+              <button
+                onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-1 text-[12px] text-teal-300 hover:text-teal-200"
+              >
+                <Pencil className="h-3 w-3" /> 수정
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                    setForm({
+                      name: stats.name,
+                      rank: stats.rank,
+                      department: stats.department,
+                      phone: stats.phone,
+                      email: stats.email,
+                    });
+                  }}
+                  className="inline-flex items-center gap-1 text-[12px] text-gray-400 hover:text-foreground"
+                >
+                  <XCircle className="h-3 w-3" /> 취소
+                </button>
+                <button
+                  onClick={save}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1 text-[12px] text-emerald-300 hover:text-emerald-200 disabled:opacity-50"
+                >
+                  <Save className="h-3 w-3" /> 저장
+                </button>
+              </div>
+            )}
           </div>
-          <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                stats.workload >= 91
-                  ? "bg-red-500"
-                  : stats.workload >= 61
-                    ? "bg-amber-400"
-                    : "bg-emerald-500"
-              }`}
-              style={{ width: `${Math.min(100, stats.workload)}%` }}
-            />
-          </div>
+
+          {!editing ? (
+            <dl className="grid grid-cols-[80px_1fr] gap-y-1.5 text-[13px]">
+              <dt className="text-gray-500">이름</dt><dd className="text-foreground">{stats.name}</dd>
+              <dt className="text-gray-500">부서</dt><dd className="text-foreground">{stats.department}</dd>
+              <dt className="text-gray-500">직급</dt><dd className="text-foreground">{stats.rank}</dd>
+              <dt className="text-gray-500">연락처</dt>
+              <dd className="text-foreground">{stats.phone || "—"}</dd>
+              <dt className="text-gray-500">이메일</dt>
+              <dd className="text-foreground truncate">{stats.email || "—"}</dd>
+            </dl>
+          ) : (
+            <div className="space-y-2 text-[13px]">
+              <Field label="이름">
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="부서">
+                <select
+                  value={form.department}
+                  onChange={(e) => setForm({ ...form, department: e.target.value as Department })}
+                  className={inputCls + " [&>option]:bg-[#0a0a0a]"}
+                >
+                  {DEPTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </Field>
+              <Field label="직급">
+                <select
+                  value={form.rank}
+                  onChange={(e) => setForm({ ...form, rank: e.target.value })}
+                  className={inputCls + " [&>option]:bg-[#0a0a0a]"}
+                >
+                  {RANKS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
+              <Field label="연락처">
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onBlur={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+                  placeholder="010-0000-0000"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="이메일">
+                <input
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="name@company.com"
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+          )}
         </section>
 
         {/* Active projects */}
         <section>
           <p className="text-[12px] uppercase tracking-wider text-gray-500 mb-2">
-            진행 중 프로젝트
+            업무 중인 프로젝트 ({stats.activeProjects.length})
           </p>
           {stats.activeProjects.length === 0 ? (
             <p className="text-[13px] text-gray-500">진행 중인 프로젝트가 없습니다.</p>
@@ -196,5 +340,17 @@ export function MemberDrawer({ stats, onClose, onAddLeave, onDeleteLeave }: Prop
         </button>
       </div>
     </aside>
+  );
+}
+
+const inputCls =
+  "w-full bg-white/5 border border-white/10 rounded-md px-2.5 py-1.5 text-[13px] text-foreground focus:outline-none focus:ring-1 focus:ring-teal-500";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[80px_1fr] items-center gap-2">
+      <span className="text-gray-500">{label}</span>
+      {children}
+    </div>
   );
 }

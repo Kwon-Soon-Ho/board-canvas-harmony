@@ -1,16 +1,25 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, Table as TableIcon, Network } from "lucide-react";
+import { Table as TableIcon, Network, Crown } from "lucide-react";
 import { Header } from "@/components/control/Header";
-import { TeamFilters, DEFAULT_TEAM_FILTERS, type TeamFiltersState } from "@/components/team/TeamFilters";
-import { MemberCard } from "@/components/team/MemberCard";
+import {
+  TeamFilters,
+  DEFAULT_TEAM_FILTERS,
+  type TeamFiltersState,
+} from "@/components/team/TeamFilters";
 import { MemberDrawer } from "@/components/team/MemberDrawer";
 import { AddLeaveModal } from "@/components/schedule/AddLeaveModal";
 import { MOCK_PROJECTS, type Project, DEPT_COLOR } from "@/lib/mockProjects";
 import { buildSeedLeaves, type Leave } from "@/lib/mockSchedule";
-import { buildAllStats, type MemberStats } from "@/lib/teamStats";
+import {
+  buildAllStats,
+  groupByDept,
+  sortByRankThenName,
+  type MemberStats,
+} from "@/lib/teamStats";
 import { supabase } from "@/integrations/supabase/client";
 import { getSyncChannel, openProjectWindow } from "@/lib/sync";
+import { loadOrSeedTeamMembers, type TeamMemberRow } from "@/lib/teamSync";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/team")({
@@ -22,15 +31,16 @@ export const Route = createFileRoute("/team")({
 });
 
 const STORAGE_KEY = "design-projects-store";
-type ViewMode = "card" | "table" | "tree";
+type ViewMode = "tree" | "table";
 
 function TeamPage() {
   const search = useSearch({ from: "/team" });
   const [filters, setFilters] = useState<TeamFiltersState>(DEFAULT_TEAM_FILTERS);
-  const [view, setView] = useState<ViewMode>("card");
+  const [view, setView] = useState<ViewMode>("tree");
   const [selected, setSelected] = useState<string | null>(search.member ?? null);
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [members, setMembers] = useState<TeamMemberRow[]>([]);
   const [refreshTick, setRefreshTick] = useState(0);
   const [addLeaveOpen, setAddLeaveOpen] = useState(false);
 
@@ -42,40 +52,41 @@ function TeamPage() {
         const parsed = JSON.parse(raw) as Project[];
         if (Array.isArray(parsed) && parsed.length > 0) setProjects(parsed);
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, []);
 
-  // Sync project updates from Window B
+  // Sync from other windows
   useEffect(() => {
     const ch = getSyncChannel();
-    if (ch) {
-      ch.onmessage = (e) => {
-        const msg = e.data;
-        if (msg?.type === "PROJECT_UPDATE" && msg.project) {
-          setProjects((prev) => {
-            const exists = prev.some((p) => p.id === msg.project.id);
-            return exists
-              ? prev.map((p) => (p.id === msg.project.id ? msg.project : p))
-              : [...prev, msg.project];
-          });
-        }
-      };
-    }
-    return () => ch?.close();
+    if (!ch) return;
+    ch.onmessage = (e) => {
+      const msg = e.data;
+      if (msg?.type === "PROJECT_UPDATE" && msg.project) {
+        setProjects((prev) => {
+          const exists = prev.some((p) => p.id === msg.project.id);
+          return exists
+            ? prev.map((p) => (p.id === msg.project.id ? msg.project : p))
+            : [...prev, msg.project];
+        });
+      }
+      if (msg?.type === "MEMBER_RENAME" || msg?.type === "MEMBER_UPDATE") {
+        setRefreshTick((t) => t + 1);
+      }
+    };
+    return () => ch.close();
   }, []);
 
-  // Load leaves
+  // Load leaves + team members
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("leaves")
-        .select("*")
-        .order("leave_date", { ascending: true });
-      if (error || cancelled) return;
-      if (!data || data.length === 0) {
+      const [{ data: leaveData }, mem] = await Promise.all([
+        supabase.from("leaves").select("*").order("leave_date", { ascending: true }),
+        loadOrSeedTeamMembers(),
+      ]);
+      if (cancelled) return;
+
+      if (!leaveData || leaveData.length === 0) {
         const seeds = buildSeedLeaves();
         await supabase.from("leaves").insert(seeds);
         const { data: data2 } = await supabase
@@ -84,22 +95,23 @@ function TeamPage() {
           .order("leave_date", { ascending: true });
         if (!cancelled && data2) setLeaves(data2 as Leave[]);
       } else {
-        setLeaves(data as Leave[]);
+        setLeaves(leaveData as Leave[]);
       }
+      setMembers(mem);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [refreshTick]);
 
-  const allStats = useMemo(() => buildAllStats(projects, leaves), [projects, leaves]);
+  const allStats = useMemo(
+    () => buildAllStats(projects, leaves, members),
+    [projects, leaves, members],
+  );
 
   const filteredStats = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return allStats.filter((s) => {
       if (!filters.depts.has(s.department)) return false;
       if (!filters.ranks.has(s.rank)) return false;
-      if (filters.workloadMin > 0 && s.workload < filters.workloadMin) return false;
       if (filters.onlyOnLeaveToday && !s.onLeaveToday) return false;
       if (q && !(s.name.toLowerCase().includes(q) || s.rank.toLowerCase().includes(q)))
         return false;
@@ -115,9 +127,8 @@ function TeamPage() {
   const kpi = useMemo(() => {
     const total = allStats.length;
     const onLeave = allStats.filter((s) => s.onLeaveToday).length;
-    const overload = allStats.filter((s) => s.workload >= 91).length;
-    const avg = Math.round(allStats.reduce((a, s) => a + s.workload, 0) / Math.max(1, total));
-    return { total, onLeave, overload, avg };
+    const activeSum = allStats.reduce((a, s) => a + s.activeProjects.length, 0);
+    return { total, onLeave, activeSum };
   }, [allStats]);
 
   const todayLeavers = allStats.filter((s) => s.onLeaveToday);
@@ -142,9 +153,8 @@ function TeamPage() {
           <h1 className="text-[19px] font-semibold">팀 관리</h1>
           <div className="hidden md:flex items-center gap-4 text-[13px] ml-2">
             <Kpi label="총원" value={kpi.total} />
-            <Kpi label="평균 가동률" value={`${kpi.avg}%`} tone="text-foreground" />
+            <Kpi label="진행중 프로젝트" value={`${kpi.activeSum}건`} tone="text-emerald-300" />
             <Kpi label="오늘 연차" value={kpi.onLeave} tone="text-blue-300" />
-            <Kpi label="과부하" value={kpi.overload} tone="text-red-300" />
           </div>
         </div>
 
@@ -168,9 +178,8 @@ function TeamPage() {
               )}
             </div>
           )}
-          <ViewBtn icon={<LayoutGrid className="h-4 w-4" />} active={view === "card"} onClick={() => setView("card")} label="카드" />
-          <ViewBtn icon={<TableIcon className="h-4 w-4" />} active={view === "table"} onClick={() => setView("table")} label="표" />
           <ViewBtn icon={<Network className="h-4 w-4" />} active={view === "tree"} onClick={() => setView("tree")} label="부서" />
+          <ViewBtn icon={<TableIcon className="h-4 w-4" />} active={view === "table"} onClick={() => setView("table")} label="표" />
         </div>
       </div>
 
@@ -182,19 +191,8 @@ function TeamPage() {
             <p className="text-center text-gray-500 text-[14px] mt-20">
               조건에 맞는 팀원이 없습니다.
             </p>
-          ) : view === "card" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {filteredStats.map((s) => (
-                <MemberCard
-                  key={s.name}
-                  stats={s}
-                  selected={selected === s.name}
-                  onClick={() => setSelected(s.name)}
-                />
-              ))}
-            </div>
           ) : view === "table" ? (
-            <TeamTableView stats={filteredStats} selected={selected} onSelect={setSelected} />
+            <TeamTableGrouped stats={filteredStats} selected={selected} onSelect={setSelected} />
           ) : (
             <TeamTreeView stats={filteredStats} selected={selected} onSelect={setSelected} />
           )}
@@ -207,6 +205,7 @@ function TeamPage() {
             onAddLeave={() => setAddLeaveOpen(true)}
             onLeaveDeleted={() => setRefreshTick((t) => t + 1)}
             onDeleteLeave={handleDeleteLeave}
+            onMemberChanged={() => setRefreshTick((t) => t + 1)}
           />
         )}
       </div>
@@ -236,16 +235,8 @@ function Kpi({ label, value, tone }: { label: string; value: string | number; to
 }
 
 function ViewBtn({
-  icon,
-  active,
-  onClick,
-  label,
-}: {
-  icon: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
+  icon, active, onClick, label,
+}: { icon: React.ReactNode; active: boolean; onClick: () => void; label: string }) {
   return (
     <button
       onClick={onClick}
@@ -261,61 +252,113 @@ function ViewBtn({
   );
 }
 
-function TeamTableView({
-  stats,
-  selected,
-  onSelect,
-}: {
-  stats: MemberStats[];
-  selected: string | null;
-  onSelect: (n: string) => void;
-}) {
+/* ─── Shared table renderer ─────────────────────────────────────── */
+function MemberRow({
+  s, selected, onSelect,
+}: { s: MemberStats; selected: boolean; onSelect: (n: string) => void }) {
+  const activeTone =
+    s.activeProjects.length === 0
+      ? "text-gray-600"
+      : s.activeProjects.length >= 4
+        ? "text-amber-300 font-semibold"
+        : "text-foreground";
+  return (
+    <tr
+      onClick={() => onSelect(s.name)}
+      className={`cursor-pointer border-t border-white/5 hover:bg-white/[0.03] ${
+        selected ? "bg-teal-950/20" : ""
+      }`}
+    >
+      <td className="px-3 py-2 text-gray-300">{s.department}</td>
+      <td className="px-3 py-2 text-gray-400">{s.rank}</td>
+      <td className="px-3 py-2 text-foreground">
+        <span className="inline-flex items-center gap-1">
+          {s.name}
+          {s.pmProjects.length > 0 && (
+            <Crown className="h-3 w-3 text-amber-300" aria-label="PM" />
+          )}
+          {s.onLeaveToday && (
+            <span className="ml-1 text-[10px] text-blue-300">●</span>
+          )}
+        </span>
+      </td>
+      <td className="px-3 py-2 text-gray-400 tabular-nums">{s.phone || "—"}</td>
+      <td className={`px-3 py-2 text-right tabular-nums ${activeTone}`}>{s.activeProjects.length}</td>
+      <td className="px-3 py-2 text-right text-gray-500 tabular-nums">{s.pendingProjects.length}</td>
+      <td className="px-3 py-2 text-right text-gray-500 tabular-nums">{s.doneProjects.length}</td>
+      <td className="px-3 py-2 text-right tabular-nums">
+        {s.openIssues.length > 0 ? (
+          <span className="text-amber-300">{s.openIssues.length}</span>
+        ) : (
+          <span className="text-gray-600">0</span>
+        )}
+      </td>
+      <td className="px-3 py-2 text-right tabular-nums">
+        {s.leavesThisMonth.length > 0 ? (
+          <span className="text-blue-300">{s.leavesThisMonth.length}</span>
+        ) : (
+          <span className="text-gray-600">0</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+const TABLE_HEAD = (
+  <thead className="bg-[#0a0a0a] text-[12px] uppercase tracking-wider text-gray-500">
+    <tr>
+      <th className="text-left px-3 py-2">부서</th>
+      <th className="text-left px-3 py-2">직급</th>
+      <th className="text-left px-3 py-2">이름</th>
+      <th className="text-left px-3 py-2">연락처</th>
+      <th className="text-right px-3 py-2">진행</th>
+      <th className="text-right px-3 py-2">대기</th>
+      <th className="text-right px-3 py-2">완료</th>
+      <th className="text-right px-3 py-2">이슈</th>
+      <th className="text-right px-3 py-2">이번달 연차</th>
+    </tr>
+  </thead>
+);
+
+function TeamTableGrouped({
+  stats, selected, onSelect,
+}: { stats: MemberStats[]; selected: string | null; onSelect: (n: string) => void }) {
+  const groups = groupByDept(stats);
+  const deptOrder = ["영상", "편집", "UX", "공통"];
+  const orderedDepts = deptOrder.filter((d) => groups[d]?.length);
   return (
     <div className="rounded-lg border border-white/10 overflow-hidden">
       <table className="w-full text-[13px]">
-        <thead className="bg-[#0a0a0a] text-[12px] uppercase tracking-wider text-gray-500">
-          <tr>
-            <th className="text-left px-3 py-2">이름</th>
-            <th className="text-left px-3 py-2">부서</th>
-            <th className="text-left px-3 py-2">직급</th>
-            <th className="text-right px-3 py-2">진행</th>
-            <th className="text-right px-3 py-2">대기</th>
-            <th className="text-right px-3 py-2">완료</th>
-            <th className="text-right px-3 py-2">이슈</th>
-            <th className="text-right px-3 py-2">이번달 연차</th>
-            <th className="text-right px-3 py-2">가동률</th>
-          </tr>
-        </thead>
+        {TABLE_HEAD}
         <tbody>
-          {stats
-            .slice()
-            .sort((a, b) => b.workload - a.workload)
-            .map((s) => (
-              <tr
-                key={s.name}
-                onClick={() => onSelect(s.name)}
-                className={`cursor-pointer border-t border-white/5 hover:bg-white/[0.03] ${
-                  selected === s.name ? "bg-teal-950/20" : ""
-                }`}
-              >
-                <td className="px-3 py-2 text-foreground">
-                  {s.name}
-                  {s.onLeaveToday && (
-                    <span className="ml-1.5 text-[10px] text-blue-300">●</span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-gray-300">{s.department}</td>
-                <td className="px-3 py-2 text-gray-400">{s.rank}</td>
-                <td className="px-3 py-2 text-right">{s.activeProjects.length}</td>
-                <td className="px-3 py-2 text-right text-gray-500">{s.pendingProjects.length}</td>
-                <td className="px-3 py-2 text-right text-gray-500">{s.doneProjects.length}</td>
-                <td className="px-3 py-2 text-right text-amber-300">{s.openIssues.length || ""}</td>
-                <td className="px-3 py-2 text-right text-blue-300">{s.leavesThisMonth.length || ""}</td>
-                <td className={`px-3 py-2 text-right font-semibold ${s.workloadColor}`}>
-                  {s.workload}%
-                </td>
-              </tr>
-            ))}
+          {orderedDepts.map((dept) => {
+            const members = groups[dept];
+            const activeSum = members.reduce((a, m) => a + m.activeProjects.length, 0);
+            return (
+              <>
+                <tr key={`hd-${dept}`} className="bg-[#0c0c0c]">
+                  <td colSpan={9} className="px-3 py-2">
+                    <span className="inline-flex items-center gap-2 text-[12px] uppercase tracking-wider">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{
+                          backgroundColor: DEPT_COLOR[dept as "영상"] ?? "#FFFFFF",
+                          boxShadow: `0 0 6px ${DEPT_COLOR[dept as "영상"] ?? "#FFFFFF"}`,
+                        }}
+                      />
+                      <span className="text-foreground font-semibold">{dept}</span>
+                      <span className="text-gray-500 normal-case tracking-normal">
+                        · {members.length}명 · 진행중 {activeSum}건
+                      </span>
+                    </span>
+                  </td>
+                </tr>
+                {members.map((s) => (
+                  <MemberRow key={s.name} s={s} selected={selected === s.name} onSelect={onSelect} />
+                ))}
+              </>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -323,24 +366,16 @@ function TeamTableView({
 }
 
 function TeamTreeView({
-  stats,
-  selected,
-  onSelect,
-}: {
-  stats: MemberStats[];
-  selected: string | null;
-  onSelect: (n: string) => void;
-}) {
-  const groups = stats.reduce<Record<string, MemberStats[]>>((acc, s) => {
-    (acc[s.department] ??= []).push(s);
-    return acc;
-  }, {});
+  stats, selected, onSelect,
+}: { stats: MemberStats[]; selected: string | null; onSelect: (n: string) => void }) {
+  const groups = groupByDept(stats);
+  const deptOrder = ["영상", "편집", "UX", "공통"];
+  const orderedDepts = deptOrder.filter((d) => groups[d]?.length);
   return (
     <div className="space-y-5">
-      {Object.entries(groups).map(([dept, members]) => {
-        const avg = Math.round(
-          members.reduce((a, m) => a + m.workload, 0) / Math.max(1, members.length),
-        );
+      {orderedDepts.map((dept) => {
+        const members = sortByRankThenName(groups[dept]);
+        const activeSum = members.reduce((a, m) => a + m.activeProjects.length, 0);
         const color = DEPT_COLOR[dept as "영상"] ?? "#FFFFFF";
         return (
           <section key={dept}>
@@ -351,18 +386,18 @@ function TeamTreeView({
               />
               <h3 className="text-[15px] font-semibold text-foreground">{dept}</h3>
               <span className="text-[12px] text-gray-500">
-                · {members.length}명 · 평균 가동률 {avg}%
+                · {members.length}명 · 진행중 프로젝트 {activeSum}건
               </span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {members.map((s) => (
-                <MemberCard
-                  key={s.name}
-                  stats={s}
-                  selected={selected === s.name}
-                  onClick={() => onSelect(s.name)}
-                />
-              ))}
+            <div className="rounded-lg border border-white/10 overflow-hidden">
+              <table className="w-full text-[13px]">
+                {TABLE_HEAD}
+                <tbody>
+                  {members.map((s) => (
+                    <MemberRow key={s.name} s={s} selected={selected === s.name} onSelect={onSelect} />
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         );
