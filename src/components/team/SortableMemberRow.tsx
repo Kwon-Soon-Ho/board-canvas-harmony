@@ -1,4 +1,4 @@
-import { Crown, GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { type MemberStats, formatRank } from "@/lib/teamStats";
@@ -10,6 +10,12 @@ interface Props {
   editing: boolean;
   onDelete?: (s: MemberStats) => void;
 }
+
+const ROLE_TONE: Record<string, string> = {
+  팀장: "text-amber-300 font-medium",
+  셀장: "text-teal-300 font-medium",
+  팀원: "text-gray-400",
+};
 
 export function SortableMemberRow({ s, selected, onSelect, editing, onDelete }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -51,12 +57,10 @@ export function SortableMemberRow({ s, selected, onSelect, editing, onDelete }: 
       )}
       <td className="px-3 py-2 text-gray-300">{s.department}</td>
       <td className="px-3 py-2 text-gray-400">{formatRank(s.rank)}</td>
+      <td className={`px-3 py-2 ${ROLE_TONE[s.role] ?? "text-gray-400"}`}>{s.role}</td>
       <td className="px-3 py-2 text-foreground">
         <span className="inline-flex items-center gap-1">
           {s.name}
-          {s.pmProjects.length > 0 && (
-            <Crown className="h-3 w-3 text-amber-300" aria-label="PM" />
-          )}
           {s.onLeaveToday && <span className="ml-1 text-[10px] text-blue-300">●</span>}
         </span>
       </td>
