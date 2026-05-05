@@ -134,7 +134,11 @@ function InsightsPage() {
   const statusDist = useMemo(() => statusDistribution(filteredProjects), [filteredProjects]);
   const buckets = useMemo(() => progressBuckets(filteredProjects), [filteredProjects]);
   const monthly = useMemo(() => monthlyCompleted(filteredProjects, range), [filteredProjects, range]);
-  const workload = useMemo(() => workloadByMember(filteredProjects), [filteredProjects]);
+  
+  // Workload is a LIVE metric, so we use all projects (status based) instead of filtered range
+  // This fixes the bug where people disappear when Q1 is selected.
+  const workload = useMemo(() => workloadByMember(projects), [projects]);
+  
   const deptAvg = useMemo(() => deptAvgProgress(filteredProjects), [filteredProjects]);
   const heatmap = useMemo(() => leaveHeatmap(filteredLeaves, range), [filteredLeaves, range]);
   const recent = useMemo(() => recentResolvedIssues(filteredProjects), [filteredProjects]);
@@ -162,410 +166,411 @@ function InsightsPage() {
     openDetailWindow(`id=${projectId}`);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white relative">
-      {/* page-level subtle radial gradient */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-0"
-        style={{
-          background:
-            "radial-gradient(1200px 600px at 15% -10%, rgba(255,92,0,0.06), transparent 60%), radial-gradient(1000px 500px at 100% 110%, rgba(0,123,255,0.06), transparent 60%)",
-        }}
-      />
+    <div className="min-h-screen bg-[#020202] text-white relative font-sans selection:bg-emerald-500/30">
+      {/* Dynamic Background Effects */}
+      <div aria-hidden className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full" />
+        <div className="absolute top-[20%] -right-[10%] w-[35%] h-[35%] bg-blue-500/5 blur-[120px] rounded-full" />
+        <div className="absolute -bottom-[10%] left-[20%] w-[50%] h-[50%] bg-purple-500/5 blur-[120px] rounded-full" />
+      </div>
+
       <Header />
-      <main className="relative mx-auto max-w-[1920px] px-12 py-10 space-y-6">
-        {/* ── Title + period filter ── */}
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-white/10 pb-6">
-          <div className="min-w-0">
-            <h1 className="text-[32px] font-black tracking-tighter break-keep leading-tight">인사이트</h1>
-            <p className="mt-1.5 text-[14px] font-medium text-white/40">
-              {quarter === 0 ? `${year}년 전체` : `${year}년 ${quarter}분기`} 운영 데이터 회고
+      
+      <main className="relative mx-auto max-w-[1920px] px-8 py-8 space-y-8">
+        {/* ── Top Navigation & Period Filter ── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-white to-white/40 bg-clip-text text-transparent">
+              Operating Insights
+            </h1>
+            <p className="text-sm font-medium text-white/30 flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {quarter === 0 ? `${year}년 전체` : `${year}년 ${quarter}분기`} 퍼포먼스 데이터
             </p>
           </div>
-          <div
-            role="group"
-            aria-label="기간"
-            className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
-          >
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              aria-label="연도 선택"
-              className="bg-transparent text-white text-sm font-bold px-2 py-2 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer appearance-none tabular-nums"
-            >
-              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
-                <option key={y} value={y} className="bg-neutral-900 text-white">{y}년</option>
-              ))}
-            </select>
-            <div className="h-5 w-px bg-white/15" />
-            {([1, 2, 3, 4] as const).map((q) => (
-              <button
-                key={q}
-                type="button"
-                aria-pressed={quarter === q}
-                onClick={() => setQuarter(q)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+
+          <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl">
+            <div className="relative group">
+               <select
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="bg-transparent text-white text-sm font-bold pl-3 pr-8 py-2 rounded-xl hover:bg-white/5 focus:outline-none cursor-pointer appearance-none tabular-nums"
+                style={{ color: '#fff', backgroundColor: 'transparent' }}
               >
-                {q}분기
+                {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                  <option key={y} value={y} style={{ backgroundColor: '#0a0a0a', color: '#fff' }}>{y}년</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            </div>
+            <div className="w-px h-4 bg-white/10 mx-1" />
+            <div className="flex gap-1">
+              {[1, 2, 3, 4].map((q) => (
+                <button
+                  key={q}
+                  onClick={() => setQuarter(q as any)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${quarter === q ? "bg-white text-black shadow-xl" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                >
+                  Q{q}
+                </button>
+              ))}
+              <button
+                onClick={() => setQuarter(0)}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${quarter === 0 ? "bg-white text-black shadow-xl" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+              >
+                ANNUAL
               </button>
-            ))}
-            <button
-              type="button"
-              aria-pressed={quarter === 0}
-              onClick={() => setQuarter(0)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === 0 ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
-            >
-              연간
-            </button>
+            </div>
           </div>
         </div>
 
-        {/* ── KPI Strip ── */}
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-          <Kpi label="진행 중" value={kpis.inProgress} accent="#10B981" />
-          <Kpi label="완료" value={kpis.done} accent="#22C55E" />
-          <Kpi label="대기" value={kpis.pending} accent="#9CA3AF" />
-          <Kpi label="상시" value={kpis.ongoing} accent="#3B82F6" />
-          <Kpi label="이슈" value={kpis.openIssues} accent="#F97316" />
-          <Kpi label="이번 달 해결" value={kpis.resolvedThisMonth} accent="#22C55E" />
-          <Kpi label="이번 달 휴가" value={kpis.leavesThisMonth} accent="#EC4899" />
-          <Kpi label="평균 진행률" value={`${kpis.avgProgress}%`} accent="#FFFFFF" />
+        {/* ── KPI Grid ── */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+          <Kpi label="ACTIVE" value={kpis.inProgress} accent="#10B981" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>} />
+          <Kpi label="COMPLETED" value={kpis.done} accent="#22C55E" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>} />
+          <Kpi label="PENDING" value={kpis.pending} accent="#9CA3AF" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>} />
+          <Kpi label="ONGOING" value={kpis.ongoing} accent="#3B82F6" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>} />
+          <Kpi label="OPEN ISSUES" value={kpis.openIssues} accent="#F97316" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>} />
+          <Kpi label="RESOLVED" value={kpis.resolvedThisMonth} accent="#22C55E" isSub label2="THIS MONTH" />
+          <Kpi label="TEAM OUT" value={kpis.leavesThisMonth} accent="#EC4899" isSub label2="THIS MONTH" />
+          <Kpi label="AVG. PROGRESS" value={`${kpis.avgProgress}%`} accent="#FFFFFF" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>} />
         </section>
 
-        {/* ── Project Analysis ── */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
-          <Card title="부서별 프로젝트 분포">
-            <div className="relative">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 rounded-full"
-                style={{
-                  background: "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 78%)",
-                }}
-              />
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
+        {/* ── Main Dashboard Layout ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          
+          {/* Left Column (8 units) - Deep Analysis */}
+          <div className="xl:col-span-8 space-y-8">
+            
+            {/* Project Trends Area */}
+            <Card title="Monthly Performance Trends" description="월별 프로젝트 완료 추이 및 성과 가독성 분석">
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={monthly} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <defs>
-                    {deptDist.map((d) => (
-                      <linearGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={DEPT_COLOR[d.name]} stopOpacity={1} />
-                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.78} />
-                      </linearGradient>
-                    ))}
+                    <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10B981" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                    </linearGradient>
                   </defs>
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(value: number, name: string) => [`${value}건`, name]}
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis dataKey="month" stroke="#666" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#fff' }} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#10B981" 
+                    strokeWidth={4} 
+                    fill="url(#area-grad)" 
+                    activeDot={{ r: 6, fill: "#10B981", stroke: "#000", strokeWidth: 3 }}
                   />
-                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2} cornerRadius={6} stroke="rgba(0,0,0,0.4)" strokeWidth={1}>
-                    {deptDist.map((d) => (
-                      <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
-                    ))}
-                  </Pie>
-                </PieChart>
+                </AreaChart>
               </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-[10px] uppercase tracking-widest text-white/40">총</div>
-                <div className="text-2xl font-black tabular-nums">{deptDist.reduce((s, d) => s + d.value, 0)}</div>
+            </Card>
+
+            {/* Team Heatmap */}
+            <Card title="Team Availability Heatmap" description="팀원별 연차 사용 패턴 및 가동 가능 인력 분포">
+              {heatmap.rows.length === 0 ? (
+                <Empty>데이터가 없습니다.</Empty>
+              ) : (
+                <Heatmap rows={heatmap.rows} labels={heatmap.labels} />
+              )}
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Dept Stacked Bar */}
+              <Card title="Departmental Status Matrix">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={matrix} barGap={8} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.03)" vertical={false} />
+                    <XAxis dataKey="dept" stroke="#666" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <RLegend wrapperStyle={{ paddingTop: 20, color: '#999', fontSize: 11 }} iconType="circle" />
+                    <Bar dataKey="진행" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="상시" stackId="a" fill="#3B82F6" />
+                    <Bar dataKey="대기" stackId="a" fill="#9CA3AF" />
+                    <Bar dataKey="완료" stackId="a" fill="#22C55E" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+
+              {/* Progress Buckets */}
+              <Card title="Progress Distribution">
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={buckets} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.03)" vertical={false} />
+                    <XAxis dataKey="range" stroke="#666" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#666" tick={{ fill: '#666', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="value" fill="#3B82F6" radius={[6, 6, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            </div>
+          </div>
+
+          {/* Right Column (4 units) - Operations & Risk */}
+          <div className="xl:col-span-4 space-y-8">
+            
+            {/* Pie Chart: Dept Distribution */}
+            <Card title="Project Distribution by Dept">
+              <div className="relative h-[240px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#fff' }} />
+                    <Pie 
+                      data={deptDist} 
+                      innerRadius={65} 
+                      outerRadius={90} 
+                      paddingAngle={4} 
+                      dataKey="value" 
+                      stroke="none"
+                      cornerRadius={8}
+                    >
+                      {deptDist.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={DEPT_COLOR[entry.name]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-bold text-white/30 tracking-widest uppercase">Total</span>
+                  <span className="text-3xl font-black">{deptDist.reduce((a, b) => a + b.value, 0)}</span>
+                </div>
               </div>
-            </div>
-            <Legend items={deptDist.map((d) => ({ label: `${d.name} ${d.value}`, color: DEPT_COLOR[d.name] }))} />
-          </Card>
-
-          <Card title="상태별 분포">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={statusDist} barCategoryGap="32%">
-                <defs>
-                  {statusDist.map((s) => (
-                    <linearGradient key={`sg-${s.name}`} id={`status-grad-${s.name}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={STATUS_COLOR[s.name]} stopOpacity={1} />
-                      <stop offset="100%" stopColor={STATUS_COLOR[s.name]} stopOpacity={0.3} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="name" stroke="#9CA3AF" tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" radius={[10, 10, 0, 0]}>
-                  {statusDist.map((s) => (
-                    <Cell key={s.name} fill={`url(#status-grad-${s.name})`} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card title="월별 완료 추이">
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={monthly}>
-                <defs>
-                  <linearGradient id="area-monthly" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22C55E" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="month" stroke="#9CA3AF" tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2.5} fill="url(#area-monthly)" activeDot={{ r: 5, fill: "#22C55E", stroke: "#0a0a0a", strokeWidth: 2 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card title="진행률 구간 분포">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={buckets}>
-                <defs>
-                  <linearGradient id="bucket-grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.5} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="range" stroke="#9CA3AF" tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" fill="url(#bucket-grad)" radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </section>
-
-        {/* ── 부서 × 상태 매트릭스 + 마감 임박 ── */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="부서별 상태 구성">
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={matrix} barCategoryGap="42%" margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
-                <defs>
-                  {(["진행", "상시", "대기", "완료"] as const).map((s) => (
-                    <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={STATUS_COLOR[s]} stopOpacity={1} />
-                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.88} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} formatter={(v: number, n: string) => [`${v}건`, n]} />
-                <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF", paddingTop: 8 }} iconType="circle" iconSize={8} />
-                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" maxBarSize={48} />
-                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" maxBarSize={48} />
-                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" maxBarSize={48} />
-                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" maxBarSize={48} radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card title="마감 임박 (30일 내)" className="lg:col-span-2">
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {urgency.buckets.map((b, i) => {
-                const grads = [
-                  "linear-gradient(135deg, rgba(244,63,94,0.25), rgba(249,115,22,0.10))",
-                  "linear-gradient(135deg, rgba(249,115,22,0.22), rgba(250,204,21,0.10))",
-                  "linear-gradient(135deg, rgba(250,204,21,0.20), rgba(16,185,129,0.10))",
-                ];
-                const colors = ["#F43F5E", "#F97316", "#FACC15"];
-                return (
-                  <div key={b.range} className="rounded-xl border border-white/10 p-3 text-center" style={{ background: grads[i] }}>
-                    <div className="text-2xl font-black tabular-nums" style={{ color: colors[i] }}>{b.value}</div>
-                    <div className="mt-1 text-[11px] text-white/60">{b.range}</div>
+              <div className="grid grid-cols-2 gap-y-2 mt-4">
+                {deptDist.map(d => (
+                  <div key={d.name} className="flex items-center gap-2 text-xs font-bold text-white/60">
+                    <div className="w-2 h-2 rounded-full" style={{ background: DEPT_COLOR[d.name] }} />
+                    <span>{d.name}</span>
+                    <span className="text-white/20 ml-auto">{d.value}</span>
                   </div>
-                );
-              })}
-            </div>
-            {urgency.items.length === 0 ? (
-              <Empty>임박한 마감이 없습니다.</Empty>
-            ) : (
-              <ul className="divide-y divide-white/5 max-h-[180px] overflow-y-auto">
-                {urgency.items.map((it) => {
-                  const dColor = it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15";
-                  return (
-                    <li key={it.id}>
+                ))}
+              </div>
+            </Card>
+
+            {/* Workload Chart - Fixed YAxis */}
+            <Card title="Live Member Workload" description="현재 팀원별 할당된 업무량 분석 (TOP 10)">
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={workload} 
+                    layout="vertical" 
+                    margin={{ left: 10, right: 30, top: 0, bottom: 0 }}
+                  >
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      stroke="#fff" 
+                      fontSize={12} 
+                      width={80} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      interval={0}
+                      tick={{ fill: '#fff', fontWeight: 'bold' }}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                    <Bar dataKey="value" fill="#10B981" radius={[0, 6, 6, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Deadline Urgency */}
+            <Card title="Critical Deadlines (D-30)" className="border-red-500/20 bg-red-500/[0.02]">
+              <div className="space-y-3">
+                {urgency.items.length === 0 ? (
+                  <Empty>마감 임박 프로젝트가 없습니다.</Empty>
+                ) : (
+                  urgency.items.map(it => {
+                    const color = it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15";
+                    return (
                       <button
-                        type="button"
+                        key={it.id}
                         onClick={() => openProjectWindow(it.id)}
-                        className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:bg-white/5 px-2 rounded transition"
+                        className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group"
                       >
-                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: dColor, boxShadow: `0 0 10px ${dColor}` }} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium">{it.title}</div>
-                          <div className="truncate text-xs" style={{ color: DEPT_COLOR[it.department] }}>
-                            {it.department}
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0 group-hover:scale-150 transition-transform" style={{ background: color, boxShadow: `0 0 12px ${color}` }} />
+                          <div className="text-left truncate">
+                            <div className="text-sm font-bold text-white/90 truncate">{it.title}</div>
+                            <div className="text-[10px] font-bold text-white/30 uppercase tracking-wider">{it.department}</div>
                           </div>
                         </div>
-                        <div className="shrink-0 text-xs font-bold tabular-nums" style={{ color: dColor }}>
-                          D-{it.daysLeft}
-                        </div>
+                        <div className="text-sm font-black tabular-nums" style={{ color }}>D-{it.daysLeft}</div>
                       </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
-        </section>
+                    )
+                  })
+                )}
+              </div>
+            </Card>
 
-        {/* ── Workload ── */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="담당자별 활성 업무 TOP 10" className="lg:col-span-2">
-            {workload.length === 0 ? (
-              <Empty>활성 업무가 없습니다.</Empty>
-            ) : (
-              <ResponsiveContainer width="100%" height={Math.max(220, workload.length * 32)}>
-                <BarChart data={workload} layout="vertical" margin={{ left: 20 }}>
-                  <defs>
-                    <linearGradient id="workload-grad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.35} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                  <XAxis type="number" stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={70} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Bar dataKey="value" fill="url(#workload-grad)" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+          </div>
+        </div>
+
+        {/* ── Secondary Dashboard Row ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Issue Summary */}
+          <Card title="Quality Assurance (Issues)">
+             <div className="grid grid-cols-3 gap-4 mb-6">
+               <div className="p-4 rounded-3xl bg-orange-500/10 border border-orange-500/20 text-center">
+                 <div className="text-sm font-bold text-orange-500/60 uppercase">Open</div>
+                 <div className="text-3xl font-black text-orange-500">{issueAgg.open}</div>
+               </div>
+               <div className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                 <div className="text-sm font-bold text-emerald-500/60 uppercase">Resolved</div>
+                 <div className="text-3xl font-black text-emerald-500">{issueAgg.resolved}</div>
+               </div>
+               <div className="p-4 rounded-3xl bg-white/5 border border-white/10 text-center">
+                 <div className="text-sm font-bold text-white/30 uppercase">Avg Resolve</div>
+                 <div className="text-3xl font-black text-white">{issueAgg.avgOpenDays}d</div>
+               </div>
+             </div>
+             <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                {recent.map(r => (
+                  <button
+                    key={`${r.projectId}-${r.issueId}`}
+                    onClick={() => openIssueWindow(r.projectId, r.issueId)}
+                    className="w-full flex items-center justify-between py-3 px-4 rounded-2xl hover:bg-white/5 border-l-4 border-transparent hover:border-emerald-500 transition-all group"
+                  >
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-white/80 group-hover:text-emerald-400">{r.title}</div>
+                      <div className="text-[11px] font-bold text-white/20">{r.project} · {r.assignee}</div>
+                    </div>
+                    <div className="text-[11px] font-bold text-white/20 tabular-nums">{r.timestamp.slice(0, 10)}</div>
+                  </button>
+                ))}
+             </div>
           </Card>
 
-          <Card title="부서별 평균 진행률">
-            <div className="space-y-4 pt-2">
-              {deptAvg.map((d) => (
-                <div key={d.name}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium" style={{ color: DEPT_COLOR[d.name as Department] }}>{d.name}</span>
-                    <span className="text-muted-foreground tabular-nums">{d.value}%</span>
-                  </div>
-                  <div className="mt-1.5 h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${d.value}%`,
-                        background: `linear-gradient(90deg, ${DEPT_COLOR[d.name as Department]}, ${DEPT_COLOR[d.name as Department]}66)`,
-                        boxShadow: `0 0 12px ${DEPT_COLOR[d.name as Department]}55`,
+          {/* Avg Progress by Dept */}
+          <Card title="Departmental Velocity">
+            <div className="flex items-end gap-6 h-[220px] px-4">
+              {deptAvg.map(d => (
+                <div key={d.name} className="flex-1 flex flex-col items-center gap-4 h-full group">
+                  <div className="flex-1 w-full relative flex items-end justify-center">
+                    <div 
+                      className="w-full max-w-[40px] rounded-t-xl transition-all duration-1000 group-hover:brightness-125"
+                      style={{ 
+                        height: `${d.value}%`, 
+                        background: `linear-gradient(to top, ${DEPT_COLOR[d.name]}44, ${DEPT_COLOR[d.name]})`,
+                        boxShadow: `0 0 30px ${DEPT_COLOR[d.name]}33`
                       }}
                     />
+                    <div className="absolute top-0 text-[11px] font-black tabular-nums opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: DEPT_COLOR[d.name] }}>{d.value}%</div>
                   </div>
+                  <span className="text-xs font-black text-white/40 group-hover:text-white transition-colors">{d.name}</span>
                 </div>
               ))}
             </div>
           </Card>
-        </section>
-
-        {/* ── Schedule ── */}
-        <section>
-          <Card title="월별 연차 사용 히트맵">
-            {heatmap.rows.length === 0 ? (
-              <Empty>연차 기록이 없습니다.</Empty>
-            ) : (
-              <Heatmap rows={heatmap.rows} labels={heatmap.labels} />
-            )}
-          </Card>
-        </section>
-
-        {/* ── Issue Retro ── */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="이슈 처리 현황">
-            <div className="grid grid-cols-3 gap-2">
-              <Stat label="미해결" value={issueAgg.open} color="#F97316" />
-              <Stat label="해결" value={issueAgg.resolved} color="#22C55E" />
-              <Stat label="평균 미해결" value={`${issueAgg.avgOpenDays}일`} color="#FFFFFF" />
-            </div>
-          </Card>
-          <Card title="최근 해결된 이슈" className="lg:col-span-2">
-            {recent.length === 0 ? (
-              <Empty>해결된 이슈가 없습니다.</Empty>
-            ) : (
-              <ul className="divide-y divide-white/5">
-                {recent.map((r) => (
-                  <li key={`${r.projectId}-${r.issueId}`}>
-                    <button
-                      type="button"
-                      onClick={() => openIssueWindow(r.projectId, r.issueId)}
-                      title="새 창에서 해당 이슈로 이동"
-                      className="flex w-full items-center justify-between gap-4 py-2 pl-3 pr-2 text-left text-sm rounded transition border-l-2 border-transparent hover:bg-white/5 hover:border-emerald-400/80"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{r.title}</div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {r.project} · {r.assignee}
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                        {r.timestamp.slice(0, 10)}
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </section>
+        </div>
       </main>
     </div>
   );
 }
 
+function SectionHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="flex flex-col gap-1 border-l-4 border-emerald-500 pl-4 mb-2">
+      <h2 className="text-xl font-black tracking-tight text-white/90 uppercase">{title}</h2>
+      <p className="text-xs font-bold text-white/20 uppercase tracking-widest">{description}</p>
+    </div>
+  );
+}
+
 const tooltipStyle = {
-  background: "rgba(10,10,10,0.85)",
-  border: "1px solid rgba(255,255,255,0.15)",
-  borderRadius: 10,
-  fontSize: 12,
-  backdropFilter: "blur(8px)",
-  boxShadow: "0 10px 30px -10px rgba(0,0,0,0.6)",
+  background: "rgba(0,0,0,0.9)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: "16px",
+  fontSize: "12px",
+  fontWeight: "bold",
+  color: "#fff",
+  backdropFilter: "blur(20px)",
+  boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+  padding: "12px 16px",
 };
 
-function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+function Card({ 
+  title, 
+  description, 
+  children, 
+  className = "" 
+}: { 
+  title: string; 
+  description?: string; 
+  children: React.ReactNode; 
+  className?: string 
+}) {
   return (
     <div
-      className={`group relative rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-transparent p-6 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] transition hover:border-white/20 ${className}`}
-      style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05), 0 30px 60px -30px rgba(0,0,0,0.6)" }}
+      className={`group relative rounded-[32px] border border-white/10 bg-[#0a0a0a] p-8 transition-all hover:border-white/20 shadow-2xl ${className}`}
     >
-      <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-white/60">{title}</h3>
+      <div className="mb-8 space-y-1">
+        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/40 group-hover:text-white/60 transition-colors">{title}</h3>
+        {description && <p className="text-[11px] font-bold text-white/20 uppercase tracking-wider">{description}</p>}
+      </div>
       {children}
     </div>
   );
 }
 
-function Kpi({ label, value, accent }: { label: string; value: number | string; accent: string }) {
+function Kpi({ 
+  label, 
+  value, 
+  accent, 
+  icon, 
+  isSub, 
+  label2 
+}: { 
+  label: string; 
+  value: number | string; 
+  accent: string; 
+  icon?: React.ReactNode;
+  isSub?: boolean;
+  label2?: string;
+}) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-white/10 p-4 transition hover:border-white/20"
+      className="relative overflow-hidden rounded-[24px] border border-white/5 p-5 transition-all hover:bg-white/[0.02] group"
       style={{
-        background: `radial-gradient(120% 100% at 0% 0%, ${accent}14, transparent 60%), linear-gradient(180deg, rgba(255,255,255,0.04), transparent)`,
-        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
+        background: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)",
       }}
     >
-      <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] uppercase tracking-wider text-white/40">{label}</div>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+      <div className="flex items-start justify-between mb-4">
+        <div className="space-y-0.5">
+          <div className="text-[10px] font-black uppercase tracking-[0.15em] text-white/30 group-hover:text-white/50 transition-colors">{label}</div>
+          {label2 && <div className="text-[9px] font-bold text-white/10 uppercase tracking-widest">{label2}</div>}
+        </div>
+        {icon && <div className="text-white/20 group-hover:text-white/40 transition-colors">{icon}</div>}
       </div>
-      <div className="mt-1.5 text-[28px] font-black tracking-tight tabular-nums" style={{ color: accent }}>{value}</div>
+      <div className="text-3xl font-black tracking-tighter tabular-nums" style={{ color: accent }}>{value}</div>
+      <div className="absolute bottom-0 left-6 right-6 h-[2px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
     </div>
   );
 }
 
-function Stat({ label, value, color }: { label: string; value: number | string; color: string }) {
+function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
-      <div className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</div>
-      <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+    <div className="flex h-40 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/[0.01]">
+      <div className="text-center">
+        <div className="text-[11px] font-black uppercase tracking-widest text-white/20">{children}</div>
+      </div>
     </div>
   );
 }
 
 function Legend({ items }: { items: { label: string; color: string }[] }) {
   return (
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-black uppercase tracking-widest text-white/30">
       {items.map((it) => (
-        <span key={it.label} className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: it.color }} />
-          {it.label}
+        <span key={it.label} className="flex items-center gap-2 group cursor-default">
+          <span className="h-1.5 w-1.5 rounded-full transition-transform group-hover:scale-150" style={{ background: it.color }} />
+          <span className="group-hover:text-white/60 transition-colors">{it.label}</span>
         </span>
       ))}
     </div>
@@ -610,19 +615,19 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
           {rows.slice(0, 16).map((r) => {
             const total = r.months.reduce((s, n) => s + n, 0);
             return (
-              <tr key={r.member}>
-                <td className="sticky left-0 bg-transparent py-0.5 pr-4 font-medium text-white/85">{r.member}</td>
+              <tr key={r.member} className="group">
+                <td className="sticky left-0 z-10 bg-[#0c0c0c]/90 backdrop-blur-md py-1 pr-4 font-bold text-white/85 border-r border-white/5 group-hover:text-white transition-colors">{r.member}</td>
                 {r.months.map((n, i) => (
                   <td key={i} className="p-0">
                     <div
-                      className="mx-auto flex h-6 w-12 items-center justify-center rounded-md text-[11px] font-semibold text-white/95"
+                      className="mx-auto flex h-7 w-12 items-center justify-center rounded-lg text-[11px] font-black text-white/95 transition-all hover:scale-110"
                       style={cellStyle(n)}
                     >
                       {n || ""}
                     </div>
                   </td>
                 ))}
-                <td className="px-2 py-0.5 text-center font-bold tabular-nums text-white/85">{total}</td>
+                <td className="px-3 py-1 text-center font-black tabular-nums text-white/50 group-hover:text-white transition-colors">{total}</td>
               </tr>
             );
           })}
