@@ -240,17 +240,22 @@ function InsightsPage() {
                 <PieChart>
                   <defs>
                     {deptDist.map((d) => (
-                      <radialGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} cx="50%" cy="50%" r="50%">
+                      <linearGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={DEPT_COLOR[d.name]} stopOpacity={1} />
-                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.55} />
-                      </radialGradient>
+                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.78} />
+                      </linearGradient>
                     ))}
+                    <radialGradient id="dept-inner-shade" cx="50%" cy="50%" r="50%">
+                      <stop offset="60%" stopColor="#000" stopOpacity={0} />
+                      <stop offset="100%" stopColor="#000" stopOpacity={0.35} />
+                    </radialGradient>
                   </defs>
-                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88} paddingAngle={3} stroke="none">
+                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2} cornerRadius={6} stroke="rgba(0,0,0,0.4)" strokeWidth={1}>
                     {deptDist.map((d) => (
                       <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
                     ))}
                   </Pie>
+                  <Pie data={[{ v: 1 }]} dataKey="v" innerRadius={58} outerRadius={92} fill="url(#dept-inner-shade)" stroke="none" isAnimationActive={false} />
                   <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
@@ -325,14 +330,14 @@ function InsightsPage() {
 
         {/* ── 부서 × 상태 매트릭스 + 마감 임박 ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="부서 × 상태 매트릭스" className="lg:col-span-2">
+          <Card title="부서별 상태 구성" className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={matrix} barCategoryGap="28%">
                 <defs>
                   {(["진행", "상시", "대기", "완료"] as const).map((s) => (
                     <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={STATUS_COLOR[s]} stopOpacity={1} />
-                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.4} />
+                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.88} />
                     </linearGradient>
                   ))}
                 </defs>
@@ -477,10 +482,10 @@ function InsightsPage() {
                       type="button"
                       onClick={() => openIssueWindow(r.projectId, r.issueId)}
                       title="새 창에서 해당 이슈로 이동"
-                      className="flex w-full items-center justify-between gap-4 py-2 px-2 text-left text-sm hover:bg-white/5 rounded transition group"
+                      className="flex w-full items-center justify-between gap-4 py-2 pl-3 pr-2 text-left text-sm rounded transition border-l-2 border-transparent hover:bg-white/5 hover:border-emerald-400/80"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium group-hover:text-emerald-400 transition">{r.title}</div>
+                        <div className="truncate font-medium">{r.title}</div>
                         <div className="truncate text-xs text-muted-foreground">
                           {r.project} · {r.assignee}
                         </div>
