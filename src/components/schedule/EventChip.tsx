@@ -1,7 +1,7 @@
 import { DEPT_COLOR, type Department } from "@/lib/mockProjects";
-import { Star, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
-export type EventKind = "deadline" | "milestone" | "leave" | "holiday";
+export type EventKind = "deadline" | "leave" | "holiday";
 
 export interface CalendarEvent {
   id: string;
@@ -17,6 +17,8 @@ export interface CalendarEvent {
   // leave-only
   member?: string;
   leaveType?: string;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 export function EventChip({
@@ -31,7 +33,7 @@ export function EventChip({
   if (event.kind === "holiday") {
     return (
       <div
-        className="truncate rounded px-1.5 py-0.5 text-[10px] font-semibold text-red-300 bg-red-500/10 border border-red-500/30"
+        className="truncate rounded px-1.5 py-0.5 text-[11px] font-semibold text-red-300 bg-red-500/10 border border-red-500/30"
         title={event.title}
       >
         {event.title}
@@ -40,29 +42,20 @@ export function EventChip({
   }
 
   if (event.kind === "leave") {
+    const isShift = event.leaveType === "시차";
+    const label = isShift
+      ? `⏱ ${event.member} ${event.startTime ?? ""}-${event.endTime ?? ""}`
+      : `🏖 ${event.member}`;
     return (
       <button
         type="button"
         onClick={onClick}
-        className="w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] text-gray-300 bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] transition-colors"
-        title={`${event.member} · ${event.leaveType}`}
+        className="w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] text-gray-300 bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] transition-colors"
+        title={`${event.member} · ${event.leaveType}${
+          isShift ? ` ${event.startTime}-${event.endTime}` : ""
+        }`}
       >
-        <span className="opacity-70">🏖</span> {event.member}
-        <span className="ml-1 opacity-60">{event.leaveType}</span>
-      </button>
-    );
-  }
-
-  if (event.kind === "milestone") {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex w-full items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[10px] text-amber-200 bg-amber-500/10 border border-amber-400/30 hover:bg-amber-500/20"
-        title={event.title}
-      >
-        <Star className="h-2.5 w-2.5 shrink-0" />
-        <span className="truncate">{event.title}</span>
+        {label}
       </button>
     );
   }
@@ -78,7 +71,7 @@ export function EventChip({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[10px] font-medium transition-colors ${
+      className={`w-full flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors ${
         isDone
           ? "bg-white/[0.03] text-gray-500 line-through"
           : isOverdue
