@@ -236,6 +236,13 @@ function InsightsPage() {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card title="부서별 프로젝트 분포">
             <div className="relative">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{
+                  background: "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 78%)",
+                }}
+              />
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <defs>
@@ -245,18 +252,16 @@ function InsightsPage() {
                         <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.78} />
                       </linearGradient>
                     ))}
-                    <radialGradient id="dept-inner-shade" cx="50%" cy="50%" r="50%">
-                      <stop offset="60%" stopColor="#000" stopOpacity={0} />
-                      <stop offset="100%" stopColor="#000" stopOpacity={0.35} />
-                    </radialGradient>
                   </defs>
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number, name: string) => [`${value}건`, name]}
+                  />
                   <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2} cornerRadius={6} stroke="rgba(0,0,0,0.4)" strokeWidth={1}>
                     {deptDist.map((d) => (
                       <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
                     ))}
                   </Pie>
-                  <Pie data={[{ v: 1 }]} dataKey="v" innerRadius={58} outerRadius={92} fill="url(#dept-inner-shade)" stroke="none" isAnimationActive={false} />
-                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
