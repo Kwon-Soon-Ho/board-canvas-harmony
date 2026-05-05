@@ -324,7 +324,7 @@ function SchedulePage() {
             <ScheduleFilters
               filters={filters}
               onChange={setFilters}
-              allMembers={ALL_MEMBERS}
+              allMembers={liveMembers.map((m) => ({ name: m.name, rank: m.rank }))}
             />
             <button
               onClick={() => setFiltersOpen(false)}
