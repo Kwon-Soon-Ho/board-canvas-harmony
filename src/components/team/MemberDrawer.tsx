@@ -255,7 +255,9 @@ export function MemberDrawer({
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] text-foreground truncate flex items-center gap-1.5">
                         {p.pm === stats.name && (
-                          <Crown className="h-3 w-3 text-amber-300 shrink-0" />
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-400/30 shrink-0">
+                            PM
+                          </span>
                         )}
                         {p.title}
                       </p>
