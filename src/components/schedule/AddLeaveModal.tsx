@@ -54,7 +54,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
         className="w-[440px] rounded-lg border border-white/10 bg-[#0a0a0a] p-6"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[17px] font-semibold text-foreground">연차 / 시차 등록</h2>
+          <h2 className="text-[17px] font-semibold text-foreground">연차 등록</h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
