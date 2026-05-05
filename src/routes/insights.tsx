@@ -482,10 +482,10 @@ function InsightsPage() {
                       type="button"
                       onClick={() => openIssueWindow(r.projectId, r.issueId)}
                       title="새 창에서 해당 이슈로 이동"
-                      className="flex w-full items-center justify-between gap-4 py-2 px-2 text-left text-sm hover:bg-white/5 rounded transition group"
+                      className="flex w-full items-center justify-between gap-4 py-2 pl-3 pr-2 text-left text-sm rounded transition border-l-2 border-transparent hover:bg-white/5 hover:border-emerald-400/80"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium group-hover:text-emerald-400 transition">{r.title}</div>
+                        <div className="truncate font-medium">{r.title}</div>
                         <div className="truncate text-xs text-muted-foreground">
                           {r.project} · {r.assignee}
                         </div>
