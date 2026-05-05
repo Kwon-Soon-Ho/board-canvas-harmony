@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
 import { DEPT_COLOR, type Department } from "@/lib/mockProjects";
+import { formatRank } from "@/lib/teamStats";
 
-export type TeamView = "table" | "tree";
+export type TeamView = "tree";
 
 export interface TeamFiltersState {
   depts: Set<Department | "공통">;
@@ -10,7 +11,7 @@ export interface TeamFiltersState {
   onlyOnLeaveToday: boolean;
 }
 
-const ALL_DEPTS: (Department | "공통")[] = ["영상", "편집", "UX", "공통"];
+const ALL_DEPTS: (Department | "공통")[] = ["공통", "영상", "편집", "UX"];
 const ALL_RANKS = ["수석", "책임", "선임", "연구원"];
 
 export const DEFAULT_TEAM_FILTERS: TeamFiltersState = {
@@ -68,7 +69,7 @@ export function TeamFilters({ filters, onChange }: Props) {
         {ALL_RANKS.map((r) => (
           <Check
             key={r}
-            label={r}
+            label={formatRank(r)}
             checked={filters.ranks.has(r)}
             onChange={() => onChange({ ...filters, ranks: toggle(filters.ranks, r) })}
           />

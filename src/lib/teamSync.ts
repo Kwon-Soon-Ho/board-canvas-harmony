@@ -14,6 +14,7 @@ export interface TeamMemberRow {
   department: string;
   phone: string | null;
   email: string | null;
+  sort_order?: number;
 }
 
 const STORAGE_KEY = "design-projects-store";
@@ -50,13 +51,14 @@ export async function loadOrSeedTeamMembers(): Promise<TeamMemberRow[]> {
 
   // Seed from static TEAM_DATA. Use deterministic phones so visuals are stable.
   const seeds = (Object.keys(TEAM_DATA) as Department[]).flatMap((dept) =>
-    TEAM_DATA[dept].map((m) => ({
+    TEAM_DATA[dept].map((m, idx) => ({
       name: m.name,
       original_name: m.name,
       rank: m.rank,
       department: dept,
       phone: "000-0000-0000",
       email: null,
+      sort_order: idx,
     })),
   );
   const { error: insErr } = await supabase.from("team_members").insert(seeds);
@@ -199,4 +201,117 @@ export function applyRenameToProjects(
     }
     return touched ? np : p;
   });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Add a new team member. Auto-formats phone and assigns sort_order
+ * = (current max in dept) + 1.
+ * ───────────────────────────────────────────────────────────────── */
+export async function addMember(input: {
+  name: string;
+  rank: string;
+  department: string;
+  phone?: string;
+  email?: string | null;
+}): Promise<{ error?: string; row?: TeamMemberRow }> {
+  const name = input.name.trim();
+  if (!name) return { error: "이름을 입력해주세요." };
+  if (!input.rank) return { error: "직급을 선택해주세요." };
+  if (!input.department) return { error: "부서를 선택해주세요." };
+
+  const { data: dup } = await supabase
+    .from("team_members")
+    .select("id")
+    .eq("name", name)
+    .maybeSingle();
+  if (dup) return { error: "이미 사용 중인 이름입니다." };
+
+  const { data: deptRows } = await supabase
+    .from("team_members")
+    .select("sort_order")
+    .eq("department", input.department);
+  const maxOrder = (deptRows ?? []).reduce(
+    (m, r: { sort_order?: number }) => Math.max(m, r.sort_order ?? 0),
+    -1,
+  );
+
+  const payload = {
+    name,
+    original_name: name,
+    rank: input.rank,
+    department: input.department,
+    phone: input.phone ? formatPhone(input.phone) : "000-0000-0000",
+    email: input.email?.trim() ? input.email.trim() : null,
+    sort_order: maxOrder + 1,
+  };
+
+  const { data, error } = await supabase
+    .from("team_members")
+    .insert(payload)
+    .select()
+    .single();
+  if (error) return { error: error.message };
+
+  const ch = getSyncChannel();
+  ch?.postMessage({ type: "MEMBER_UPDATE", name });
+  ch?.close();
+  return { row: data as TeamMemberRow };
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Delete a member. Blocks deletion if the member is referenced as PM
+ * or member in any project (localStorage). Cascades to leaves.
+ * ───────────────────────────────────────────────────────────────── */
+export async function deleteMember(
+  id: string,
+  name: string,
+): Promise<{ error?: string }> {
+  // Safety: check projects in localStorage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Project[];
+      const blocking = parsed.filter(
+        (p) =>
+          p.pm === name ||
+          p.members.includes(name) ||
+          p.tasks?.some((t) => t.assignee === name) ||
+          p.issues?.some((i) => i.assignee === name),
+      );
+      if (blocking.length > 0) {
+        return {
+          error: `참여 중인 프로젝트가 ${blocking.length}건 있습니다. 먼저 다른 담당자로 변경해주세요.`,
+        };
+      }
+    }
+  } catch { /* ignore */ }
+
+  await supabase.from("leaves").delete().eq("member_name", name);
+  const { error } = await supabase.from("team_members").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  const ch = getSyncChannel();
+  ch?.postMessage({ type: "MEMBER_UPDATE", name });
+  ch?.close();
+  return {};
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Reorder members within a department. Receives ordered list of ids
+ * and writes 0..N to sort_order.
+ * ───────────────────────────────────────────────────────────────── */
+export async function reorderMembers(
+  orderedIds: string[],
+): Promise<{ error?: string }> {
+  const updates = orderedIds.map((id, idx) =>
+    supabase.from("team_members").update({ sort_order: idx }).eq("id", id),
+  );
+  const results = await Promise.all(updates);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) return { error: failed.error.message };
+
+  const ch = getSyncChannel();
+  ch?.postMessage({ type: "MEMBER_UPDATE", name: "__reorder__" });
+  ch?.close();
+  return {};
 }

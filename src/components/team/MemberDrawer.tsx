@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Crown, ExternalLink, Plus, Pencil, Save, XCircle } from "lucide-react";
-import { type MemberStats, deptColorFor } from "@/lib/teamStats";
+import { type MemberStats, deptColorFor, formatRank } from "@/lib/teamStats";
 import { dDay } from "@/lib/mockSchedule";
 import { openProjectWindow } from "@/lib/sync";
 import { useNavigate } from "@tanstack/react-router";
@@ -105,7 +105,7 @@ export function MemberDrawer({
               )}
             </p>
             <p className="text-[12px] text-gray-400">
-              {stats.department} · {stats.rank}
+              {stats.department} · {formatRank(stats.rank)}
               {stats.onLeaveToday && (
                 <span className="ml-2 text-blue-300">· 오늘 휴가</span>
               )}
@@ -161,7 +161,7 @@ export function MemberDrawer({
             <dl className="grid grid-cols-[80px_1fr] gap-y-1.5 text-[13px]">
               <dt className="text-gray-500">이름</dt><dd className="text-foreground">{stats.name}</dd>
               <dt className="text-gray-500">부서</dt><dd className="text-foreground">{stats.department}</dd>
-              <dt className="text-gray-500">직급</dt><dd className="text-foreground">{stats.rank}</dd>
+              <dt className="text-gray-500">직급</dt><dd className="text-foreground">{formatRank(stats.rank)}</dd>
               <dt className="text-gray-500">연락처</dt>
               <dd className="text-foreground">{stats.phone || "—"}</dd>
               <dt className="text-gray-500">이메일</dt>
@@ -191,7 +191,7 @@ export function MemberDrawer({
                   onChange={(e) => setForm({ ...form, rank: e.target.value })}
                   className={inputCls + " [&>option]:bg-[#0a0a0a]"}
                 >
-                  {RANKS.map((r) => <option key={r} value={r}>{r}</option>)}
+                  {RANKS.map((r) => <option key={r} value={r}>{formatRank(r)}</option>)}
                 </select>
               </Field>
               <Field label="연락처">

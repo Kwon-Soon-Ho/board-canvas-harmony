@@ -1,6 +1,15 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, Fragment } from "react";
-import { Table as TableIcon, Network, Crown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Pencil, Check } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { Header } from "@/components/control/Header";
 import {
   TeamFilters,
@@ -9,17 +18,25 @@ import {
 } from "@/components/team/TeamFilters";
 import { MemberDrawer } from "@/components/team/MemberDrawer";
 import { AddLeaveModal } from "@/components/schedule/AddLeaveModal";
+import { AddMemberModal } from "@/components/team/AddMemberModal";
+import { SortableMemberRow } from "@/components/team/SortableMemberRow";
 import { MOCK_PROJECTS, type Project, DEPT_COLOR } from "@/lib/mockProjects";
 import { buildSeedLeaves, type Leave } from "@/lib/mockSchedule";
 import {
   buildAllStats,
   groupByDept,
-  sortByRankThenName,
+  sortMembers,
+  DEPT_ORDER,
   type MemberStats,
 } from "@/lib/teamStats";
 import { supabase } from "@/integrations/supabase/client";
-import { getSyncChannel, openProjectWindow } from "@/lib/sync";
-import { loadOrSeedTeamMembers, type TeamMemberRow } from "@/lib/teamSync";
+import { getSyncChannel } from "@/lib/sync";
+import {
+  loadOrSeedTeamMembers,
+  reorderMembers,
+  deleteMember,
+  type TeamMemberRow,
+} from "@/lib/teamSync";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/team")({
@@ -31,20 +48,19 @@ export const Route = createFileRoute("/team")({
 });
 
 const STORAGE_KEY = "design-projects-store";
-type ViewMode = "tree" | "table";
 
 function TeamPage() {
   const search = useSearch({ from: "/team" });
   const [filters, setFilters] = useState<TeamFiltersState>(DEFAULT_TEAM_FILTERS);
-  const [view, setView] = useState<ViewMode>("tree");
   const [selected, setSelected] = useState<string | null>(search.member ?? null);
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [members, setMembers] = useState<TeamMemberRow[]>([]);
   const [refreshTick, setRefreshTick] = useState(0);
   const [addLeaveOpen, setAddLeaveOpen] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
 
-  // Load projects from shared store
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -55,7 +71,6 @@ function TeamPage() {
     } catch { /* ignore */ }
   }, []);
 
-  // Sync from other windows
   useEffect(() => {
     const ch = getSyncChannel();
     if (!ch) return;
@@ -76,7 +91,6 @@ function TeamPage() {
     return () => ch.close();
   }, []);
 
-  // Load leaves + team members
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -85,7 +99,6 @@ function TeamPage() {
         loadOrSeedTeamMembers(),
       ]);
       if (cancelled) return;
-
       if (!leaveData || leaveData.length === 0) {
         const seeds = buildSeedLeaves();
         await supabase.from("leaves").insert(seeds);
@@ -123,12 +136,10 @@ function TeamPage() {
     ? allStats.find((s) => s.name === selected) ?? null
     : null;
 
-  // KPI
   const kpi = useMemo(() => {
     const total = allStats.length;
     const onLeave = allStats.filter((s) => s.onLeaveToday).length;
-    const activeSum = allStats.reduce((a, s) => a + s.activeProjects.length, 0);
-    return { total, onLeave, activeSum };
+    return { total, onLeave };
   }, [allStats]);
 
   const todayLeavers = allStats.filter((s) => s.onLeaveToday);
@@ -143,6 +154,19 @@ function TeamPage() {
     setRefreshTick((t) => t + 1);
   };
 
+  const handleDeleteMember = async (s: MemberStats) => {
+    if (!s.id) return;
+    if (!confirm(`'${s.name}' 팀원을 삭제하시겠습니까? 등록된 연차도 함께 삭제됩니다.`)) return;
+    const res = await deleteMember(s.id, s.name);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success("팀원이 삭제되었습니다.");
+    if (selected === s.name) setSelected(null);
+    setRefreshTick((t) => t + 1);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
@@ -153,13 +177,12 @@ function TeamPage() {
           <h1 className="text-[19px] font-semibold">팀 관리</h1>
           <div className="hidden md:flex items-center gap-4 text-[13px] ml-2">
             <Kpi label="총원" value={kpi.total} />
-            <Kpi label="진행중 프로젝트" value={`${kpi.activeSum}건`} tone="text-emerald-300" />
             <Kpi label="오늘 연차" value={kpi.onLeave} tone="text-blue-300" />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {todayLeavers.length > 0 && (
+          {todayLeavers.length > 0 && !editing && (
             <div className="hidden lg:flex items-center gap-1 mr-2">
               <span className="text-[12px] text-gray-500 mr-1">오늘 휴가:</span>
               {todayLeavers.slice(0, 5).map((s) => (
@@ -178,8 +201,22 @@ function TeamPage() {
               )}
             </div>
           )}
-          <ViewBtn icon={<Network className="h-4 w-4" />} active={view === "tree"} onClick={() => setView("tree")} label="부서" />
-          <ViewBtn icon={<TableIcon className="h-4 w-4" />} active={view === "table"} onClick={() => setView("table")} label="표" />
+          <button
+            onClick={() => setAddMemberOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] bg-teal-600 hover:bg-teal-500 text-white"
+          >
+            <Plus className="h-4 w-4" /> 팀원 추가
+          </button>
+          <button
+            onClick={() => setEditing((v) => !v)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] border transition-colors ${
+              editing
+                ? "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                : "bg-white/5 border-white/10 text-gray-300 hover:text-foreground"
+            }`}
+          >
+            {editing ? <><Check className="h-4 w-4" /> 완료</> : <><Pencil className="h-4 w-4" /> 편집</>}
+          </button>
         </div>
       </div>
 
@@ -191,10 +228,15 @@ function TeamPage() {
             <p className="text-center text-gray-500 text-[14px] mt-20">
               조건에 맞는 팀원이 없습니다.
             </p>
-          ) : view === "table" ? (
-            <TeamTableGrouped stats={filteredStats} selected={selected} onSelect={setSelected} />
           ) : (
-            <TeamTreeView stats={filteredStats} selected={selected} onSelect={setSelected} />
+            <TeamTreeView
+              stats={filteredStats}
+              selected={selected}
+              onSelect={setSelected}
+              editing={editing}
+              onDeleteMember={handleDeleteMember}
+              onReordered={() => setRefreshTick((t) => t + 1)}
+            />
           )}
         </main>
 
@@ -221,6 +263,16 @@ function TeamPage() {
           }}
         />
       )}
+
+      {addMemberOpen && (
+        <AddMemberModal
+          onClose={() => setAddMemberOpen(false)}
+          onCreated={() => {
+            setAddMemberOpen(false);
+            setRefreshTick((t) => t + 1);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -234,174 +286,131 @@ function Kpi({ label, value, tone }: { label: string; value: string | number; to
   );
 }
 
-function ViewBtn({
-  icon, active, onClick, label,
-}: { icon: React.ReactNode; active: boolean; onClick: () => void; label: string }) {
+function tableHead(editing: boolean) {
   return (
-    <button
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] border transition-colors ${
-        active
-          ? "bg-teal-700/30 border-teal-500/50 text-teal-200"
-          : "bg-white/5 border-white/10 text-gray-400 hover:text-foreground"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-/* ─── Shared table renderer ─────────────────────────────────────── */
-function MemberRow({
-  s, selected, onSelect,
-}: { s: MemberStats; selected: boolean; onSelect: (n: string) => void }) {
-  const activeTone =
-    s.activeProjects.length === 0
-      ? "text-gray-600"
-      : s.activeProjects.length >= 4
-        ? "text-amber-300 font-semibold"
-        : "text-foreground";
-  return (
-    <tr
-      onClick={() => onSelect(s.name)}
-      className={`cursor-pointer border-t border-white/5 hover:bg-white/[0.03] ${
-        selected ? "bg-teal-950/20" : ""
-      }`}
-    >
-      <td className="px-3 py-2 text-gray-300">{s.department}</td>
-      <td className="px-3 py-2 text-gray-400">{s.rank}</td>
-      <td className="px-3 py-2 text-foreground">
-        <span className="inline-flex items-center gap-1">
-          {s.name}
-          {s.pmProjects.length > 0 && (
-            <Crown className="h-3 w-3 text-amber-300" aria-label="PM" />
-          )}
-          {s.onLeaveToday && (
-            <span className="ml-1 text-[10px] text-blue-300">●</span>
-          )}
-        </span>
-      </td>
-      <td className="px-3 py-2 text-gray-400 tabular-nums">{s.phone || "—"}</td>
-      <td className={`px-3 py-2 text-right tabular-nums ${activeTone}`}>{s.activeProjects.length}</td>
-      <td className="px-3 py-2 text-right text-gray-500 tabular-nums">{s.pendingProjects.length}</td>
-      <td className="px-3 py-2 text-right text-gray-500 tabular-nums">{s.doneProjects.length}</td>
-      <td className="px-3 py-2 text-right tabular-nums">
-        {s.openIssues.length > 0 ? (
-          <span className="text-amber-300">{s.openIssues.length}</span>
-        ) : (
-          <span className="text-gray-600">0</span>
-        )}
-      </td>
-      <td className="px-3 py-2 text-right tabular-nums">
-        {s.leavesThisMonth.length > 0 ? (
-          <span className="text-blue-300">{s.leavesThisMonth.length}</span>
-        ) : (
-          <span className="text-gray-600">0</span>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-const TABLE_HEAD = (
-  <thead className="bg-[#0a0a0a] text-[12px] uppercase tracking-wider text-gray-500">
-    <tr>
-      <th className="text-left px-3 py-2">부서</th>
-      <th className="text-left px-3 py-2">직급</th>
-      <th className="text-left px-3 py-2">이름</th>
-      <th className="text-left px-3 py-2">연락처</th>
-      <th className="text-right px-3 py-2">진행</th>
-      <th className="text-right px-3 py-2">대기</th>
-      <th className="text-right px-3 py-2">완료</th>
-      <th className="text-right px-3 py-2">이슈</th>
-      <th className="text-right px-3 py-2">이번달 연차</th>
-    </tr>
-  </thead>
-);
-
-function TeamTableGrouped({
-  stats, selected, onSelect,
-}: { stats: MemberStats[]; selected: string | null; onSelect: (n: string) => void }) {
-  const groups = groupByDept(stats);
-  const deptOrder = ["영상", "편집", "UX", "공통"];
-  const orderedDepts = deptOrder.filter((d) => groups[d]?.length);
-  return (
-    <div className="rounded-lg border border-white/10 overflow-hidden">
-      <table className="w-full text-[13px]">
-        {TABLE_HEAD}
-        <tbody>
-          {orderedDepts.map((dept) => {
-            const members = groups[dept];
-            const activeSum = members.reduce((a, m) => a + m.activeProjects.length, 0);
-            return (
-              <Fragment key={dept}>
-                <tr className="bg-[#0c0c0c]">
-                  <td colSpan={9} className="px-3 py-2">
-                    <span className="inline-flex items-center gap-2 text-[12px] uppercase tracking-wider">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{
-                          backgroundColor: DEPT_COLOR[dept as "영상"] ?? "#FFFFFF",
-                          boxShadow: `0 0 6px ${DEPT_COLOR[dept as "영상"] ?? "#FFFFFF"}`,
-                        }}
-                      />
-                      <span className="text-foreground font-semibold">{dept}</span>
-                      <span className="text-gray-500 normal-case tracking-normal">
-                        · {members.length}명 · 진행중 {activeSum}건
-                      </span>
-                    </span>
-                  </td>
-                </tr>
-                {members.map((s) => (
-                  <MemberRow key={s.name} s={s} selected={selected === s.name} onSelect={onSelect} />
-                ))}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <thead className="bg-[#0a0a0a] text-[12px] uppercase tracking-wider text-gray-500">
+      <tr>
+        {editing && <th className="w-8" />}
+        <th className="text-left px-3 py-2">부서</th>
+        <th className="text-left px-3 py-2">직급</th>
+        <th className="text-left px-3 py-2">이름</th>
+        <th className="text-left px-3 py-2">연락처</th>
+        <th className="text-right px-3 py-2">진행</th>
+        <th className="text-right px-3 py-2">대기</th>
+        <th className="text-right px-3 py-2">완료</th>
+        <th className="text-right px-3 py-2">이슈</th>
+        <th className="text-right px-3 py-2">이번달 연차</th>
+        {editing && <th className="w-10" />}
+      </tr>
+    </thead>
   );
 }
 
 function TeamTreeView({
-  stats, selected, onSelect,
-}: { stats: MemberStats[]; selected: string | null; onSelect: (n: string) => void }) {
+  stats, selected, onSelect, editing, onDeleteMember, onReordered,
+}: {
+  stats: MemberStats[];
+  selected: string | null;
+  onSelect: (n: string) => void;
+  editing: boolean;
+  onDeleteMember: (s: MemberStats) => void;
+  onReordered: () => void;
+}) {
   const groups = groupByDept(stats);
-  const deptOrder = ["영상", "편집", "UX", "공통"];
-  const orderedDepts = deptOrder.filter((d) => groups[d]?.length);
+  const orderedDepts = DEPT_ORDER.filter((d) => groups[d]?.length);
   return (
     <div className="space-y-5">
       {orderedDepts.map((dept) => {
-        const members = sortByRankThenName(groups[dept]);
-        const activeSum = members.reduce((a, m) => a + m.activeProjects.length, 0);
+        const list = sortMembers(groups[dept]);
         const color = DEPT_COLOR[dept as "영상"] ?? "#FFFFFF";
         return (
-          <section key={dept}>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
-              />
-              <h3 className="text-[15px] font-semibold text-foreground">{dept}</h3>
-              <span className="text-[12px] text-gray-500">
-                · {members.length}명 · 진행중 프로젝트 {activeSum}건
-              </span>
-            </div>
-            <div className="rounded-lg border border-white/10 overflow-hidden">
-              <table className="w-full text-[13px]">
-                {TABLE_HEAD}
-                <tbody>
-                  {members.map((s) => (
-                    <MemberRow key={s.name} s={s} selected={selected === s.name} onSelect={onSelect} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <DeptSection
+            key={dept}
+            dept={dept}
+            color={color}
+            members={list}
+            selected={selected}
+            onSelect={onSelect}
+            editing={editing}
+            onDeleteMember={onDeleteMember}
+            onReordered={onReordered}
+          />
         );
       })}
     </div>
+  );
+}
+
+function DeptSection({
+  dept, color, members, selected, onSelect, editing, onDeleteMember, onReordered,
+}: {
+  dept: string;
+  color: string;
+  members: MemberStats[];
+  selected: string | null;
+  onSelect: (n: string) => void;
+  editing: boolean;
+  onDeleteMember: (s: MemberStats) => void;
+  onReordered: () => void;
+}) {
+  const [items, setItems] = useState<MemberStats[]>(members);
+
+  // Re-sync when parent data changes
+  useEffect(() => {
+    setItems(members);
+  }, [members]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const onDragEnd = async (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = items.findIndex((m) => (m.id ?? m.name) === active.id);
+    const newIdx = items.findIndex((m) => (m.id ?? m.name) === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const next = arrayMove(items, oldIdx, newIdx);
+    setItems(next);
+    const ids = next.map((m) => m.id).filter((x): x is string => !!x);
+    const res = await reorderMembers(ids);
+    if (res.error) {
+      toast.error("순서 저장 실패: " + res.error);
+    }
+    onReordered();
+  };
+
+  const ids = items.map((m) => m.id ?? m.name);
+
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-2">
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
+        />
+        <h3 className="text-[15px] font-semibold text-foreground">{dept}</h3>
+        <span className="text-[12px] text-gray-500">· {items.length}명</span>
+      </div>
+      <div className="rounded-lg border border-white/10 overflow-hidden">
+        <table className="w-full text-[13px]">
+          {tableHead(editing)}
+          <tbody>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+                {items.map((s) => (
+                  <SortableMemberRow
+                    key={s.id ?? s.name}
+                    s={s}
+                    selected={selected === s.name}
+                    onSelect={onSelect}
+                    editing={editing}
+                    onDelete={onDeleteMember}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
