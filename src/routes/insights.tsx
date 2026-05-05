@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend as RLegend,
 } from "recharts";
 import { Header } from "@/components/control/Header";
-import { MOCK_PROJECTS, DEPT_COLOR, type Project } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, DEPT_COLOR, type Project, type Department } from "@/lib/mockProjects";
 import { type Leave } from "@/lib/mockSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { getSyncChannel } from "@/lib/sync";
@@ -17,14 +19,22 @@ import {
   monthlyCompleted,
   workloadByMember,
   deptAvgProgress,
-  pmSummary,
   leaveHeatmap,
-  shiftPatterns,
   recentResolvedIssues,
   issueStats,
+  projectsInRange,
+  leavesInRange,
+  deadlineUrgency,
+  deptStatusMatrix,
 } from "@/lib/insights";
 
+const searchSchema = z.object({
+  y: fallback(z.number(), new Date().getFullYear()).default(new Date().getFullYear()),
+  q: fallback(z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(0)]), 0).default(0),
+});
+
 export const Route = createFileRoute("/insights")({
+  validateSearch: zodValidator(searchSchema),
   component: InsightsPage,
   ssr: false,
   head: () => ({
@@ -37,18 +47,20 @@ export const Route = createFileRoute("/insights")({
 
 const STORAGE_KEY = "design-projects-store";
 const STATUS_COLOR: Record<string, string> = {
-  진행: "#147058",
+  진행: "#10B981",
   상시: "#3B82F6",
   대기: "#9CA3AF",
   완료: "#22C55E",
 };
 
 function InsightsPage() {
+  const { y: year, q: quarter } = Route.useSearch();
+  const navigate = Route.useNavigate();
+
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [refreshTick, setRefreshTick] = useState(0);
 
-  // Hydrate projects from localStorage (same source as other pages)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -68,7 +80,7 @@ function InsightsPage() {
     if (!ch) return;
     const handler = (e: MessageEvent) => {
       const t = e.data?.type;
-      if (t === "PROJECT_UPDATE" || t === "MEMBER_UPDATE" || t === "MEMBER_RENAME") {
+      if (t === "PROJECT_UPDATE" || t === "MEMBER_UPDATE" || t === "MEMBER_RENAME" || t === "LEAVE_UPDATE") {
         setRefreshTick((x) => x + 1);
       }
     };
@@ -80,7 +92,6 @@ function InsightsPage() {
     };
   }, []);
 
-  // Load leaves from Cloud
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -90,33 +101,113 @@ function InsightsPage() {
     return () => { cancelled = true; };
   }, [refreshTick]);
 
-  const kpis = useMemo(() => computeKpis(projects, leaves), [projects, leaves]);
-  const deptDist = useMemo(() => deptDistribution(projects), [projects]);
-  const statusDist = useMemo(() => statusDistribution(projects), [projects]);
-  const buckets = useMemo(() => progressBuckets(projects), [projects]);
-  const monthly = useMemo(() => monthlyCompleted(projects), [projects]);
-  const workload = useMemo(() => workloadByMember(projects), [projects]);
-  const deptAvg = useMemo(() => deptAvgProgress(projects), [projects]);
-  const pms = useMemo(() => pmSummary(projects), [projects]);
-  const heatmap = useMemo(() => leaveHeatmap(leaves), [leaves]);
-  const shifts = useMemo(() => shiftPatterns(leaves), [leaves]);
-  const recent = useMemo(() => recentResolvedIssues(projects), [projects]);
-  const issueAgg = useMemo(() => issueStats(projects), [projects]);
+  // ── Range computation ───────────────────────────────────────────
+  const range = useMemo(() => {
+    if (quarter === 0) {
+      return { start: new Date(year, 0, 1), end: new Date(year, 11, 31, 23, 59, 59) };
+    }
+    return {
+      start: new Date(year, (quarter - 1) * 3, 1),
+      end: new Date(year, quarter * 3, 0, 23, 59, 59),
+    };
+  }, [year, quarter]);
+
+  const yearHasData = useMemo(() => {
+    return projects.some((p) => {
+      const ref = p.deadline && p.deadline !== "상시" ? p.deadline : (p.startDate ?? "");
+      if (!ref) return false;
+      return new Date(ref).getFullYear() === year;
+    });
+  }, [projects, year]);
+
+  const filteredProjects = useMemo(() => {
+    const base = projectsInRange(projects, range);
+    if (!yearHasData) return base.filter((p) => p.status !== "상시" && p.status !== "대기");
+    return base;
+  }, [projects, range, yearHasData]);
+
+  const filteredLeaves = useMemo(() => leavesInRange(leaves, range), [leaves, range]);
+
+  const kpis = useMemo(() => computeKpis(filteredProjects, filteredLeaves), [filteredProjects, filteredLeaves]);
+  const deptDist = useMemo(() => deptDistribution(filteredProjects), [filteredProjects]);
+  const statusDist = useMemo(() => statusDistribution(filteredProjects), [filteredProjects]);
+  const buckets = useMemo(() => progressBuckets(filteredProjects), [filteredProjects]);
+  const monthly = useMemo(() => monthlyCompleted(filteredProjects, range), [filteredProjects, range]);
+  const workload = useMemo(() => workloadByMember(filteredProjects), [filteredProjects]);
+  const deptAvg = useMemo(() => deptAvgProgress(filteredProjects), [filteredProjects]);
+  const heatmap = useMemo(() => leaveHeatmap(filteredLeaves, range), [filteredLeaves, range]);
+  const recent = useMemo(() => recentResolvedIssues(filteredProjects), [filteredProjects]);
+  const issueAgg = useMemo(() => issueStats(filteredProjects), [filteredProjects]);
+  const urgency = useMemo(() => deadlineUrgency(filteredProjects), [filteredProjects]);
+  const matrix = useMemo(() => deptStatusMatrix(filteredProjects), [filteredProjects]);
+
+  const currentYear = new Date().getFullYear();
+
+  const setYear = (newY: number) =>
+    navigate({ search: (prev: any) => ({ ...prev, y: newY }), replace: true });
+  const setQuarter = (newQ: 0 | 1 | 2 | 3 | 4) =>
+    navigate({ search: (prev: any) => ({ ...prev, q: newQ }), replace: true });
+
+  const openIssueWindow = (projectId: string, focusId: string) => {
+    window.open(`/detail?id=${projectId}&focus=${focusId}`, "_blank", "noopener");
+  };
+  const openProjectWindow = (projectId: string) => {
+    window.open(`/detail?id=${projectId}`, "_blank", "noopener");
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#050505] text-white">
       <Header />
-      <main className="mx-auto max-w-[1920px] px-12 py-8 space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">인사이트</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            지금까지 진행한 업무를 회고하고 운영 패턴을 발견하세요.
-          </p>
+      <main className="mx-auto max-w-[1920px] px-12 py-10 space-y-6">
+        {/* ── Title + period filter ── */}
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-white/10 pb-6">
+          <div className="min-w-0">
+            <h1 className="text-[32px] font-black tracking-tighter break-keep leading-tight">인사이트</h1>
+            <p className="mt-1.5 text-[14px] font-medium text-white/40">
+              {quarter === 0 ? `${year}년 전체` : `${year}년 ${quarter}분기`} 운영 데이터 회고
+            </p>
+          </div>
+          <div
+            role="group"
+            aria-label="기간"
+            className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 backdrop-blur-md"
+          >
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              aria-label="연도 선택"
+              className="bg-transparent text-white text-sm font-bold px-2 py-2 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer appearance-none tabular-nums"
+            >
+              {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                <option key={y} value={y} className="bg-neutral-900 text-white">{y}년</option>
+              ))}
+            </select>
+            <div className="h-5 w-px bg-white/15" />
+            {([1, 2, 3, 4] as const).map((q) => (
+              <button
+                key={q}
+                type="button"
+                aria-pressed={quarter === q}
+                onClick={() => setQuarter(q)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === q ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+              >
+                {q}분기
+              </button>
+            ))}
+            <button
+              type="button"
+              aria-pressed={quarter === 0}
+              onClick={() => setQuarter(0)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${quarter === 0 ? "bg-white/20 text-white" : "text-white/40 hover:text-white"}`}
+            >
+              연간
+            </button>
+          </div>
         </div>
 
-        {/* ── 1. KPI Strip ── */}
+        {/* ── KPI Strip ── */}
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
-          <Kpi label="진행 중" value={kpis.inProgress} accent="#147058" />
+          <Kpi label="진행 중" value={kpis.inProgress} accent="#10B981" />
           <Kpi label="완료" value={kpis.done} accent="#22C55E" />
           <Kpi label="대기" value={kpis.pending} accent="#9CA3AF" />
           <Kpi label="상시" value={kpis.ongoing} accent="#3B82F6" />
@@ -126,12 +217,12 @@ function InsightsPage() {
           <Kpi label="평균 진행률" value={`${kpis.avgProgress}%`} accent="#FFFFFF" />
         </section>
 
-        {/* ── 2. Project Analysis ── */}
+        {/* ── Project Analysis ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card title="부서별 프로젝트 분포">
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2} stroke="none">
                   {deptDist.map((d) => (
                     <Cell key={d.name} fill={DEPT_COLOR[d.name]} />
                   ))}
@@ -145,11 +236,11 @@ function InsightsPage() {
           <Card title="상태별 분포">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={statusDist}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="name" stroke="#9CA3AF" tickLine={false} axisLine={false} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                   {statusDist.map((s) => (
                     <Cell key={s.name} fill={STATUS_COLOR[s.name]} />
                   ))}
@@ -158,14 +249,14 @@ function InsightsPage() {
             </ResponsiveContainer>
           </Card>
 
-          <Card title="월별 완료 추이 (최근 6개월)">
+          <Card title="월별 완료 추이">
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={monthly}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="month" stroke="#9CA3AF" tickLine={false} axisLine={false} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2} dot={{ fill: "#22C55E" }} />
+                <Line type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2.5} dot={{ fill: "#22C55E", r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -173,29 +264,87 @@ function InsightsPage() {
           <Card title="진행률 구간 분포">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={buckets}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="range" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="range" stroke="#9CA3AF" tickLine={false} axisLine={false} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" fill="#147058" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="value" fill="#10B981" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
         </section>
 
-        {/* ── 3. Workload ── */}
+        {/* ── 부서 × 상태 매트릭스 + 마감 임박 ── */}
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card title="부서 × 상태 매트릭스" className="lg:col-span-2">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={matrix}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF" }} />
+                <Bar dataKey="진행" stackId="a" fill={STATUS_COLOR["진행"]} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="상시" stackId="a" fill={STATUS_COLOR["상시"]} />
+                <Bar dataKey="대기" stackId="a" fill={STATUS_COLOR["대기"]} />
+                <Bar dataKey="완료" stackId="a" fill={STATUS_COLOR["완료"]} radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+
+          <Card title="마감 임박 (30일 내)">
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {urgency.buckets.map((b, i) => (
+                <div key={b.range} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-center">
+                  <div
+                    className="text-2xl font-bold tabular-nums"
+                    style={{ color: ["#F43F5E", "#F97316", "#FACC15"][i] }}
+                  >{b.value}</div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{b.range}</div>
+                </div>
+              ))}
+            </div>
+            {urgency.items.length === 0 ? (
+              <Empty>임박한 마감이 없습니다.</Empty>
+            ) : (
+              <ul className="divide-y divide-white/5 max-h-[180px] overflow-y-auto">
+                {urgency.items.map((it) => (
+                  <li key={it.id}>
+                    <button
+                      type="button"
+                      onClick={() => openProjectWindow(it.id)}
+                      className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:bg-white/5 px-2 rounded transition"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium">{it.title}</div>
+                        <div className="truncate text-xs text-muted-foreground" style={{ color: DEPT_COLOR[it.department] }}>
+                          {it.department}
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-xs tabular-nums" style={{ color: it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15" }}>
+                        D-{it.daysLeft}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </section>
+
+        {/* ── Workload ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="담당자별 활성 태스크 TOP 10" className="lg:col-span-2">
             {workload.length === 0 ? (
               <Empty>활성 태스크가 없습니다.</Empty>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(220, workload.length * 32)}>
-                <BarChart data={workload} layout="vertical" margin={{ left: 60 }}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-                  <XAxis type="number" stroke="#9CA3AF" allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={70} />
+                <BarChart data={workload} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                  <XAxis type="number" stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={70} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Bar dataKey="value" fill="#3B82F6" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="value" fill="#3B82F6" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -206,13 +355,13 @@ function InsightsPage() {
               {deptAvg.map((d) => (
                 <div key={d.name}>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium" style={{ color: DEPT_COLOR[d.name] }}>{d.name}</span>
-                    <span className="text-muted-foreground">{d.value}%</span>
+                    <span className="font-medium" style={{ color: DEPT_COLOR[d.name as Department] }}>{d.name}</span>
+                    <span className="text-muted-foreground tabular-nums">{d.value}%</span>
                   </div>
                   <div className="mt-1.5 h-2 rounded-full bg-white/5 overflow-hidden">
                     <div
-                      className="h-full rounded-full"
-                      style={{ width: `${d.value}%`, backgroundColor: DEPT_COLOR[d.name] }}
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${d.value}%`, backgroundColor: DEPT_COLOR[d.name as Department] }}
                     />
                   </div>
                 </div>
@@ -221,81 +370,18 @@ function InsightsPage() {
           </Card>
         </section>
 
+        {/* ── Schedule ── */}
         <section>
-          <Card title="PM별 담당 프로젝트">
-            {pms.length === 0 ? (
-              <Empty>PM 데이터가 없습니다.</Empty>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-muted-foreground">
-                    <tr className="border-b border-white/10">
-                      <th className="py-2 pr-4 font-medium">PM</th>
-                      <th className="py-2 pr-4 font-medium">담당 프로젝트</th>
-                      <th className="py-2 pr-4 font-medium">평균 진행률</th>
-                      <th className="py-2 font-medium">진행률 바</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pms.map((row) => (
-                      <tr key={row.pm} className="border-b border-white/5">
-                        <td className="py-2 pr-4 font-medium">{row.pm}</td>
-                        <td className="py-2 pr-4">{row.count}개</td>
-                        <td className="py-2 pr-4">{row.avg}%</td>
-                        <td className="py-2">
-                          <div className="h-2 w-48 rounded-full bg-white/5 overflow-hidden">
-                            <div className="h-full rounded-full bg-[#147058]" style={{ width: `${row.avg}%` }} />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </section>
-
-        {/* ── 4. Schedule / Issue Retro ── */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card title="월별 연차 사용 히트맵 (최근 6개월)">
-            {heatmap.length === 0 ? (
+          <Card title="월별 연차 사용 히트맵">
+            {heatmap.rows.length === 0 ? (
               <Empty>연차 기록이 없습니다.</Empty>
             ) : (
-              <Heatmap rows={heatmap} />
+              <Heatmap rows={heatmap.rows} labels={heatmap.labels} />
             )}
-          </Card>
-
-          <Card title="시차 신청 패턴">
-            <div className="space-y-4">
-              <div>
-                <div className="mb-2 text-xs text-muted-foreground">요일별</div>
-                <ResponsiveContainer width="100%" height={120}>
-                  <BarChart data={shifts.byWeekday}>
-                    <XAxis dataKey="day" stroke="#9CA3AF" />
-                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                    <Bar dataKey="value" fill="#EC4899" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div>
-                <div className="mb-2 text-xs text-muted-foreground">시작 시간대별</div>
-                {shifts.byHour.length === 0 ? (
-                  <Empty>시차 기록이 없습니다.</Empty>
-                ) : (
-                  <ResponsiveContainer width="100%" height={120}>
-                    <BarChart data={shifts.byHour}>
-                      <XAxis dataKey="hour" stroke="#9CA3AF" />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                      <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
           </Card>
         </section>
 
+        {/* ── Issue Retro ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="이슈 처리 현황">
             <div className="grid grid-cols-3 gap-3 pt-2">
@@ -309,17 +395,24 @@ function InsightsPage() {
               <Empty>해결된 이슈가 없습니다.</Empty>
             ) : (
               <ul className="divide-y divide-white/5">
-                {recent.map((r, i) => (
-                  <li key={i} className="flex items-center justify-between gap-4 py-2 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{r.title}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {r.project} · {r.assignee}
+                {recent.map((r) => (
+                  <li key={`${r.projectId}-${r.issueId}`}>
+                    <button
+                      type="button"
+                      onClick={() => openIssueWindow(r.projectId, r.issueId)}
+                      title="새 창에서 해당 이슈로 이동"
+                      className="flex w-full items-center justify-between gap-4 py-2 px-2 text-left text-sm hover:bg-white/5 rounded transition group"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium group-hover:text-emerald-400 transition">{r.title}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {r.project} · {r.assignee}
+                        </div>
                       </div>
-                    </div>
-                    <div className="shrink-0 text-xs text-muted-foreground">
-                      {r.timestamp.slice(0, 10)}
-                    </div>
+                      <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                        {r.timestamp.slice(0, 10)}
+                      </div>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -340,8 +433,8 @@ const tooltipStyle = {
 
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-white/10 bg-card p-5 ${className}`}>
-      <h3 className="mb-3 text-sm font-semibold text-foreground/90">{title}</h3>
+    <div className={`rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent p-6 ${className}`}>
+      <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-white/60">{title}</h3>
       {children}
     </div>
   );
@@ -349,17 +442,17 @@ function Card({ title, children, className = "" }: { title: string; children: Re
 
 function Kpi({ label, value, accent }: { label: string; value: number | string; accent: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-card p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-2xl font-bold tracking-tight" style={{ color: accent }}>{value}</div>
+    <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-4">
+      <div className="text-[11px] uppercase tracking-wider text-white/40">{label}</div>
+      <div className="mt-1.5 text-[28px] font-black tracking-tight tabular-nums" style={{ color: accent }}>{value}</div>
     </div>
   );
 }
 
 function Stat({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-center">
-      <div className="text-2xl font-bold" style={{ color }}>{value}</div>
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
+      <div className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</div>
       <div className="mt-1 text-xs text-muted-foreground">{label}</div>
     </div>
   );
@@ -382,13 +475,7 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <div className="py-10 text-center text-sm text-muted-foreground">{children}</div>;
 }
 
-function Heatmap({ rows }: { rows: { member: string; months: number[] }[] }) {
-  const now = new Date();
-  const labels: string[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    labels.push(`${d.getMonth() + 1}월`);
-  }
+function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[]; labels: string[] }) {
   const max = Math.max(1, ...rows.flatMap((r) => r.months));
   const colorFor = (n: number) => {
     if (!n) return "rgba(255,255,255,0.04)";
@@ -400,7 +487,7 @@ function Heatmap({ rows }: { rows: { member: string; months: number[] }[] }) {
       <table className="w-full text-xs">
         <thead className="text-muted-foreground">
           <tr>
-            <th className="sticky left-0 bg-card py-1 pr-3 text-left font-medium">팀원</th>
+            <th className="sticky left-0 bg-transparent py-1 pr-3 text-left font-medium">팀원</th>
             {labels.map((l) => (
               <th key={l} className="px-2 py-1 text-center font-medium">{l}</th>
             ))}
@@ -408,22 +495,22 @@ function Heatmap({ rows }: { rows: { member: string; months: number[] }[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.slice(0, 12).map((r) => {
+          {rows.slice(0, 16).map((r) => {
             const total = r.months.reduce((s, n) => s + n, 0);
             return (
               <tr key={r.member}>
-                <td className="sticky left-0 bg-card py-1 pr-3 font-medium">{r.member}</td>
+                <td className="sticky left-0 bg-transparent py-1 pr-3 font-medium">{r.member}</td>
                 {r.months.map((n, i) => (
                   <td key={i} className="px-1 py-1">
                     <div
-                      className="mx-auto flex h-7 w-10 items-center justify-center rounded text-[11px] text-foreground/80"
+                      className="mx-auto flex h-7 w-10 items-center justify-center rounded text-[11px] text-white/80"
                       style={{ background: colorFor(n) }}
                     >
                       {n || ""}
                     </div>
                   </td>
                 ))}
-                <td className="px-2 py-1 text-center font-semibold">{total}</td>
+                <td className="px-2 py-1 text-center font-bold tabular-nums">{total}</td>
               </tr>
             );
           })}

@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const searchSchema = z.object({ id: z.string().optional() });
+const searchSchema = z.object({ id: z.string().optional(), focus: z.string().optional() });
 export const Route = createFileRoute("/detail")({
   validateSearch: (s) => searchSchema.parse(s),
   component: DetailWindow,
@@ -40,7 +40,8 @@ function DndProvider({ children }: { children: React.ReactNode }) {
 }
 
 function DetailWindow() {
-  const { id } = Route.useSearch();
+  const { id, focus } = Route.useSearch();
+  const [focusPulse, setFocusPulse] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(() => {
     if (!id) return null;
@@ -271,6 +272,22 @@ function DetailWindow() {
     }, 50);
   };
 
+  // Auto-focus an item passed via ?focus=… (deep link from Insights)
+  useEffect(() => {
+    if (!focus || !project) return;
+    const exists = project.tasks.some(t => t.id === focus) || project.issues.some(i => i.id === focus);
+    if (!exists) return;
+    setActiveItemId(focus);
+    setFocusPulse(focus);
+    const t1 = setTimeout(() => {
+      const el = document.getElementById(`tracker-item-${focus}`);
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 250);
+    const t2 = setTimeout(() => setFocusPulse(undefined), 2200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, project?.id]);
+
   const handleUpdateEndDate = (id: string, daysDelta: number) => {
     setProject(prev => {
       if (!prev) return prev;
@@ -483,7 +500,7 @@ function DetailWindow() {
                                    <span className="text-[14px] font-bold text-white/40">({filteredTasks.length}/{project.tasks.length})</span>
                                 </div>
                                 {filteredTasks.map(t => (
-                                  <div key={t.id} id={`tracker-item-${t.id}`}>
+                                  <div key={t.id} id={`tracker-item-${t.id}`} className={focusPulse === t.id ? 'rounded-xl ring-2 ring-orange-400/70 transition' : ''}>
                                     <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} onDelete={() => handleDeleteTask(t.id)} />
                                   </div>
                                 ))}
@@ -495,7 +512,7 @@ function DetailWindow() {
                                    <span className="text-[15px] font-bold text-rose-500/50">({filteredIssues.length}/{project.issues.length})</span>
                                 </div>
                                 {filteredIssues.map(iss => (
-                                  <div key={iss.id} id={`tracker-item-${iss.id}`}>
+                                  <div key={iss.id} id={`tracker-item-${iss.id}`} className={focusPulse === iss.id ? 'rounded-xl ring-2 ring-orange-400/70 transition' : ''}>
                                     <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} onDelete={() => handleDeleteIssue(iss.id)} />
                                   </div>
                                 ))}
