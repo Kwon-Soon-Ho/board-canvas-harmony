@@ -240,17 +240,22 @@ function InsightsPage() {
                 <PieChart>
                   <defs>
                     {deptDist.map((d) => (
-                      <radialGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} cx="50%" cy="50%" r="50%">
+                      <linearGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={DEPT_COLOR[d.name]} stopOpacity={1} />
-                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.55} />
-                      </radialGradient>
+                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.78} />
+                      </linearGradient>
                     ))}
+                    <radialGradient id="dept-inner-shade" cx="50%" cy="50%" r="50%">
+                      <stop offset="60%" stopColor="#000" stopOpacity={0} />
+                      <stop offset="100%" stopColor="#000" stopOpacity={0.35} />
+                    </radialGradient>
                   </defs>
-                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88} paddingAngle={3} stroke="none">
+                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2} cornerRadius={6} stroke="rgba(0,0,0,0.4)" strokeWidth={1}>
                     {deptDist.map((d) => (
                       <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
                     ))}
                   </Pie>
+                  <Pie data={[{ v: 1 }]} dataKey="v" innerRadius={58} outerRadius={92} fill="url(#dept-inner-shade)" stroke="none" isAnimationActive={false} />
                   <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
