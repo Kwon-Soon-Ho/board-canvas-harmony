@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { addMember, formatPhone } from "@/lib/teamSync";
+import { addMember, formatPhone, ROLES } from "@/lib/teamSync";
 import { toast } from "sonner";
 
 const DEPTS = ["공통", "영상", "편집", "UX"] as const;
