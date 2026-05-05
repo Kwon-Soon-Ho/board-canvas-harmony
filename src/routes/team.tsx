@@ -173,12 +173,14 @@ function TeamPage() {
 
       {/* Toolbar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-[#080808]">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <h1 className="text-[19px] font-semibold">팀 관리</h1>
-          <div className="hidden md:flex items-center gap-4 text-[13px] ml-2">
-            <Kpi label="총원" value={kpi.total} />
-            <Kpi label="오늘 연차" value={kpi.onLeave} tone="text-blue-300" />
-          </div>
+        </div>
+
+        {/* KPI mini bar (centered, matches /schedule) */}
+        <div className="hidden md:flex items-center gap-4 text-[13px]">
+          <Kpi label="총원" value={kpi.total} />
+          <Kpi label="오늘 휴가" value={kpi.onLeave} tone="text-blue-300" />
         </div>
 
         <div className="flex items-center gap-2">
@@ -286,11 +288,30 @@ function Kpi({ label, value, tone }: { label: string; value: string | number; to
   );
 }
 
+function TableColgroup({ editing }: { editing: boolean }) {
+  return (
+    <colgroup>
+      {editing && <col style={{ width: 32 }} />}
+      <col style={{ width: 80 }} />
+      <col style={{ width: 130 }} />
+      <col style={{ width: 80 }} />
+      <col style={{ width: 130 }} />
+      <col style={{ width: 170 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 110 }} />
+      {editing && <col style={{ width: 40 }} />}
+    </colgroup>
+  );
+}
+
 function tableHead(editing: boolean) {
   return (
     <thead className="bg-[#0a0a0a] text-[12px] uppercase tracking-wider text-gray-500">
       <tr>
-        {editing && <th className="w-8" />}
+        {editing && <th />}
         <th className="text-left px-3 py-2">부서</th>
         <th className="text-left px-3 py-2">직급</th>
         <th className="text-left px-3 py-2">역할</th>
@@ -301,7 +322,7 @@ function tableHead(editing: boolean) {
         <th className="text-right px-3 py-2">완료</th>
         <th className="text-right px-3 py-2">이슈</th>
         <th className="text-right px-3 py-2">이번달 연차</th>
-        {editing && <th className="w-10" />}
+        {editing && <th />}
       </tr>
     </thead>
   );
@@ -392,11 +413,12 @@ function DeptSection({
         <span className="text-[12px] text-gray-500">· {items.length}명</span>
       </div>
       <div className="rounded-lg border border-white/10 overflow-hidden">
-        <table className="w-full text-[13px]">
-          {tableHead(editing)}
-          <tbody>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <table className="w-full text-[13px] table-fixed">
+              <TableColgroup editing={editing} />
+              {tableHead(editing)}
+              <tbody>
                 {items.map((s) => (
                   <SortableMemberRow
                     key={s.id ?? s.name}
@@ -407,10 +429,10 @@ function DeptSection({
                     onDelete={onDeleteMember}
                   />
                 ))}
-              </SortableContext>
-            </DndContext>
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
       </div>
     </section>
   );

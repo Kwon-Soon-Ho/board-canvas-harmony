@@ -11,7 +11,8 @@ import { EventChip, type CalendarEvent } from "@/components/schedule/EventChip";
 import { RiskBanner } from "@/components/schedule/RiskBanner";
 import { DayDetailPanel } from "@/components/schedule/DayDetailPanel";
 import { AddLeaveModal } from "@/components/schedule/AddLeaveModal";
-import { MOCK_PROJECTS, ALL_MEMBERS, DEPT_COLOR, DEPTS, type Project } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, DEPT_COLOR, DEPTS, type Project } from "@/lib/mockProjects";
+import { useLiveTeam } from "@/lib/useLiveTeam";
 import {
   buildMonthGrid,
   dayKey,
@@ -44,6 +45,7 @@ function SchedulePage() {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [refreshTick, setRefreshTick] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const liveMembers = useLiveTeam();
 
   // Load projects from same localStorage as the main board
   const loadProjects = () => {
@@ -322,7 +324,7 @@ function SchedulePage() {
             <ScheduleFilters
               filters={filters}
               onChange={setFilters}
-              allMembers={ALL_MEMBERS}
+              allMembers={liveMembers.map((m) => ({ name: m.name, rank: m.rank }))}
             />
             <button
               onClick={() => setFiltersOpen(false)}
@@ -363,11 +365,18 @@ function SchedulePage() {
               const overflow = dayEvents.length - visible.length;
 
               return (
-                <button
+                <div
                   key={k}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedDay(k)}
-                  className={`flex flex-col items-stretch text-left border-r border-b border-white/[0.06] p-1.5 overflow-hidden transition-colors ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedDay(k);
+                    }
+                  }}
+                  className={`flex flex-col items-stretch text-left border-r border-b border-white/[0.06] p-1.5 overflow-hidden transition-colors cursor-pointer ${
                     inMonth ? "bg-[#0a0a0a]" : "bg-[#060606]"
                   } ${
                     isHoliday && inMonth ? "bg-red-950/20" : ""
@@ -412,7 +421,7 @@ function SchedulePage() {
                       <p className="text-[11px] text-gray-500 px-1">+{overflow}건 더보기</p>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

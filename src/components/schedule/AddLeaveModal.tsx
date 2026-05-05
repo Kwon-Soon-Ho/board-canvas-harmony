@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { TEAM_DATA, ALL_MEMBERS, type Department } from "@/lib/mockProjects";
-import { MEMBER_DEPT, TIME_SLOTS, type LeaveType } from "@/lib/mockSchedule";
+import { type Department } from "@/lib/mockProjects";
+import { TIME_SLOTS, type LeaveType } from "@/lib/mockSchedule";
+import { useLiveTeam, groupLiveByDept } from "@/lib/useLiveTeam";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { X } from "lucide-react";
@@ -13,7 +14,10 @@ interface Props {
 }
 
 export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }: Props) {
-  const [member, setMember] = useState(defaultMember ?? ALL_MEMBERS[0].name);
+  const liveMembers = useLiveTeam();
+  const { byDept, order } = groupLiveByDept(liveMembers);
+  const fallbackName = liveMembers[0]?.name ?? "";
+  const [member, setMember] = useState(defaultMember ?? fallbackName);
   const [date, setDate] = useState(defaultDate);
   const [type, setType] = useState<LeaveType>("연차");
   const [startTime, setStartTime] = useState("09:00");
@@ -28,7 +32,7 @@ export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }
       return;
     }
     setSaving(true);
-    const dept = MEMBER_DEPT[member] as Department;
+    const dept = (liveMembers.find((m) => m.name === member)?.department ?? "공통") as Department;
     const { error } = await supabase.from("leaves").insert({
       member_name: member,
       department: dept,
@@ -68,9 +72,9 @@ export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }
               onChange={(e) => setMember(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-1 focus:ring-teal-500 [&>option]:bg-[#0a0a0a] [&>option]:text-foreground [&>optgroup]:bg-[#0a0a0a] [&>optgroup]:text-gray-400"
             >
-              {(Object.keys(TEAM_DATA) as Department[]).map((d) => (
+              {order.map((d) => (
                 <optgroup key={d} label={d}>
-                  {TEAM_DATA[d].map((m) => (
+                  {byDept[d].map((m) => (
                     <option key={m.name} value={m.name}>
                       {m.name} · {m.rank}
                     </option>

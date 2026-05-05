@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
-import { MOCK_PROJECTS, backfillStartDate, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, type Department, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES, timeAgo } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, backfillStartDate, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, type Department, getOptimizedUrl, STATUSES, timeAgo } from "@/lib/mockProjects";
+import { useLiveTeam } from "@/lib/useLiveTeam";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen, Image, ChevronUp, ChevronDown } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
@@ -866,9 +867,10 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
     };
   });
 
-  const members = project.department === "공통" 
-    ? ALL_MEMBERS.map(m => m.name) 
-    : (TEAM_DATA[project.department] || []).map(m => m.name);
+  const liveMembers = useLiveTeam();
+  const members = project.department === "공통"
+    ? liveMembers.map((m) => m.name)
+    : liveMembers.filter((m) => m.department === project.department).map((m) => m.name);
   const taskStatuses: TaskStatus[] = ["진행", "대기", "완료"];
 
   const handleSave = (e: React.FormEvent) => {
@@ -1290,9 +1292,10 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
   const [pm, setPm] = useState(project.pm);
   const [status, setStatus] = useState<any>(project.status);
 
+  const liveMembers = useLiveTeam();
   const availableMembers = useMemo(() => {
-    return department === "공통" ? ALL_MEMBERS : TEAM_DATA[department] || ALL_MEMBERS;
-  }, [department]);
+    return department === "공통" ? liveMembers : liveMembers.filter((m) => m.department === department);
+  }, [department, liveMembers]);
 
   const dateError = status !== "상시" && startDate && deadline && deadline !== "상시" && startDate > deadline
     ? "시작일이 마감일보다 늦을 수 없습니다."
@@ -1325,7 +1328,7 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
             <div className="space-y-3">
               <label className="text-sm font-semibold text-white/70">PM (담당 책임자)</label>
               <select value={pm} onChange={e => setPm(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition appearance-none">
-                {availableMembers.map(m => (
+                {availableMembers.map((m) => (
                   <option key={m.name} value={m.name} className="bg-neutral-900">{m.name}</option>
                 ))}
               </select>
