@@ -288,11 +288,30 @@ function Kpi({ label, value, tone }: { label: string; value: string | number; to
   );
 }
 
+function TableColgroup({ editing }: { editing: boolean }) {
+  return (
+    <colgroup>
+      {editing && <col style={{ width: 32 }} />}
+      <col style={{ width: 80 }} />
+      <col style={{ width: 130 }} />
+      <col style={{ width: 80 }} />
+      <col style={{ width: 130 }} />
+      <col style={{ width: 170 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 70 }} />
+      <col style={{ width: 110 }} />
+      {editing && <col style={{ width: 40 }} />}
+    </colgroup>
+  );
+}
+
 function tableHead(editing: boolean) {
   return (
     <thead className="bg-[#0a0a0a] text-[12px] uppercase tracking-wider text-gray-500">
       <tr>
-        {editing && <th className="w-8" />}
+        {editing && <th />}
         <th className="text-left px-3 py-2">부서</th>
         <th className="text-left px-3 py-2">직급</th>
         <th className="text-left px-3 py-2">역할</th>
@@ -303,7 +322,7 @@ function tableHead(editing: boolean) {
         <th className="text-right px-3 py-2">완료</th>
         <th className="text-right px-3 py-2">이슈</th>
         <th className="text-right px-3 py-2">이번달 연차</th>
-        {editing && <th className="w-10" />}
+        {editing && <th />}
       </tr>
     </thead>
   );
