@@ -66,6 +66,7 @@ export async function loadOrSeedTeamMembers(): Promise<TeamMemberRow[]> {
       name: m.name,
       original_name: m.name,
       rank: m.rank,
+      role: ROLE_SEED[m.name] ?? "팀원",
       department: dept,
       phone: "000-0000-0000",
       email: null,
