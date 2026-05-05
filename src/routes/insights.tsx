@@ -433,7 +433,11 @@ function InsightsPage() {
                   <div className="mt-1.5 h-2 rounded-full bg-white/5 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
-                      style={{ width: `${d.value}%`, backgroundColor: DEPT_COLOR[d.name as Department] }}
+                      style={{
+                        width: `${d.value}%`,
+                        background: `linear-gradient(90deg, ${DEPT_COLOR[d.name as Department]}, ${DEPT_COLOR[d.name as Department]}66)`,
+                        boxShadow: `0 0 12px ${DEPT_COLOR[d.name as Department]}55`,
+                      }}
                     />
                   </div>
                 </div>
