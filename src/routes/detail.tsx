@@ -500,7 +500,7 @@ function DetailWindow() {
                                    <span className="text-[14px] font-bold text-white/40">({filteredTasks.length}/{project.tasks.length})</span>
                                 </div>
                                 {filteredTasks.map(t => (
-                                  <div key={t.id} id={`tracker-item-${t.id}`}>
+                                  <div key={t.id} id={`tracker-item-${t.id}`} className={focusPulse === t.id ? 'rounded-xl ring-2 ring-orange-400/70 transition' : ''}>
                                     <TaskAccordionItem task={t} isActive={activeItemId === t.id} onEdit={() => setModalConfig({ type: 'task', mode: 'edit', id: t.id })} onDelete={() => handleDeleteTask(t.id)} />
                                   </div>
                                 ))}
@@ -512,7 +512,7 @@ function DetailWindow() {
                                    <span className="text-[15px] font-bold text-rose-500/50">({filteredIssues.length}/{project.issues.length})</span>
                                 </div>
                                 {filteredIssues.map(iss => (
-                                  <div key={iss.id} id={`tracker-item-${iss.id}`}>
+                                  <div key={iss.id} id={`tracker-item-${iss.id}`} className={focusPulse === iss.id ? 'rounded-xl ring-2 ring-orange-400/70 transition' : ''}>
                                     <IssueAccordionItem issue={iss} isActive={activeItemId === iss.id} onEdit={() => setModalConfig({ type: 'issue', mode: 'edit', id: iss.id })} onDelete={() => handleDeleteIssue(iss.id)} />
                                   </div>
                                 ))}
