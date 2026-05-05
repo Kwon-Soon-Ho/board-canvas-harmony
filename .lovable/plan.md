@@ -1,114 +1,131 @@
-# 팀 관리(/team) 페이지 설계 플랜
+# 팀 관리 페이지 개편 계획
 
-현재 플랫폼은 **프로젝트(/) ↔ 일정 관리(/schedule) ↔ Window B(상세)** 가 BroadcastChannel(`sync.ts`)로 동기화되는 구조입니다. 팀 관리 페이지는 이 두 축을 잇는 **"사람" 중심의 허브**로 설계하면 사용성이 가장 좋습니다.
+## 1. UI 단순화
 
----
+### 좌측 필터 (`TeamFilters.tsx`)
+- 제거: **가동률 슬라이더**, `workloadMin` 상태
+- 유지: 검색, 부서, 직급, "오늘 연차" 토글
+- `DEFAULT_TEAM_FILTERS` 에서 `workloadMin` 제거
 
-## 1. 핵심 컨셉
+### 뷰 모드 (`routes/team.tsx`)
+- 제거: **카드 그리드** (`MemberCard.tsx` 파일도 삭제)
+- 유지: **부서별(tree)** + **표(table)** — 기본값을 `tree`로 변경
+- 상단 ViewSwitcher 버튼: 카드 버튼 삭제, "부서" / "표" 두개만 노출
+- KPI 바에서 "평균 가동률", "과부하" 항목 제거 → "총원", "오늘 연차"만 유지
+- "업무중인 프로젝트 수" 합계를 KPI 자리에 추가 (예: `진행중 프로젝트 합계: N건`)
 
-> "프로젝트는 무엇을, 일정은 언제를, 팀 관리는 **누가**를 본다."
-
-- 데이터 소스는 신규 테이블 없이 기존 `TEAM_DATA`(부서/직급) + `projects`(소속 프로젝트·워크로드) + `leaves`(연차) **조합 뷰** 로 시작.
-- 멤버 카드/행을 클릭 → 우측 **Member Drawer** 가 열려 해당 인원의 진행 프로젝트·연차·이슈를 한 화면에서 확인.
-- 멤버 Drawer 안의 프로젝트 클릭 → 기존 `openProjectWindow()` 로 Window B 팝업 (일정 관리와 동일한 동기화).
-
----
-
-## 2. 화면 레이아웃
-
-```text
-┌─ Header (GNB: 팀 관리 활성) ────────────────────────────────┐
-├─ KPI Bar  [총원 N · 오늘 연차 N · 가동률 N% · 과부하 N명]    │
-├─ 좌측 필터(240px) │ 메인 콘텐츠 ──────────────│ 우측 Drawer │
-│  - 부서 체크      │  ┌ View Switcher [카드│표│부서트리]      │
-│  - 직급           │  │                                       │
-│  - 가동률 슬라이더 │  │  멤버 카드 그리드 또는 표             │
-│  - 검색           │  │  - 이름/직급/부서태그                 │
-│  - 오늘 연차 토글  │  │  - 진행 프로젝트 수 + 워크로드 바     │
-│                   │  │  - 오늘/이번주 연차 뱃지              │
-│                   │  │  - 마감 임박 프로젝트 D-n 칩           │
-│                   │  └────────────────────────────────────── │
-└──────────────────────────────────────────────────────────────┘
-```
-
-뷰 모드 3가지 (`ViewSwitcher` 패턴 재사용):
-
-1. **카드 그리드** — 한눈에 보는 인물 카드 (기본)
-2. **표(Table)** — 정렬·비교용 (이름·부서·직급·진행수·가동률·이번달 연차일수·마감임박)
-3. **부서 트리** — 영상/편집/UX/공통 그룹 + 각 그룹 안 멤버 (조직도 느낌)
-
----
-
-## 3. Member Drawer (우측, Window B 와는 별도의 in-page Sheet)
-
-선택 시 우측에서 슬라이드 인:
-
-- **상단**: 이름 · 직급 · 부서 태그 · 연락 (mock)
-- **워크로드**: 진행/대기/완료 프로젝트 카운트 + 가동률 게이지
-- **진행 중 프로젝트**: 카드 리스트 (D-n, 진행률) → 클릭 시 `openProjectWindow(projectId)`
-- **이번 달 연차**: `leaves` 조회 결과 + "연차 추가" 버튼 (`AddLeaveModal` 재사용, member preselect)
-- **담당 이슈**: 미해결 issues 모아보기 (프로젝트별 그룹)
-- **빠른 액션**: [일정관리에서 보기] → `/schedule?member=이름` 으로 점프(필터 자동 적용)
-
----
-
-## 4. 가동률(Workload) 산정 규칙
+### 표 뷰 재설계
+- **부서별 그룹** (헤더 행: 부서명 + 인원수)
+- 그룹 내 정렬: **직급순(수석→책임→선임→연구원)**, 동일 직급 내에서는 이름 가나다순
+- 컬럼 순서:
 
 ```text
-가동률 = (진행 중 프로젝트 수 / 부서 평균) * 100, 캡 150%
-색상: 0–60% 초록, 61–90% 노랑, 91%+ 빨강(과부하 칩)
-PM 역할이면 +10% 가중
-오늘 연차 중이면 별도 "휴가중" 뱃지 (가동률 위에 오버레이)
+부서 | 직급 | 이름 | 연락처 | 진행 | 대기 | 완료 | 이슈 | 이번달 연차
 ```
 
-KPI Bar의 "과부하 N명" = 가동률 91%+ 인원 수.
+- "가동률" 컬럼/색상 표기 제거. 진행 컬럼만 강조 (예: 0건은 회색, 4건↑은 amber)
+- 행 클릭 시 기존 `MemberDrawer` 오픈 유지
+
+### 부서 뷰
+- 그룹 헤더의 "평균 가동률 N%" 문구 제거 → "진행중 프로젝트 합계 N건"으로 교체
+- 카드 컴포넌트 대신 **간이 표 행**으로 재사용 (위 표와 동일한 컬럼)
+
+### 멤버 드로어 (`MemberDrawer.tsx`)
+- "가동률 게이지" 섹션 삭제
+- 상단 프로필 영역에 **편집 가능한 필드** 추가 (다음 항목 참고)
 
 ---
 
-## 5. 다른 페이지와의 동기화 (가장 중요)
+## 2. 팀원 정보 편집 + 동기화
 
+### 새 DB 테이블 (Lovable Cloud 마이그레이션)
 
-| 동작                      | 결과                                                  |
-| ----------------------- | --------------------------------------------------- |
-| 팀 멤버 카드 → 프로젝트 클릭       | `openProjectWindow()` → Window B 오픈 (프로젝트·일정관리와 동일) |
-| Drawer "일정관리에서 보기"      | `/schedule` 이동 + members 필터 자동 선택                   |
-| Drawer "연차 추가"          | `AddLeaveModal` 재사용, 저장 즉시 `/schedule` 도 반영 (DB 동일) |
-| 프로젝트에서 멤버 이름 클릭 (신규 추가) | `/team?member=이름` 으로 이동 + 해당 Drawer 자동 오픈           |
+```sql
+create table public.team_members (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,           -- 현재 이름 (정식 키)
+  original_name text not null unique,  -- 시드 이름 (TEAM_DATA 매핑용 불변키)
+  rank text not null,
+  department text not null,
+  phone text,
+  email text,
+  updated_at timestamptz not null default now()
+);
+-- RLS: 공개 select/insert/update/delete (다른 테이블과 동일 패턴)
+```
 
+- 첫 진입 시 `TEAM_DATA` 시드를 upsert (없을 때만). `original_name`으로 시드/실제 이름 분리해 안전하게 매핑.
+- 페이지 마운트 시 `team_members` 로드해서 화면 데이터 소스로 사용 (TEAM_DATA는 fallback).
 
-`sync.ts` 에 `MEMBER_SELECT` 메시지 타입을 추가해 다른 창에서도 멤버 포커스 이동 가능.
+### 편집 가능한 필드 (드로어 내 inline edit)
+- 이름, 직급, 부서, 연락처, 이메일
+- "저장" 버튼 → Supabase update + 동기화 브로드캐스트
+
+### 이름/부서 변경 시 일괄 동기화 (가장 위험한 부분)
+
+새 헬퍼 `src/lib/teamSync.ts` 신설:
+
+```text
+renameMember(oldName, newName)
+  1. supabase.team_members.update name=newName
+  2. supabase.leaves.update member_name=newName where member_name=oldName
+  3. localStorage projects 스토어 갱신:
+       - p.pm === oldName  → newName
+       - p.members 배열 내 oldName → newName
+       - p.tasks[].assignee, p.issues[].assignee 동일 처리
+  4. sync 채널 브로드캐스트:
+       - 변경된 각 project: PROJECT_UPDATE
+       - MEMBER_RENAME { oldName, newName } (신규 메시지 타입)
+  5. 로컬 상태(setProjects, setLeaves) 갱신
+
+changeDepartment(name, newDept)
+  1. supabase.team_members.update
+  2. (프로젝트의 department는 프로젝트 자체 속성이라 영향 X)
+  3. 로컬 MEMBER_DEPT 매핑은 derived map에서 team_members 우선 사용
+```
+
+연락처/이메일/직급 변경은 `team_members` 한 곳만 업데이트 후 브로드캐스트.
+
+### 다른 페이지 수신 처리
+- `routes/index.tsx`(프로젝트), `routes/schedule.tsx` 의 sync 핸들러에 `MEMBER_RENAME` 케이스 추가 → 자체 보유 projects/leaves 상태에 동일한 치환 수행
+- `MEMBER_DEPT` 도 런타임 override 가능하도록 `getMemberDept(name)` 헬퍼 도입 (team_members 캐시 우선, 없으면 정적 맵)
+
+### sync.ts 변경
+- 메시지 타입 union에 `MEMBER_RENAME`, `MEMBER_UPDATE` 추가
+- `openProjectWindow` 등 기존 API는 변경 없음
 
 ---
 
-## 6. 추가 제안 기능 (우선순위 순)
+## 3. 표시 데이터 정리 (`teamStats.ts`)
+- `workload`, `workloadColor` 필드 삭제 (사용처 모두 제거됨)
+- `buildAllStats` 시그니처 단순화 — 부서 평균/PM 가중치 계산 로직 제거
+- `MemberStats` 에 `phone`, `email` 추가 (team_members 데이터에서 주입)
+- 정렬 헬퍼 추가:
 
-1. **가동률 히트맵** (선택 사항): 멤버 × 주(week) 매트릭스. 향후 단계.
-2. **연차 캘린더 미니뷰**: Drawer 안 작은 월간 미니 캘린더로 본인 연차 시각화.
-3. **"오늘 출근/연차" 위젯**: KPI Bar 옆에 오늘 연차자 아바타 스택 (클릭 시 필터).
-4. **워크로드 정렬/리더보드**: 표 뷰에서 가동률 내림차순 → 매니저용 리밸런싱 시그널.
-5. **부서 통계 패널**: 부서 트리 뷰 상단에 부서별 평균 가동률·진행 프로젝트 수.
-
----
-
-## 7. 구현 단계 (Phase 1 권장 범위)
-
-- [a] `/team` 라우트 + Header 활성화 (현재 disabled)
-- [b] `TeamFilters`, `TeamKpiBar`, `TeamCardGrid`, `TeamTable`, `TeamDeptTree`, `MemberDrawer` 컴포넌트
-- [c] `useMemberStats(member)` 훅: 진행 프로젝트/이슈/연차/가동률 집계
-- [d] `sync.ts` 에 `MEMBER_SELECT` 추가, `Drawer` 안 프로젝트 클릭 시 `openProjectWindow` 연결
-- [e] `AddLeaveModal` 재사용 (member preselect prop 추가)
-- [f] `/schedule?member=` 쿼리 파라미터 → 필터 자동 적용 로직 추가
-
-Phase 2(추후): 히트맵, 미니 캘린더, 부서 통계.
+```text
+sortByRankThenName(members)  // 수석→연구원, 동일 직급 가나다
+groupByDept(members)         // Record<Department, MemberStats[]>
+```
 
 ---
 
-## 8. 사용자 확인 필요 (3가지)
+## 4. 무결성 체크리스트 (코드 작성 시 확인)
+- 이름 변경 시 동일 이름 중복 검사 (DB unique 제약 외에 UI 사전 체크)
+- 빈 문자열/공백 trim 후 저장
+- 연락처는 자유 입력 + 저장 시 `000-0000-0000` 포맷 자동 변환 (정규식)
+- 이름 변경 트랜잭션 중 실패 시 롤백 토스트 + 부분 적용 안내
+- TEAM_DATA(정적) → team_members(동적) 전환 시, 신규 페이지(프로젝트/일정)에서도 hydrate 후 렌더 보장 (없으면 시드 fallback)
+- routeTree, types.ts는 자동 생성이므로 수동 편집 금지
 
-질문은 별도로 묻겠습니다 — 기본값으로 진행해도 OK면 그대로 구현합니다:
+---
 
-- (a) **기본 뷰**: 카드 그리드 vs 표 — 기본 = 카드 그리드
-- (b) **가동률 산정**: 단순 "진행 중 프로젝트 수" 만으로 충분 vs 위 5번 공식 — 기본 = 위 공식
-- (c) **Phase 1 추가 기능 포함 범위**: 위 6번 중 1·2 만 vs 1·2·3·5 — 기본 = 3,5(KPI/오늘 연차 위젯, 부서 통계)
-
-승인 후 구현 시작하겠습니다.
+## 5. 작업 순서 (구현 단계)
+1. 마이그레이션: `team_members` 테이블 + RLS + 시드 함수
+2. `src/lib/teamSync.ts` + `getMemberDept` 헬퍼 신설
+3. `teamStats.ts` 정리 (workload 제거, phone/email 추가, 정렬 헬퍼)
+4. `TeamFilters.tsx` (가동률 제거)
+5. `routes/team.tsx` 개편 (뷰 2개, 표/부서 그룹 재구성, KPI 정리)
+6. `MemberDrawer.tsx` 편집 모드 추가
+7. `MemberCard.tsx` 삭제
+8. `routes/index.tsx`, `routes/schedule.tsx` sync 수신 핸들러 확장
+9. 동작 검증: 이름 변경 → 프로젝트/일정 동시 반영, 연차 추가/삭제 정상, 위험알림 정상
