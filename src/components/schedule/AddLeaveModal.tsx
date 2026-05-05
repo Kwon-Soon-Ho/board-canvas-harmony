@@ -32,7 +32,7 @@ export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }
       return;
     }
     setSaving(true);
-    const dept = MEMBER_DEPT[member] as Department;
+    const dept = (liveMembers.find((m) => m.name === member)?.department ?? "공통") as Department;
     const { error } = await supabase.from("leaves").insert({
       member_name: member,
       department: dept,
