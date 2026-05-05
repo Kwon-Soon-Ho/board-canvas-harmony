@@ -272,6 +272,22 @@ function DetailWindow() {
     }, 50);
   };
 
+  // Auto-focus an item passed via ?focus=… (deep link from Insights)
+  useEffect(() => {
+    if (!focus || !project) return;
+    const exists = project.tasks.some(t => t.id === focus) || project.issues.some(i => i.id === focus);
+    if (!exists) return;
+    setActiveItemId(focus);
+    setFocusPulse(focus);
+    const t1 = setTimeout(() => {
+      const el = document.getElementById(`tracker-item-${focus}`);
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 250);
+    const t2 = setTimeout(() => setFocusPulse(undefined), 2200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, project?.id]);
+
   const handleUpdateEndDate = (id: string, daysDelta: number) => {
     setProject(prev => {
       if (!prev) return prev;
