@@ -228,8 +228,9 @@ function SchedulePage() {
       (p) => p.status !== "완료" && dDay(p.deadline) < 0,
     ).length;
     const inProgress = monthDeadlines.filter((p) => p.status === "진행").length;
-    const leaveCount = leaves.filter((l) => inMonth(l.leave_date)).length;
-    return { total: monthDeadlines.length, inProgress, overdue, leaveCount };
+    const todayIso = dayKey(new Date());
+    const todayLeave = leaves.filter((l) => l.leave_date === todayIso).length;
+    return { total: monthDeadlines.length, inProgress, overdue, todayLeave };
   }, [projects, leaves, anchor]);
 
   const monthLabel = `${anchor.getFullYear()}년 ${anchor.getMonth() + 1}월`;
