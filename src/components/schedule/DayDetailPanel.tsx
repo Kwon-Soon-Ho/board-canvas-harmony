@@ -109,30 +109,37 @@ export function DayDetailPanel({ date, events, onClose, onAddLeave, onLeaveDelet
             {grouped.leave.map((e) => (
               <div
                 key={e.id}
-                className="group flex items-center justify-between p-2 rounded-md bg-white/[0.04] border border-white/10"
+                className="group flex flex-col gap-1 p-2 rounded-md bg-white/[0.04] border border-white/10"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: e.department ? DEPT_COLOR[e.department] : "#888" }}
-                  />
-                  <span className="text-[13px] text-foreground truncate">{e.member}</span>
-                  <span className="text-[11px] text-gray-500">{e.department}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: e.department ? DEPT_COLOR[e.department] : "#888" }}
+                    />
+                    <span className="text-[13px] text-foreground truncate">{e.member}</span>
+                    <span className="text-[11px] text-gray-500">{e.department}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-gray-400">
+                      {e.leaveType === "시차"
+                        ? `${e.startTime ?? ""}-${e.endTime ?? ""}`
+                        : e.leaveType}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteLeave(e.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity"
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] text-gray-400">
-                    {e.leaveType === "시차"
-                      ? `${e.startTime ?? ""}-${e.endTime ?? ""}`
-                      : e.leaveType}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteLeave(e.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity"
-                    aria-label="삭제"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
+                {e.reason && (
+                  <p className="text-[12px] text-gray-400 italic pl-3.5 break-words">
+                    “{e.reason}”
+                  </p>
+                )}
               </div>
             ))}
           </Section>
