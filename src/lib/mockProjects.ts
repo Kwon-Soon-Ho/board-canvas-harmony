@@ -12,7 +12,7 @@ export interface ThumbnailConfig {
   sequence: number[];
 }
 
-export type TaskStatus = "대기" | "진행" | "검토중" | "승인됨" | "보류" | "취소" | "완료";
+export type TaskStatus = "대기" | "진행" | "완료";
 export type IssueStatus = "Issue" | "Resolved";
 
 export interface Task {
