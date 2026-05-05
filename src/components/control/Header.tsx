@@ -5,7 +5,7 @@ const NAV: { label: string; to: string; enabled: boolean }[] = [
   { label: "프로젝트", to: "/", enabled: true },
   { label: "일정 관리", to: "/schedule", enabled: true },
   { label: "인사이트", to: "/insights", enabled: false },
-  { label: "팀 관리", to: "/team", enabled: false },
+  { label: "팀 관리", to: "/team", enabled: true },
 ];
 
 export function Header() {
