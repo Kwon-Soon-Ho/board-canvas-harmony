@@ -577,10 +577,6 @@ function Legend({ items }: { items: { label: string; color: string }[] }) {
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="py-10 text-center text-sm text-muted-foreground">{children}</div>;
-}
-
 function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[]; labels: string[] }) {
   const max = Math.max(1, ...rows.flatMap((r) => r.months));
   const cellStyle = (n: number) => {
