@@ -596,14 +596,14 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
   };
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-separate" style={{ borderSpacing: "4px" }}>
-        <thead className="text-muted-foreground">
+      <table className="text-xs border-separate" style={{ borderSpacing: "3px", width: "auto", minWidth: "min(100%, 720px)" }}>
+        <thead className="text-white/50">
           <tr>
-            <th className="sticky left-0 bg-transparent py-1 pr-3 text-left font-medium">팀원</th>
+            <th className="sticky left-0 bg-transparent py-1 pr-4 text-left font-medium w-[80px]">팀원</th>
             {labels.map((l) => (
-              <th key={l} className="px-2 py-1 text-center font-medium">{l}</th>
+              <th key={l} className="px-1 py-1 text-center font-medium w-[56px]">{l}</th>
             ))}
-            <th className="px-2 py-1 text-center font-medium">합계</th>
+            <th className="px-2 py-1 text-center font-medium w-[48px]">합계</th>
           </tr>
         </thead>
         <tbody>
@@ -611,18 +611,18 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
             const total = r.months.reduce((s, n) => s + n, 0);
             return (
               <tr key={r.member}>
-                <td className="sticky left-0 bg-transparent py-1 pr-3 font-medium">{r.member}</td>
+                <td className="sticky left-0 bg-transparent py-0.5 pr-4 font-medium text-white/85">{r.member}</td>
                 {r.months.map((n, i) => (
                   <td key={i} className="p-0">
                     <div
-                      className="mx-auto flex h-7 w-10 items-center justify-center rounded-md text-[11px] text-white/90"
+                      className="mx-auto flex h-6 w-12 items-center justify-center rounded-md text-[11px] font-semibold text-white/95"
                       style={cellStyle(n)}
                     >
                       {n || ""}
                     </div>
                   </td>
                 ))}
-                <td className="px-2 py-1 text-center font-bold tabular-nums">{total}</td>
+                <td className="px-2 py-0.5 text-center font-bold tabular-nums text-white/85">{total}</td>
               </tr>
             );
           })}
