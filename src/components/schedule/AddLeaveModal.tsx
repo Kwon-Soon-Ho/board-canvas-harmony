@@ -14,7 +14,10 @@ interface Props {
 }
 
 export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }: Props) {
-  const [member, setMember] = useState(defaultMember ?? ALL_MEMBERS[0].name);
+  const liveMembers = useLiveTeam();
+  const { byDept, order } = groupLiveByDept(liveMembers);
+  const fallbackName = liveMembers[0]?.name ?? "";
+  const [member, setMember] = useState(defaultMember ?? fallbackName);
   const [date, setDate] = useState(defaultDate);
   const [type, setType] = useState<LeaveType>("연차");
   const [startTime, setStartTime] = useState("09:00");
