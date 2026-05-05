@@ -144,9 +144,9 @@ function InsightsPage() {
   const currentYear = new Date().getFullYear();
 
   const setYear = (newY: number) =>
-    navigate({ search: (prev) => ({ ...prev, y: newY }), replace: true });
+    navigate({ search: (prev: any) => ({ ...prev, y: newY }), replace: true });
   const setQuarter = (newQ: 0 | 1 | 2 | 3 | 4) =>
-    navigate({ search: (prev) => ({ ...prev, q: newQ }), replace: true });
+    navigate({ search: (prev: any) => ({ ...prev, q: newQ }), replace: true });
 
   const openIssueWindow = (projectId: string, focusId: string) => {
     window.open(`/detail?id=${projectId}&focus=${focusId}`, "_blank", "noopener");
