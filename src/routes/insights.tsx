@@ -162,9 +162,18 @@ function InsightsPage() {
     openDetailWindow(`id=${projectId}`);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white">
+    <div className="min-h-screen bg-[#050505] text-white relative">
+      {/* page-level subtle radial gradient */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-0"
+        style={{
+          background:
+            "radial-gradient(1200px 600px at 15% -10%, rgba(255,92,0,0.06), transparent 60%), radial-gradient(1000px 500px at 100% 110%, rgba(0,123,255,0.06), transparent 60%)",
+        }}
+      />
       <Header />
-      <main className="mx-auto max-w-[1920px] px-12 py-10 space-y-6">
+      <main className="relative mx-auto max-w-[1920px] px-12 py-10 space-y-6">
         {/* ── Title + period filter ── */}
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-white/10 pb-6">
           <div className="min-w-0">
