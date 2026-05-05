@@ -501,15 +501,20 @@ function InsightsPage() {
 }
 
 const tooltipStyle = {
-  background: "#0A0A0A",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: 8,
+  background: "rgba(10,10,10,0.85)",
+  border: "1px solid rgba(255,255,255,0.15)",
+  borderRadius: 10,
   fontSize: 12,
+  backdropFilter: "blur(8px)",
+  boxShadow: "0 10px 30px -10px rgba(0,0,0,0.6)",
 };
 
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent p-6 ${className}`}>
+    <div
+      className={`group relative rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-transparent p-6 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] transition hover:border-white/20 ${className}`}
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05), 0 30px 60px -30px rgba(0,0,0,0.6)" }}
+    >
       <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-white/60">{title}</h3>
       {children}
     </div>
@@ -518,8 +523,18 @@ function Card({ title, children, className = "" }: { title: string; children: Re
 
 function Kpi({ label, value, accent }: { label: string; value: number | string; accent: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-4">
-      <div className="text-[11px] uppercase tracking-wider text-white/40">{label}</div>
+    <div
+      className="relative overflow-hidden rounded-2xl border border-white/10 p-4 transition hover:border-white/20"
+      style={{
+        background: `radial-gradient(120% 100% at 0% 0%, ${accent}14, transparent 60%), linear-gradient(180deg, rgba(255,255,255,0.04), transparent)`,
+        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
+      }}
+    >
+      <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] uppercase tracking-wider text-white/40">{label}</div>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+      </div>
       <div className="mt-1.5 text-[28px] font-black tracking-tight tabular-nums" style={{ color: accent }}>{value}</div>
     </div>
   );
