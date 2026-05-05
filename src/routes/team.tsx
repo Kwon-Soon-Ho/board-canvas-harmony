@@ -413,11 +413,12 @@ function DeptSection({
         <span className="text-[12px] text-gray-500">· {items.length}명</span>
       </div>
       <div className="rounded-lg border border-white/10 overflow-hidden">
-        <table className="w-full text-[13px]">
-          {tableHead(editing)}
-          <tbody>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <table className="w-full text-[13px] table-fixed">
+              <TableColgroup editing={editing} />
+              {tableHead(editing)}
+              <tbody>
                 {items.map((s) => (
                   <SortableMemberRow
                     key={s.id ?? s.name}
@@ -428,10 +429,10 @@ function DeptSection({
                     onDelete={onDeleteMember}
                   />
                 ))}
-              </SortableContext>
-            </DndContext>
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </SortableContext>
+        </DndContext>
       </div>
     </section>
   );
