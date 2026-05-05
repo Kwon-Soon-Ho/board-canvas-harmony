@@ -226,7 +226,7 @@ function InsightsPage() {
           <Kpi label="완료" value={kpis.done} accent="#22C55E" />
           <Kpi label="대기" value={kpis.pending} accent="#9CA3AF" />
           <Kpi label="상시" value={kpis.ongoing} accent="#3B82F6" />
-          <Kpi label="열린 이슈" value={kpis.openIssues} accent="#F97316" />
+          <Kpi label="이슈" value={kpis.openIssues} accent="#F97316" />
           <Kpi label="이번 달 해결" value={kpis.resolvedThisMonth} accent="#22C55E" />
           <Kpi label="이번 달 휴가" value={kpis.leavesThisMonth} accent="#EC4899" />
           <Kpi label="평균 진행률" value={`${kpis.avgProgress}%`} accent="#FFFFFF" />
@@ -236,6 +236,13 @@ function InsightsPage() {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card title="부서별 프로젝트 분포">
             <div className="relative">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{
+                  background: "radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 78%)",
+                }}
+              />
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <defs>
@@ -245,18 +252,16 @@ function InsightsPage() {
                         <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.78} />
                       </linearGradient>
                     ))}
-                    <radialGradient id="dept-inner-shade" cx="50%" cy="50%" r="50%">
-                      <stop offset="60%" stopColor="#000" stopOpacity={0} />
-                      <stop offset="100%" stopColor="#000" stopOpacity={0.35} />
-                    </radialGradient>
                   </defs>
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number, name: string) => [`${value}건`, name]}
+                  />
                   <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2} cornerRadius={6} stroke="rgba(0,0,0,0.4)" strokeWidth={1}>
                     {deptDist.map((d) => (
                       <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
                     ))}
                   </Pie>
-                  <Pie data={[{ v: 1 }]} dataKey="v" innerRadius={58} outerRadius={92} fill="url(#dept-inner-shade)" stroke="none" isAnimationActive={false} />
-                  <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -330,9 +335,9 @@ function InsightsPage() {
 
         {/* ── 부서 × 상태 매트릭스 + 마감 임박 ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="부서별 상태 구성" className="lg:col-span-2">
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={matrix} barCategoryGap="28%">
+          <Card title="부서별 상태 구성">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={matrix} barCategoryGap="42%" margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                 <defs>
                   {(["진행", "상시", "대기", "완료"] as const).map((s) => (
                     <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
@@ -342,19 +347,19 @@ function InsightsPage() {
                   ))}
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF" }} />
-                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" />
-                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" />
-                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" />
-                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" radius={[10, 10, 0, 0]} />
+                <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} formatter={(v: number, n: string) => [`${v}건`, n]} />
+                <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF", paddingTop: 8 }} iconType="circle" iconSize={8} />
+                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" maxBarSize={48} />
+                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" maxBarSize={48} />
+                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" maxBarSize={48} />
+                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" maxBarSize={48} radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card title="마감 임박 (30일 내)">
+          <Card title="마감 임박 (30일 내)" className="lg:col-span-2">
             <div className="grid grid-cols-3 gap-2 mb-4">
               {urgency.buckets.map((b, i) => {
                 const grads = [
@@ -465,9 +470,9 @@ function InsightsPage() {
         {/* ── Issue Retro ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="이슈 처리 현황">
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              <Stat label="Open" value={issueAgg.open} color="#F97316" />
-              <Stat label="Resolved" value={issueAgg.resolved} color="#22C55E" />
+            <div className="grid grid-cols-3 gap-2">
+              <Stat label="미해결" value={issueAgg.open} color="#F97316" />
+              <Stat label="해결" value={issueAgg.resolved} color="#22C55E" />
               <Stat label="평균 미해결" value={`${issueAgg.avgOpenDays}일`} color="#FFFFFF" />
             </div>
           </Card>
@@ -591,14 +596,14 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
   };
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-separate" style={{ borderSpacing: "4px" }}>
-        <thead className="text-muted-foreground">
+      <table className="text-xs border-separate" style={{ borderSpacing: "3px", width: "auto", minWidth: "min(100%, 720px)" }}>
+        <thead className="text-white/50">
           <tr>
-            <th className="sticky left-0 bg-transparent py-1 pr-3 text-left font-medium">팀원</th>
+            <th className="sticky left-0 bg-transparent py-1 pr-4 text-left font-medium w-[80px]">팀원</th>
             {labels.map((l) => (
-              <th key={l} className="px-2 py-1 text-center font-medium">{l}</th>
+              <th key={l} className="px-1 py-1 text-center font-medium w-[56px]">{l}</th>
             ))}
-            <th className="px-2 py-1 text-center font-medium">합계</th>
+            <th className="px-2 py-1 text-center font-medium w-[48px]">합계</th>
           </tr>
         </thead>
         <tbody>
@@ -606,18 +611,18 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
             const total = r.months.reduce((s, n) => s + n, 0);
             return (
               <tr key={r.member}>
-                <td className="sticky left-0 bg-transparent py-1 pr-3 font-medium">{r.member}</td>
+                <td className="sticky left-0 bg-transparent py-0.5 pr-4 font-medium text-white/85">{r.member}</td>
                 {r.months.map((n, i) => (
                   <td key={i} className="p-0">
                     <div
-                      className="mx-auto flex h-7 w-10 items-center justify-center rounded-md text-[11px] text-white/90"
+                      className="mx-auto flex h-6 w-12 items-center justify-center rounded-md text-[11px] font-semibold text-white/95"
                       style={cellStyle(n)}
                     >
                       {n || ""}
                     </div>
                   </td>
                 ))}
-                <td className="px-2 py-1 text-center font-bold tabular-nums">{total}</td>
+                <td className="px-2 py-0.5 text-center font-bold tabular-nums text-white/85">{total}</td>
               </tr>
             );
           })}
