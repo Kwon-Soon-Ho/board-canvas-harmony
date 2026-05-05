@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/lib/mockProjects";
-import { getOptimizedUrl } from "@/lib/mockProjects";
+import { getOptimizedUrl, timeAgo } from "@/lib/mockProjects";
 import { DeptTag } from "./DeptTag";
 import { StatusTag } from "./StatusTag";
 
@@ -234,9 +234,16 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
           </div>
 
           <div className={`relative bg-[#0F0F0F] px-4 py-3 ${hover ? '' : 'rounded-b-xl'}`}>
-            <h3 className="truncate text-base font-bold tracking-tight text-white/90">
-              {project.title}
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="truncate text-base font-bold tracking-tight text-white/90">
+                {project.title}
+              </h3>
+              {project.updatedAt && (
+                <span className="shrink-0 text-[10px] text-white/30 whitespace-nowrap font-medium">
+                  {timeAgo(project.updatedAt)} 수정
+                </span>
+              )}
+            </div>
 
             {/* Always-on slim progress bar at the bottom of the title block */}
             <div

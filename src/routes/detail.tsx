@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { z } from "zod";
 import { getSyncChannel } from "@/lib/sync";
-import { MOCK_PROJECTS, backfillStartDate, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES } from "@/lib/mockProjects";
+import { MOCK_PROJECTS, backfillStartDate, type Project, type Task, type Issue, type TaskStatus, type IssueStatus, type ProjectImage, getOptimizedUrl, TEAM_DATA, ALL_MEMBERS, STATUSES, timeAgo } from "@/lib/mockProjects";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Maximize2, Minimize2, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Edit2, Plus, Star, X, Trash2, Calendar, Users, FolderOpen, Image, ChevronUp, ChevronDown } from "lucide-react";
 import * as Accordion from "@radix-ui/react-accordion";
@@ -112,9 +112,15 @@ function DetailWindow() {
     // Stamp updatedAt automatically when meaningful state changes (skip first render)
     let outgoing = project;
     if (initialProjectRef.current && initialProjectRef.current !== project) {
+      const prev = { ...initialProjectRef.current, updatedAt: undefined };
+      const curr = { ...project, updatedAt: undefined };
+      if (JSON.stringify(prev) === JSON.stringify(curr)) {
+        initialProjectRef.current = project;
+        return; // No meaningful change, skip broadcast
+      }
       outgoing = { ...project, updatedAt: new Date().toISOString() };
     }
-    initialProjectRef.current = project;
+    initialProjectRef.current = outgoing;
 
     // Update the in-memory MOCK_PROJECTS array so it persists during the session
     const idx = MOCK_PROJECTS.findIndex(p => p.id === outgoing.id);
@@ -258,6 +264,11 @@ function DetailWindow() {
             <button onClick={() => setModalConfig({ type: 'project' })} className="p-1.5 ml-2 text-white/30 hover:text-white/80 hover:bg-white/10 rounded-md transition" title="프로젝트 정보 수정">
               <Edit2 className="w-4 h-4" />
             </button>
+            {project.updatedAt && (
+              <span className="ml-2 text-[11px] font-bold text-white/40 tracking-wider bg-white/5 px-2.5 py-1 rounded-md">
+                {timeAgo(project.updatedAt)} 수정
+              </span>
+            )}
 
             {/* Expanded Info - Enlarged for better visibility */}
             <div className="ml-4 flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/10 text-base">

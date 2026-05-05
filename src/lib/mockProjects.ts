@@ -100,6 +100,22 @@ export function backfillStartDate<T extends Partial<Project> & { id: string; sta
   return { ...p, startDate: derived };
 }
 
+export function timeAgo(dateStr?: string): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "";
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMins = Math.floor(diffInMs / 60000);
+
+  if (diffInMins < 1) return "방금 전";
+  if (diffInMins < 60) return `${diffInMins}분 전`;
+  const diffInHours = Math.floor(diffInMins / 60);
+  if (diffInHours < 24) return `${diffInHours}시간 전`;
+  const diffInDays = Math.floor(diffInHours / 24);
+  return `${diffInDays}일 전`;
+}
+
 export const DEPT_COLOR: Record<Department, string> = {
   영상: "#FF5C00",
   편집: "#007BFF",
