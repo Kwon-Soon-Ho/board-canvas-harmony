@@ -358,7 +358,7 @@ function DetailWindow() {
 
 
                       {(() => {
-                        const taskStatusOrder: Record<string, number> = { 진행: 0, 검토중: 1, 대기: 2, 보류: 3, 승인됨: 4, 완료: 5, 취소: 6 };
+                        const taskStatusOrder: Record<string, number> = { 진행: 0, 대기: 1, 완료: 2 };
                         const sortFn = <T extends { startDate: string; progress?: number; status?: string; resolved?: boolean }>(a: T, b: T) => {
                           let cmp = 0;
                           if (trackerSort === 'startDate') cmp = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
@@ -401,7 +401,7 @@ function DetailWindow() {
                                   className={selectClass}
                                 >
                                   <option value="전체">전체 상태</option>
-                                  {(["대기","진행","검토중","승인됨","보류","취소","완료"] as TaskStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                                  {(["진행","대기","완료"] as TaskStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                                 {ChevronIcon}
                               </div>
@@ -812,7 +812,7 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
   });
 
   const members = Array.from(new Set([project.pm, ...project.members]));
-  const taskStatuses: TaskStatus[] = ["대기", "진행", "검토중", "승인됨", "보류", "취소", "완료"];
+  const taskStatuses: TaskStatus[] = ["진행", "대기", "완료"];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

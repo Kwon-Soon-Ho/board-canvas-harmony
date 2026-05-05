@@ -13,7 +13,13 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black">
       <div className="mx-auto flex h-16 max-w-[1920px] items-center justify-between px-12">
         <div className="flex items-center gap-10">
-          <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/"; }}
+            className="flex items-center gap-2.5 rounded-md px-1 py-1 -mx-1 hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            aria-label="홈으로 이동"
+            title="홈으로 이동"
+          >
             <div
               className="h-2 w-2 rounded-full bg-foreground"
               style={{ boxShadow: "0 0 8px rgba(255,255,255,0.7)" }}
@@ -21,7 +27,7 @@ export function Header() {
             <span className="text-[18px] font-semibold tracking-tight text-foreground">
               Design Team
             </span>
-          </div>
+          </button>
           <nav className="flex items-center gap-1">
             {NAV.map((item, i) => (
               <button
