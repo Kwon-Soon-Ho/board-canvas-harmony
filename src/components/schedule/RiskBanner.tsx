@@ -165,5 +165,3 @@ function RiskCard({ item }: { item: RiskItem }) {
   );
 }
 
-// Re-export for convenience
-export { Department };
