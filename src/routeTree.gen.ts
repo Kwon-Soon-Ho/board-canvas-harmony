@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as DetailRouteImport } from './routes/detail'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -22,6 +23,11 @@ const TeamRoute = TeamRouteImport.update({
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DetailRoute = DetailRouteImport.update({
@@ -38,12 +44,14 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/detail': typeof DetailRoute
+  '/insights': typeof InsightsRoute
   '/schedule': typeof ScheduleRoute
   '/team': typeof TeamRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/detail': typeof DetailRoute
+  '/insights': typeof InsightsRoute
   '/schedule': typeof ScheduleRoute
   '/team': typeof TeamRoute
 }
@@ -51,20 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/detail': typeof DetailRoute
+  '/insights': typeof InsightsRoute
   '/schedule': typeof ScheduleRoute
   '/team': typeof TeamRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/detail' | '/schedule' | '/team'
+  fullPaths: '/' | '/detail' | '/insights' | '/schedule' | '/team'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/detail' | '/schedule' | '/team'
-  id: '__root__' | '/' | '/detail' | '/schedule' | '/team'
+  to: '/' | '/detail' | '/insights' | '/schedule' | '/team'
+  id: '__root__' | '/' | '/detail' | '/insights' | '/schedule' | '/team'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DetailRoute: typeof DetailRoute
+  InsightsRoute: typeof InsightsRoute
   ScheduleRoute: typeof ScheduleRoute
   TeamRoute: typeof TeamRoute
 }
@@ -83,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/detail': {
@@ -105,6 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DetailRoute: DetailRoute,
+  InsightsRoute: InsightsRoute,
   ScheduleRoute: ScheduleRoute,
   TeamRoute: TeamRoute,
 }
