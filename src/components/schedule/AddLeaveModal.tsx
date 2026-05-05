@@ -65,7 +65,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
             <select
               value={member}
               onChange={(e) => setMember(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground"
+              className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-1 focus:ring-teal-500 [&>option]:bg-[#0a0a0a] [&>option]:text-foreground [&>optgroup]:bg-[#0a0a0a] [&>optgroup]:text-gray-400"
             >
               {(Object.keys(TEAM_DATA) as Department[]).map((d) => (
                 <optgroup key={d} label={d}>
