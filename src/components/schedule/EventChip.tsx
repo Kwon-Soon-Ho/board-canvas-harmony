@@ -19,6 +19,7 @@ export interface CalendarEvent {
   leaveType?: string;
   startTime?: string | null;
   endTime?: string | null;
+  reason?: string | null;
 }
 
 export function EventChip({

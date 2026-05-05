@@ -167,6 +167,7 @@ function SchedulePage() {
         leaveType: l.leave_type,
         startTime: l.start_time,
         endTime: l.end_time,
+        reason: l.reason,
       });
     });
 
@@ -227,8 +228,9 @@ function SchedulePage() {
       (p) => p.status !== "완료" && dDay(p.deadline) < 0,
     ).length;
     const inProgress = monthDeadlines.filter((p) => p.status === "진행").length;
-    const leaveCount = leaves.filter((l) => inMonth(l.leave_date)).length;
-    return { total: monthDeadlines.length, inProgress, overdue, leaveCount };
+    const todayIso = dayKey(new Date());
+    const todayLeave = leaves.filter((l) => l.leave_date === todayIso).length;
+    return { total: monthDeadlines.length, inProgress, overdue, todayLeave };
   }, [projects, leaves, anchor]);
 
   const monthLabel = `${anchor.getFullYear()}년 ${anchor.getMonth() + 1}월`;
@@ -280,7 +282,7 @@ function SchedulePage() {
           <Kpi label="이달 마감" value={kpi.total} />
           <Kpi label="진행중" value={kpi.inProgress} tone="text-emerald-300" />
           <Kpi label="지연" value={kpi.overdue} tone="text-red-300" />
-          <Kpi label="휴가 인원" value={kpi.leaveCount} tone="text-blue-300" />
+          <Kpi label="오늘 휴가" value={kpi.todayLeave} tone="text-blue-300" />
         </div>
 
         <div className="flex items-center gap-2">

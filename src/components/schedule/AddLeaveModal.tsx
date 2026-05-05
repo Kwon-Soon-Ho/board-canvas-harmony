@@ -16,8 +16,8 @@ export function AddLeaveModal({ defaultDate, defaultMember, onClose, onCreated }
   const [member, setMember] = useState(defaultMember ?? ALL_MEMBERS[0].name);
   const [date, setDate] = useState(defaultDate);
   const [type, setType] = useState<LeaveType>("연차");
-  const [startTime, setStartTime] = useState("10:00");
-  const [endTime, setEndTime] = useState("19:00");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("18:00");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 

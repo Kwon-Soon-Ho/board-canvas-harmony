@@ -39,14 +39,9 @@ export const KR_HOLIDAYS: Holiday[] = [
 ];
 
 // ─── Time slots (06:00 ~ 22:00, 30-min step) ──────────────────────────
-export const TIME_SLOTS: string[] = (() => {
-  const out: string[] = [];
-  for (let h = 6; h <= 22; h++) {
-    out.push(`${String(h).padStart(2, "0")}:00`);
-    if (h < 22) out.push(`${String(h).padStart(2, "0")}:30`);
-  }
-  return out;
-})();
+export const TIME_SLOTS: string[] = [
+  "09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00",
+];
 
 // ─── Member → department lookup ───────────────────────────────────────
 export const MEMBER_DEPT: Record<string, Department> = (() => {
