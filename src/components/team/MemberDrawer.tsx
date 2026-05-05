@@ -148,6 +148,7 @@ export function MemberDrawer({
                     setForm({
                       name: stats.name,
                       rank: stats.rank,
+                      role: stats.role,
                       department: stats.department,
                       phone: stats.phone,
                       email: stats.email,
