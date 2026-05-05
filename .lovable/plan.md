@@ -1,35 +1,67 @@
-## 통합 정합성 + 정렬 + 용어 통일
+## 인사이트 메뉴 — 활용 방향 제안
 
-### 1. 팀 표 열 정렬 수정
-부서마다 데이터 길이가 달라 컬럼이 어긋남. `<table>`에 `<colgroup>`을 추가해 모든 부서 표가 동일한 폭을 사용하도록 강제.
-- 부서 80 / 직급 120 / 역할 80 / 이름 120 / 연락처 160 / 진행·대기·완료·이슈 80 / 이번달연차 120
-- 편집 모드 좌(8)·우(10) 핸들 컬럼 포함
+현재 앱에는 이미 **프로젝트(태스크/이슈/진행률/기간/담당자)**, **일정(연차·시차)**, **팀(부서·직급·역할)** 데이터가 충분히 쌓이고 있어서, 인사이트 페이지는 이 데이터를 **회고하고 운영 패턴을 발견**하는 곳으로 만들면 의미가 있습니다. 억지스럽지 않습니다 — 오히려 지금 흩어져 있는 숫자를 한 화면에 모으는 역할입니다.
 
-### 2. 용어/위치 통일
-- 일정·팀 페이지 모두 KPI 라벨 **"오늘 휴가"** 로 통일
-- 팀 관리의 KPI를 일정관리와 같은 **툴바 중앙**으로 이동 (제목은 좌측 단독)
+아래 4개 섹션으로 구성하는 것을 제안합니다. 모두 **기존 데이터**(`mockProjects`, `mockSchedule`, `useLiveTeam`)에서 파생되므로 별도 입력은 필요 없습니다.
 
-### 3. 데이터 싱크 일원화 (정적 → DB)
-신규 훅 `src/lib/useLiveTeam.ts`:
-- `team_members` 로드 + `MEMBER_UPDATE`/`MEMBER_RENAME` 구독
-- `{ members, deptOf, rankOf, roleOf, byDept }` 반환
+---
 
-다음 파일이 정적 `TEAM_DATA`/`ALL_MEMBERS` 대신 이 훅을 사용:
-- `CreateProjectModal.tsx` — PM/멤버 셀렉트
-- `AddLeaveModal.tsx` — 팀원 드롭다운, 부서 매핑
-- `TeamWorkloadBar.tsx` — 워크로드 계산
-- `routes/detail.tsx` — 담당자 셀렉트 두 곳 (Task/Issue, ProjectEditModal)
+### 1. 운영 현황 KPI (상단 띠)
 
-→ 팀 관리에서 추가/수정/직급변경/부서이동이 즉시 다른 화면에 반영.
+- 진행 중 프로젝트 수 / 완료 프로젝트 수 / 대기 프로젝트 수
+- 열린 이슈 수 / 이번 달 해결한 이슈 수
+- 이번 달 누적 연차 사용일 / 시차 사용 횟수
+- 평균 프로젝트 진행률
 
-### 4. 역할 표시 연동
-- `MemberDrawer` 내 PM 텍스트 옆에 팀장/셀장 색배지
-- 일정 상세 leave 항목에 role 한 줄 추가
+### 2. 프로젝트 분석
 
-### 5. 콘솔 에러 수정
-- **schedule 달력 셀**: outer `<button>` → `<div role="button" tabIndex={0} onKeyDown>` 로 변경 (EventChip 내부 `<button>` 유지)
-- **team `<tbody>` 안 div**: `<DndContext>`를 `<table>` 바깥으로 이동, `<SortableContext>`만 `<tbody>` 안에 유지 (DndContext의 hidden helper div가 tbody 직속 자식이 되지 않도록)
+- **부서별 프로젝트 분포** (도넛: 영상/편집/UX/공통)
+- **상태별 분포** (진행/상시/대기/완료 막대)
+- **월별 완료 프로젝트 추이** (최근 6개월 라인 차트)
+- **진행률 구간 분포** (0–25 / 25–50 / 50–75 / 75–100%)
 
-### 변경 파일
-- 신규: `src/lib/useLiveTeam.ts`
-- 수정: `src/routes/team.tsx`, `src/routes/schedule.tsx`, `src/routes/detail.tsx`, `src/components/control/CreateProjectModal.tsx`, `src/components/control/TeamWorkloadBar.tsx`, `src/components/schedule/AddLeaveModal.tsx`, `src/components/schedule/DayDetailPanel.tsx`, `src/components/schedule/EventChip.tsx`, `src/components/team/MemberDrawer.tsx`, `src/lib/teamStats.ts`
+### 3. 팀 워크로드 & 기여도
+
+- **담당자별 활성 태스크 수** TOP 10 (막대) — 누가 과부하인지 즉시 보임
+- **부서별 평균 진행률**
+- **PM별 담당 프로젝트 수 + 평균 진행률 표**
+- **셀장/팀장** 누가 어느 프로젝트를 끌고 있는지 요약 카드
+
+### 4. 일정/이슈 회고
+
+- **월별 연차 사용 히트맵** (팀원 × 월)
+- **시차 신청 패턴** (요일별 · 시간대별)
+- **이슈 처리 현황**: Open vs Resolved, 평균 미해결 기간
+- **최근 해결된 이슈 타임라인** (최근 10건)
+
+---
+
+### 기술 구현 개요
+
+- 새 라우트 `src/routes/insights.tsx` 생성
+- `Header.tsx`에서 `enabled: true`로 변경
+- 데이터 집계 헬퍼 `src/lib/insights.ts` 신설 — 순수 함수로 KPI/분포/추이 계산
+- 차트는 이미 설치된 **recharts** 사용 (도넛, 막대, 라인)
+- 카드/그리드 레이아웃은 기존 `team.tsx`/`schedule.tsx` 톤(검정 배경 + 흰색 테두리 카드)에 맞춤
+- 모든 데이터는 `useLiveTeam` + `mockProjects` + `mockSchedule`에서 파생 → 실시간 동기화 자동 반영
+
+### 만들 / 수정할 파일
+
+- `src/routes/insights.tsx` (신규)
+- `src/lib/insights.ts` (신규, 집계 로직)
+- `src/components/insights/KpiStrip.tsx`, `ProjectCharts.tsx`, `WorkloadPanel.tsx`, `RetroPanel.tsx` (신규)
+- `src/components/control/Header.tsx` (인사이트 enabled 처리, 비활성 버튼 분기 제거)
+
+---
+
+### 대안
+
+원하시면 위 4개 섹션 중 일부만 먼저 만들고 단순하게 시작할 수도 있고, "회고 노트" 같은 사용자 입력 기능(완료 프로젝트에 한줄 회고 남기기)을 추가할 수도 있습니다. 우선 위 구성이 데이터만으로 가치 있는 최소 버전입니다.
+
+진행 방식 선택해 주세요:
+
+- (A) 4개 섹션 전부 한 번에 구현
+- (B) 1·2번(KPI + 프로젝트 분석)만 먼저
+- (C) 인사이트 메뉴 자체를 삭제  
+  
+4개 섹션 한번에 구현할게.
