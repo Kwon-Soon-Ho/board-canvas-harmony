@@ -568,14 +568,25 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[]; labels: string[] }) {
   const max = Math.max(1, ...rows.flatMap((r) => r.months));
-  const colorFor = (n: number) => {
-    if (!n) return "rgba(255,255,255,0.04)";
-    const a = 0.15 + (n / max) * 0.7;
-    return `rgba(236, 72, 153, ${a.toFixed(2)})`;
+  const cellStyle = (n: number) => {
+    if (!n) {
+      return {
+        background: "transparent",
+        border: "1px dashed rgba(255,255,255,0.08)",
+      } as React.CSSProperties;
+    }
+    const t = n / max;
+    const a1 = 0.25 + t * 0.55;
+    const a2 = 0.10 + t * 0.30;
+    return {
+      background: `linear-gradient(135deg, rgba(236,72,153,${a1.toFixed(2)}), rgba(236,72,153,${a2.toFixed(2)}))`,
+      boxShadow: `0 0 12px rgba(236,72,153,${(t * 0.35).toFixed(2)})`,
+      border: "1px solid rgba(236,72,153,0.18)",
+    } as React.CSSProperties;
   };
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs">
+      <table className="w-full text-xs border-separate" style={{ borderSpacing: "4px" }}>
         <thead className="text-muted-foreground">
           <tr>
             <th className="sticky left-0 bg-transparent py-1 pr-3 text-left font-medium">팀원</th>
@@ -592,10 +603,10 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
               <tr key={r.member}>
                 <td className="sticky left-0 bg-transparent py-1 pr-3 font-medium">{r.member}</td>
                 {r.months.map((n, i) => (
-                  <td key={i} className="px-1 py-1">
+                  <td key={i} className="p-0">
                     <div
-                      className="mx-auto flex h-7 w-10 items-center justify-center rounded text-[11px] text-white/80"
-                      style={{ background: colorFor(n) }}
+                      className="mx-auto flex h-7 w-10 items-center justify-center rounded-md text-[11px] text-white/90"
+                      style={cellStyle(n)}
                     >
                       {n || ""}
                     </div>
