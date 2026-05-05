@@ -73,11 +73,9 @@ export async function updateMemberFields(
   id: string,
   patch: Partial<Pick<TeamMemberRow, "rank" | "department" | "phone" | "email">>,
 ): Promise<{ error?: string }> {
-  const cleaned = {
-    ...patch,
-    phone: patch.phone !== undefined ? formatPhone(patch.phone) : undefined,
-    email: patch.email !== undefined ? (patch.email?.trim() || null) : undefined,
-  };
+  const cleaned: Record<string, unknown> = { ...patch };
+  if (patch.phone !== undefined) cleaned.phone = formatPhone(patch.phone ?? "");
+  if (patch.email !== undefined) cleaned.email = patch.email?.trim() ? patch.email.trim() : null;
   const { data, error } = await supabase
     .from("team_members")
     .update(cleaned)
