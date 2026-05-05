@@ -1,6 +1,8 @@
 import type { Project, Department, Status } from "@/lib/mockProjects";
 import type { Leave } from "@/lib/mockSchedule";
 
+export interface DateRange { start: Date; end: Date }
+
 export interface Kpis {
   inProgress: number;
   done: number;
@@ -15,6 +17,29 @@ export interface Kpis {
 }
 
 const ymKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const inRange = (iso: string | undefined, r: DateRange) => {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  return !isNaN(t) && t >= r.start.getTime() && t <= r.end.getTime();
+};
+
+/** Project intersects range if its [start, deadline] overlaps, or it is 상시. */
+export function projectsInRange(projects: Project[], range: DateRange): Project[] {
+  return projects.filter((p) => {
+    if (p.status === "상시") return true;
+    if (p.status === "대기") return true;
+    const s = p.startDate ? new Date(p.startDate) : null;
+    const e = p.deadline && p.deadline !== "상시" ? new Date(p.deadline) : null;
+    if (!s && !e) return false;
+    const st = (s ?? e!).getTime();
+    const en = (e ?? s!).getTime();
+    return en >= range.start.getTime() && st <= range.end.getTime();
+  });
+}
+
+export function leavesInRange(leaves: Leave[], range: DateRange): Leave[] {
+  return leaves.filter((l) => inRange(l.leave_date, range));
+}
 
 export function computeKpis(projects: Project[], leaves: Leave[]): Kpis {
   const now = new Date();
@@ -86,12 +111,14 @@ export function progressBuckets(projects: Project[]): { range: string; value: nu
   ];
 }
 
-export function monthlyCompleted(projects: Project[]): { month: string; value: number }[] {
-  const now = new Date();
+/** Monthly completion within range (months derived from range, max 12). */
+export function monthlyCompleted(projects: Project[], range: DateRange): { month: string; value: number }[] {
   const months: { ym: string; label: string }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ ym: ymKey(d), label: `${d.getMonth() + 1}월` });
+  const cur = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+  const end = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
+  while (cur.getTime() <= end.getTime()) {
+    months.push({ ym: ymKey(cur), label: `${cur.getMonth() + 1}월` });
+    cur.setMonth(cur.getMonth() + 1);
   }
   const counts: Record<string, number> = {};
   for (const p of projects) {
@@ -135,69 +162,42 @@ export function deptAvgProgress(projects: Project[]): { name: Department; value:
   }));
 }
 
-export function pmSummary(projects: Project[]): { pm: string; count: number; avg: number }[] {
-  const map: Record<string, { count: number; sum: number }> = {};
-  for (const p of projects) {
-    if (!p.pm) continue;
-    const m = (map[p.pm] ??= { count: 0, sum: 0 });
-    m.count++;
-    m.sum += p.progress ?? 0;
+export function leaveHeatmap(leaves: Leave[], range: DateRange): { member: string; months: number[]; labels: string[] } {
+  const months: { ym: string; label: string }[] = [];
+  const cur = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+  const end = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
+  while (cur.getTime() <= end.getTime()) {
+    months.push({ ym: ymKey(cur), label: `${cur.getMonth() + 1}월` });
+    cur.setMonth(cur.getMonth() + 1);
   }
-  return Object.entries(map)
-    .map(([pm, v]) => ({ pm, count: v.count, avg: Math.round(v.sum / v.count) }))
-    .sort((a, b) => b.count - a.count);
-}
-
-export function leaveHeatmap(leaves: Leave[]): { member: string; months: number[] }[] {
-  const now = new Date();
-  const monthKeys: string[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthKeys.push(ymKey(d));
-  }
+  const labels = months.map((m) => m.label);
   const map: Record<string, number[]> = {};
   for (const l of leaves) {
     if (l.leave_type !== "연차") continue;
-    const idx = monthKeys.indexOf(l.leave_date.slice(0, 7));
+    const idx = months.findIndex((m) => m.ym === l.leave_date.slice(0, 7));
     if (idx < 0) continue;
-    if (!map[l.member_name]) map[l.member_name] = Array(6).fill(0);
+    if (!map[l.member_name]) map[l.member_name] = Array(months.length).fill(0);
     map[l.member_name][idx]++;
   }
-  return Object.entries(map)
-    .map(([member, months]) => ({ member, months }))
+  const rows = Object.entries(map)
+    .map(([member, m]) => ({ member, months: m, labels }))
     .sort((a, b) => b.months.reduce((s, n) => s + n, 0) - a.months.reduce((s, n) => s + n, 0));
-}
-
-export function shiftPatterns(leaves: Leave[]): {
-  byWeekday: { day: string; value: number }[];
-  byHour: { hour: string; value: number }[];
-} {
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const dayCounts = Array(7).fill(0);
-  const hourCounts: Record<string, number> = {};
-  for (const l of leaves) {
-    if (l.leave_type !== "시차") continue;
-    const d = new Date(l.leave_date);
-    if (!isNaN(d.getTime())) dayCounts[d.getDay()]++;
-    if (l.start_time) {
-      const h = l.start_time.slice(0, 2) + "시";
-      hourCounts[h] = (hourCounts[h] ?? 0) + 1;
-    }
-  }
-  return {
-    byWeekday: days.map((d, i) => ({ day: d, value: dayCounts[i] })),
-    byHour: Object.entries(hourCounts)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([hour, value]) => ({ hour, value })),
-  };
+  return rows as any;
 }
 
 export function recentResolvedIssues(projects: Project[], limit = 10) {
-  const items: { project: string; title: string; assignee: string; timestamp: string }[] = [];
+  const items: { projectId: string; project: string; issueId: string; title: string; assignee: string; timestamp: string }[] = [];
   for (const p of projects) {
     for (const i of p.issues ?? []) {
       if (i.resolved && i.timestamp) {
-        items.push({ project: p.title, title: i.title, assignee: i.assignee, timestamp: i.timestamp });
+        items.push({
+          projectId: p.id,
+          project: p.title,
+          issueId: i.id,
+          title: i.title,
+          assignee: i.assignee,
+          timestamp: i.timestamp,
+        });
       }
     }
   }
@@ -223,4 +223,40 @@ export function issueStats(projects: Project[]) {
     }
   }
   return { open, resolved, avgOpenDays: count ? Math.round(totalDays / count) : 0 };
+}
+
+// ── New: 마감 임박 ─────────────────────────────────────────────
+export function deadlineUrgency(projects: Project[]): {
+  buckets: { range: string; value: number }[];
+  items: { id: string; title: string; department: Department; deadline: string; daysLeft: number }[];
+} {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const items: { id: string; title: string; department: Department; deadline: string; daysLeft: number }[] = [];
+  for (const p of projects) {
+    if (p.status === "완료" || p.status === "대기" || p.status === "상시") continue;
+    if (!p.deadline || p.deadline === "상시") continue;
+    const d = new Date(p.deadline);
+    if (isNaN(d.getTime())) continue;
+    const days = Math.ceil((d.getTime() - today.getTime()) / 86400000);
+    if (days < 0 || days > 30) continue;
+    items.push({ id: p.id, title: p.title, department: p.department, deadline: p.deadline, daysLeft: days });
+  }
+  items.sort((a, b) => a.daysLeft - b.daysLeft);
+  const buckets = [
+    { range: "7일 이내", value: items.filter((i) => i.daysLeft <= 7).length },
+    { range: "8–14일", value: items.filter((i) => i.daysLeft > 7 && i.daysLeft <= 14).length },
+    { range: "15–30일", value: items.filter((i) => i.daysLeft > 14 && i.daysLeft <= 30).length },
+  ];
+  return { buckets, items: items.slice(0, 12) };
+}
+
+// ── New: 부서 × 상태 매트릭스 ──────────────────────────────────
+export function deptStatusMatrix(projects: Project[]): { dept: Department; 진행: number; 상시: number; 대기: number; 완료: number }[] {
+  const depts: Department[] = ["영상", "편집", "UX", "공통"];
+  return depts.map((dept) => {
+    const row = { dept, 진행: 0, 상시: 0, 대기: 0, 완료: 0 } as any;
+    for (const p of projects) if (p.department === dept) row[p.status]++;
+    return row;
+  });
 }
