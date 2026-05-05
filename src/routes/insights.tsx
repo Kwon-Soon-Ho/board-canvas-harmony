@@ -330,14 +330,14 @@ function InsightsPage() {
 
         {/* ── 부서 × 상태 매트릭스 + 마감 임박 ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="부서 × 상태 매트릭스" className="lg:col-span-2">
+          <Card title="부서별 상태 구성" className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={matrix} barCategoryGap="28%">
                 <defs>
                   {(["진행", "상시", "대기", "완료"] as const).map((s) => (
                     <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={STATUS_COLOR[s]} stopOpacity={1} />
-                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.4} />
+                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.88} />
                     </linearGradient>
                   ))}
                 </defs>
