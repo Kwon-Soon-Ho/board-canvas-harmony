@@ -6,6 +6,7 @@ export interface MemberStats {
   id?: string;
   name: string;
   rank: string;
+  role: string;
   department: Department | "공통";
   phone: string;
   email: string;
