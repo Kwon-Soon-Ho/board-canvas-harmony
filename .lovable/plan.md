@@ -1,90 +1,85 @@
 # 인사이트 페이지 개선 계획
 
-참조 이미지(Atlass / FinSet / Donezo / Shopall)의 카드형 레이아웃·여백·둥근 모서리·은은한 그라데이션 톤을 차용하되, 기존 디자인팀 사이트의 다크 + 부서 컬러(영상 #FF5C00 / 편집 #007BFF / UX #FF007F / 공통 #FFFFFF) 톤앤매너는 유지합니다.
+요청 4가지를 한 번에 반영합니다. 톤앤매너(다크 + 부서 컬러: 영상 #FF5C00 / 편집 #007BFF / UX #FF007F / 공통 #FFFFFF)는 유지합니다.
 
-## 1. 레이아웃 / 비주얼 리디자인
+## 1. 용어 변경
 
-- 헤더 영역에 **타이틀 + 서브카피 + 우측 필터(연도·분기)** 를 한 줄로 배치 (참조: Atlass, Shopall 상단 바).
-- 카드 스타일 통일:
-  - `rounded-2xl`, `border border-white/8`, `bg-gradient-to-b from-white/[0.03] to-transparent`, 내부 패딩 24px.
-  - 카드 헤더: 타이틀(좌) + 보조 메타/단위(우, 미니 라벨).
-  - 차트 색상은 부서 색을 우선 사용, 보조는 emerald/blue 계열.
-- KPI Strip: Donezo·Atlass처럼 큰 숫자 + 작은 변화량(전월 대비 ↑/↓) + 미니 스파크라인.
-- 섹션 그룹화 가이드 (좌→우, 위→아래):
-  1. 상단: 필터 + KPI Strip
-  2. 프로젝트 현황 (도넛 + 바 + 트렌드)
-  3. 워크로드 / 부서 평균
-  4. 일정·휴가
-  5. 이슈 회고 (최근 해결 + 처리 통계)
+`src/routes/insights.tsx`의 카드 타이틀:
+- "담당자별 활성 태스크 TOP 10" → **"담당자별 활성 업무 TOP 10"**
+- 본문/Empty 문구도 "태스크" 단어가 남아있으면 "업무"로 통일.
 
-## 2. 필터 (연도 / 분기)
+## 2. 이슈/마감 임박 클릭 → 단일 풀스크린 창(window B) 재사용
 
-`src/routes/index.tsx`와 동일한 패턴을 그대로 채택:
+현재는 `window.open(url, "_blank", "noopener")` 로 매번 새 탭이 열림.
 
-- 연도 select + 1/2/3/4분기 + 전체 토글.
-- 모든 집계는 선택된 기간 안의 프로젝트(시작일·마감일·완료일 기준)와 휴가(leave_date)를 필터링한 결과 사용.
-- 상시/대기 프로젝트는 해당 연도에 데이터가 있을 때만 노출 (index.tsx의 `yearHasData` 로직 재사용).
-- 필터 상태는 URL search param(`?y=2026&q=2`)으로 보존 → 새로고침/공유 시에도 유지.
+변경:
+- `openIssueWindow`, `openProjectWindow` 두 헬퍼를 통합해 **고정 이름 `"design-detail-window"`** 와 **창 features**(width=screen.availWidth, height=screen.availHeight, left=0, top=0, popup=yes)로 호출.
+- 같은 이름으로 재호출하면 기존 창이 그대로 재사용되며 URL만 갱신되고 `win.focus()`로 앞으로 가져옴.
+- detail 페이지가 이미 열려 있다면 검색 파라미터(`id`, `focus`)가 바뀌어 `useEffect`가 재발화 → 새 프로젝트/이슈로 즉시 포커싱됨.
+- noopener 대신 noreferrer만 두어 named-target 동작 보장.
 
-## 3. 차트 변경
+```ts
+const DETAIL_WIN_NAME = "design-detail-window";
+function openDetailWindow(qs: string) {
+  const w = screen.availWidth, h = screen.availHeight;
+  const features = `popup=yes,width=${w},height=${h},left=0,top=0,noreferrer`;
+  const win = window.open(`/detail?${qs}`, DETAIL_WIN_NAME, features);
+  win?.focus();
+}
+```
 
-- **삭제**: "PM별 담당 프로젝트" 섹션, "시차 신청 패턴" 카드.
-- **유지/개선**: 부서 분포(도넛), 상태 분포(바), 월별 완료 추이, 진행률 구간, 담당자 활성 태스크 TOP10, 부서 평균 진행률, 연차 히트맵, 이슈 처리 / 최근 해결.
-- **신규로 뽑아낼 만한 그래프 후보** (검토 결과):
-  1. **마감 임박 vs 위험 프로젝트** — 7일·14일·30일 내 마감 카운트(스택 바). 운영 압박 가시화.
-  2. **번다운(Burndown)/누적 완료 곡선** — 분기 내 누적 진행률 vs 이상선. 분기별 회고에 적합.
-  3. **부서 × 상태 매트릭스(스택 바)** — 부서별로 진행/완료/대기/상시 비중.
-  4. **이슈 발생 추이** — 월별 발생 vs 해결 라인(쌍선). 이슈가 쌓이는지 줄어드는지 가시화.
-  5. **태스크 처리량(Throughput)** — 주차별 완료된 태스크 수 바.
-  6. **팀원별 이슈 보유 수** — 워크로드와 분리해 위험 신호 파악.
-  7. **휴가 사용률 게이지** — 분기 평균 휴가일/인 (목표선 대비).
+이슈 행/마감 임박 행/(필요 시) 추후 항목 모두 이 헬퍼만 사용.
 
-이 중 1·3·4·5를 1차로 추가 권장 (실데이터로 즉시 산출 가능, 회고 가치 큼). 2·6·7은 2차.
+## 3. 진입 시 현재 분기 자동 필터
 
-## 4. 데이터 연동 강화
+현재 `q` 기본값이 `0`(연간)이라 진입 시 연간 보기가 됨.
 
-현재 `MOCK_PROJECTS` + localStorage 병합은 유지하되:
+변경:
+- `searchSchema`의 `q` 기본값/fallback을 **함수형으로 현재 분기 계산** — `Math.floor(new Date().getMonth() / 3) + 1`.
+- `y`도 동일하게 현재 연도 유지(이미 그러함).
+- 사용자가 직접 "연간" 토글 시 `q=0`을 URL에 명시 → 그 값이 그대로 보존되므로 자동 분기 필터를 덮어쓰지 않음.
+- URL에 q가 없으면 현재 분기로 자동 진입, 새로고침 후에도 동일 동작.
 
-- `useLiveTeam()` 훅을 도입해 팀원 표시(이름·부서·직급)를 실시간 동기화 (이름 변경 시 차트 라벨도 즉시 갱신).
-- 워크로드 차트의 부서 색은 팀원의 현재 부서를 따라가도록 매핑.
-- `getSyncChannel`에서 `LEAVE_UPDATE` 브로드캐스트도 구독해 휴가 등록/삭제 시 즉시 리렌더(현재는 PROJECT/MEMBER만 구독).
-- 모든 집계 함수(`src/lib/insights.ts`)에 `range: { start: Date; end: Date }` 인자를 추가해 필터링된 데이터로 동작.
+## 4. 차트 디자인 세련화 — 그라데이션 적극 활용 (톤 유지)
 
-## 5. "최근 해결된 이슈" 딥링크 (새 창)
+참조 이미지(FundFlow / Vitality)의 부드러운 카드·그라데이션·라운드 무드를 가져오되, 색은 부서 컬러 팔레트로 한정.
 
-목표: 항목 클릭 → 해당 프로젝트의 detail 페이지가 새 창(window B)으로 열리고, 해당 이슈가 자동으로 펼쳐지고 스크롤·하이라이트되어야 함.
+### 4-1. 카드 컨테이너 업그레이드 (`Card` 로컬 컴포넌트)
+- 배경: `bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-transparent`
+- 보더: `border border-white/8` + 안쪽 하이라이트 `shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]`
+- 외곽: 은은한 컬러 글로우 `shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)]`
+- 라운드: `rounded-2xl` 유지, 패딩 24px.
+- 호버 시 보더 opacity 살짝 상승.
 
-구현:
+### 4-2. KPI Strip 리디자인
+- 각 KPI 카드 좌측에 액센트 컬러 세로 바(2px) + 액센트 컬러의 8% 라디얼 그라데이션 백.
+- 숫자 폰트 크기 ↑(28px), `tabular-nums`, 하단에 작은 라벨.
+- 상단 우측에 작은 점(액센트색)으로 카테고리 표식.
 
-1. `src/routes/detail.tsx` 의 `searchSchema`에 `focus: z.string().optional()` 추가.
-2. `DetailWindow` 마운트 시 `focus` 값이 있으면:
-  - `setActiveItemId(focus)` 호출 (Accordion 자동 펼침).
-  - 기존 `handleFocusItem`(tracker 스크롤) 재사용해 해당 항목으로 스크롤.
-  - 1.2초 펄스 링(`ring-2 ring-orange-400/60`) 효과로 위치 강조.
-3. 인사이트의 "최근 해결된 이슈" 행을 버튼으로 변경:
-  ```
-   window.open(`/detail?id=${projectId}&focus=${issueId}`, "_blank", "noopener");
-  ```
-4. `recentResolvedIssues()` 가 `projectId`와 `issueId`를 함께 반환하도록 수정.
-5. 같은 패턴을 추가 도입할 "이슈 추이" 차트 데이터 포인트 클릭, "마감 임박 프로젝트" 칩 클릭에도 적용 (모두 새 창).
+### 4-3. 차트 그라데이션 (Recharts `<defs><linearGradient>`)
+모든 차트 색은 **단색 → 그라데이션**으로 교체. 색 자체는 기존과 동일.
 
-## 6. 변경 파일
+- **부서별 분포 (도넛)**: 각 셀에 부서색 → 부서색 60% 투명도 라디얼 그라데이션. innerRadius 55, outerRadius 88, paddingAngle 3, 중앙에 총 프로젝트 수 텍스트 배치.
+- **상태별 분포 (Bar)**: `linearGradient` (top: 상태색 / bottom: 상태색 30%), `radius={[10,10,0,0]}`, 막대 사이 간격 ↑.
+- **월별 완료 추이 (Line)**: `<Area>`로 변경 — 라인 + 하단 그라데이션 채움(완료 그린 50% → 0%). dot 강조, activeDot에 글로우.
+- **진행률 구간 (Bar)**: 그라데이션(에메랄드 → 블루 톤 전환으로 진행률 상승감 표현).
+- **부서 × 상태 매트릭스 (Stacked Bar)**: 각 스택 세그먼트에 상태색 그라데이션, 라운드 상단 8px.
+- **마감 임박 카드**:
+  - 상단 3-bucket 카드를 그라데이션 칩으로(7일=로즈→앰버 그라데이션, 8–14=앰버→옐로우, 15–30=옐로우→에메랄드).
+  - 하단 리스트는 좌측에 D-day 컬러 도트 + 호버 시 부서색 글로우.
+- **담당자별 활성 업무 TOP 10 (Horizontal Bar)**: 막대를 부서색 매핑 그라데이션(왼→오, 진하게→옅게), 막대 끝에 값 라벨.
+- **부서별 평균 진행률**: 진행률 바를 단색→그라데이션(부서색 100% → 부서색 40%) + 트랙에 미세 그리드.
+- **연차 히트맵**: 셀을 `linear-gradient`로 강도 표현(0건=transparent, 1=핑크 20%, 2+=핑크 40~60%), 값 0인 셀은 가는 점선 보더만, 셀 사이 gap 4px, 라운드 6px.
 
-- `src/routes/insights.tsx` — 리디자인, 필터, 새 차트, 딥링크.
-- `src/lib/insights.ts` — 기간 필터 인자, PM/시차 함수 제거, 신규 집계(마감 임박, 부서×상태, 이슈 추이, 주차별 처리량) 추가, recent에 id 포함.
-- `src/routes/detail.tsx` — search 스키마 `focus` 추가 + 마운트 시 자동 포커싱·하이라이트.
+### 4-4. 공통
+- `tooltipStyle` 업그레이드: `backdrop-blur`, 그라데이션 배경, 보더 `border-white/15`.
+- 그리드 라인 색을 `rgba(255,255,255,0.04)`로 더 약하게.
+- 모든 축 `tickLine={false} axisLine={false}` 유지.
+- 페이지 배경에 매우 옅은 라디얼 그라데이션(상단에 영상 오렌지 4%, 하단에 편집 블루 4%) 한 장만 추가하여 카드들이 떠 보이게.
 
-## 7. 비고
+## 5. 변경 파일
 
-- 모바일 대응은 기존 그리드 브레이크포인트(`md`/`lg`/`xl`) 패턴을 유지.
-- 모든 차트는 빈 데이터일 때 `Empty` 컴포넌트로 폴백.
-- 색상·라운드·여백은 토큰화하지 않고 인사이트 페이지 내 로컬 상수로 관리(스코프 한정).
+- `src/routes/insights.tsx` — KPI/카드/차트 리디자인, 분기 기본값, 단일 창 재사용 헬퍼, 용어 변경.
+- (필요 시) `src/lib/insights.ts` — 변경 없음 예정. 데이터 함수는 그대로.
 
-승인해 주시면 위 순서대로 구현하겠습니다.  
-  
-**신규로 뽑아낼 만한 그래프 후보** (검토 결과):  
-  
-**마감 임박 vs 위험 프로젝트** — 7일·14일·30일 내 마감 카운트(스택 바). 운영 압박 가시화  
-**부서 × 상태 매트릭스(스택 바)** — 부서별로 진행/완료/대기/상시 비중.  
-  
-이렇게 두개만 신규로 뽑아내줘. 나머진 폐기할게.
+승인해 주시면 위 순서대로 구현하겠습니다.

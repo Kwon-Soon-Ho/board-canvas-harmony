@@ -4,7 +4,7 @@ import { z } from "zod";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Legend as RLegend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, Legend as RLegend,
 } from "recharts";
 import { Header } from "@/components/control/Header";
 import { MOCK_PROJECTS, DEPT_COLOR, type Project, type Department } from "@/lib/mockProjects";
@@ -28,9 +28,10 @@ import {
   deptStatusMatrix,
 } from "@/lib/insights";
 
+const currentQuarter = () => (Math.floor(new Date().getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
 const searchSchema = z.object({
   y: fallback(z.number(), new Date().getFullYear()).default(new Date().getFullYear()),
-  q: fallback(z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(0)]), 0).default(0),
+  q: fallback(z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(0)]), currentQuarter()).default(currentQuarter()),
 });
 
 export const Route = createFileRoute("/insights")({
@@ -148,17 +149,31 @@ function InsightsPage() {
   const setQuarter = (newQ: 0 | 1 | 2 | 3 | 4) =>
     navigate({ search: (prev: any) => ({ ...prev, q: newQ }), replace: true });
 
-  const openIssueWindow = (projectId: string, focusId: string) => {
-    window.open(`/detail?id=${projectId}&focus=${focusId}`, "_blank", "noopener");
+  const openDetailWindow = (qs: string) => {
+    const w = window.screen.availWidth;
+    const h = window.screen.availHeight;
+    const features = `popup=yes,width=${w},height=${h},left=0,top=0,noreferrer`;
+    const win = window.open(`/detail?${qs}`, "design-detail-window", features);
+    win?.focus();
   };
-  const openProjectWindow = (projectId: string) => {
-    window.open(`/detail?id=${projectId}`, "_blank", "noopener");
-  };
+  const openIssueWindow = (projectId: string, focusId: string) =>
+    openDetailWindow(`id=${projectId}&focus=${focusId}`);
+  const openProjectWindow = (projectId: string) =>
+    openDetailWindow(`id=${projectId}`);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white">
+    <div className="min-h-screen bg-[#050505] text-white relative">
+      {/* page-level subtle radial gradient */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-0"
+        style={{
+          background:
+            "radial-gradient(1200px 600px at 15% -10%, rgba(255,92,0,0.06), transparent 60%), radial-gradient(1000px 500px at 100% 110%, rgba(0,123,255,0.06), transparent 60%)",
+        }}
+      />
       <Header />
-      <main className="mx-auto max-w-[1920px] px-12 py-10 space-y-6">
+      <main className="relative mx-auto max-w-[1920px] px-12 py-10 space-y-6">
         {/* ── Title + period filter ── */}
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-white/10 pb-6">
           <div className="min-w-0">
@@ -220,29 +235,51 @@ function InsightsPage() {
         {/* ── Project Analysis ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <Card title="부서별 프로젝트 분포">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2} stroke="none">
-                  {deptDist.map((d) => (
-                    <Cell key={d.name} fill={DEPT_COLOR[d.name]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <defs>
+                    {deptDist.map((d) => (
+                      <radialGradient key={`g-${d.name}`} id={`dept-grad-${d.name}`} cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor={DEPT_COLOR[d.name]} stopOpacity={1} />
+                        <stop offset="100%" stopColor={DEPT_COLOR[d.name]} stopOpacity={0.55} />
+                      </radialGradient>
+                    ))}
+                  </defs>
+                  <Pie data={deptDist} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88} paddingAngle={3} stroke="none">
+                    {deptDist.map((d) => (
+                      <Cell key={d.name} fill={`url(#dept-grad-${d.name})`} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-[10px] uppercase tracking-widest text-white/40">총</div>
+                <div className="text-2xl font-black tabular-nums">{deptDist.reduce((s, d) => s + d.value, 0)}</div>
+              </div>
+            </div>
             <Legend items={deptDist.map((d) => ({ label: `${d.name} ${d.value}`, color: DEPT_COLOR[d.name] }))} />
           </Card>
 
           <Card title="상태별 분포">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={statusDist}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <BarChart data={statusDist} barCategoryGap="32%">
+                <defs>
+                  {statusDist.map((s) => (
+                    <linearGradient key={`sg-${s.name}`} id={`status-grad-${s.name}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={STATUS_COLOR[s.name]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={STATUS_COLOR[s.name]} stopOpacity={0.3} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="name" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="value" radius={[10, 10, 0, 0]}>
                   {statusDist.map((s) => (
-                    <Cell key={s.name} fill={STATUS_COLOR[s.name]} />
+                    <Cell key={s.name} fill={`url(#status-grad-${s.name})`} />
                   ))}
                 </Bar>
               </BarChart>
@@ -251,24 +288,36 @@ function InsightsPage() {
 
           <Card title="월별 완료 추이">
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={monthly}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <AreaChart data={monthly}>
+                <defs>
+                  <linearGradient id="area-monthly" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22C55E" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="month" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2.5} dot={{ fill: "#22C55E", r: 3 }} />
-              </LineChart>
+                <Area type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2.5} fill="url(#area-monthly)" activeDot={{ r: 5, fill: "#22C55E", stroke: "#0a0a0a", strokeWidth: 2 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </Card>
 
           <Card title="진행률 구간 분포">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={buckets}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <defs>
+                  <linearGradient id="bucket-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.5} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="range" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <Bar dataKey="value" fill="#10B981" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="value" fill="url(#bucket-grad)" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -278,55 +327,72 @@ function InsightsPage() {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="부서 × 상태 매트릭스" className="lg:col-span-2">
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={matrix}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <BarChart data={matrix} barCategoryGap="28%">
+                <defs>
+                  {(["진행", "상시", "대기", "완료"] as const).map((s) => (
+                    <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={STATUS_COLOR[s]} stopOpacity={1} />
+                      <stop offset="100%" stopColor={STATUS_COLOR[s]} stopOpacity={0.4} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} />
                 <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
                 <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF" }} />
-                <Bar dataKey="진행" stackId="a" fill={STATUS_COLOR["진행"]} radius={[0, 0, 0, 0]} />
-                <Bar dataKey="상시" stackId="a" fill={STATUS_COLOR["상시"]} />
-                <Bar dataKey="대기" stackId="a" fill={STATUS_COLOR["대기"]} />
-                <Bar dataKey="완료" stackId="a" fill={STATUS_COLOR["완료"]} radius={[8, 8, 0, 0]} />
+                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" />
+                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" />
+                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" />
+                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
           <Card title="마감 임박 (30일 내)">
             <div className="grid grid-cols-3 gap-2 mb-4">
-              {urgency.buckets.map((b, i) => (
-                <div key={b.range} className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-center">
-                  <div
-                    className="text-2xl font-bold tabular-nums"
-                    style={{ color: ["#F43F5E", "#F97316", "#FACC15"][i] }}
-                  >{b.value}</div>
-                  <div className="mt-1 text-[11px] text-muted-foreground">{b.range}</div>
-                </div>
-              ))}
+              {urgency.buckets.map((b, i) => {
+                const grads = [
+                  "linear-gradient(135deg, rgba(244,63,94,0.25), rgba(249,115,22,0.10))",
+                  "linear-gradient(135deg, rgba(249,115,22,0.22), rgba(250,204,21,0.10))",
+                  "linear-gradient(135deg, rgba(250,204,21,0.20), rgba(16,185,129,0.10))",
+                ];
+                const colors = ["#F43F5E", "#F97316", "#FACC15"];
+                return (
+                  <div key={b.range} className="rounded-xl border border-white/10 p-3 text-center" style={{ background: grads[i] }}>
+                    <div className="text-2xl font-black tabular-nums" style={{ color: colors[i] }}>{b.value}</div>
+                    <div className="mt-1 text-[11px] text-white/60">{b.range}</div>
+                  </div>
+                );
+              })}
             </div>
             {urgency.items.length === 0 ? (
               <Empty>임박한 마감이 없습니다.</Empty>
             ) : (
               <ul className="divide-y divide-white/5 max-h-[180px] overflow-y-auto">
-                {urgency.items.map((it) => (
-                  <li key={it.id}>
-                    <button
-                      type="button"
-                      onClick={() => openProjectWindow(it.id)}
-                      className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:bg-white/5 px-2 rounded transition"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{it.title}</div>
-                        <div className="truncate text-xs text-muted-foreground" style={{ color: DEPT_COLOR[it.department] }}>
-                          {it.department}
+                {urgency.items.map((it) => {
+                  const dColor = it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15";
+                  return (
+                    <li key={it.id}>
+                      <button
+                        type="button"
+                        onClick={() => openProjectWindow(it.id)}
+                        className="flex w-full items-center justify-between gap-3 py-2 text-left text-sm hover:bg-white/5 px-2 rounded transition"
+                      >
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: dColor, boxShadow: `0 0 10px ${dColor}` }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{it.title}</div>
+                          <div className="truncate text-xs" style={{ color: DEPT_COLOR[it.department] }}>
+                            {it.department}
+                          </div>
                         </div>
-                      </div>
-                      <div className="shrink-0 text-xs tabular-nums" style={{ color: it.daysLeft <= 7 ? "#F43F5E" : it.daysLeft <= 14 ? "#F97316" : "#FACC15" }}>
-                        D-{it.daysLeft}
-                      </div>
-                    </button>
-                  </li>
-                ))}
+                        <div className="shrink-0 text-xs font-bold tabular-nums" style={{ color: dColor }}>
+                          D-{it.daysLeft}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Card>
@@ -334,17 +400,23 @@ function InsightsPage() {
 
         {/* ── Workload ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="담당자별 활성 태스크 TOP 10" className="lg:col-span-2">
+          <Card title="담당자별 활성 업무 TOP 10" className="lg:col-span-2">
             {workload.length === 0 ? (
-              <Empty>활성 태스크가 없습니다.</Empty>
+              <Empty>활성 업무가 없습니다.</Empty>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(220, workload.length * 32)}>
                 <BarChart data={workload} layout="vertical" margin={{ left: 20 }}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                  <defs>
+                    <linearGradient id="workload-grad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.35} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.04)" horizontal={false} />
                   <XAxis type="number" stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="name" stroke="#9CA3AF" width={70} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Bar dataKey="value" fill="#3B82F6" radius={[0, 8, 8, 0]} />
+                  <Bar dataKey="value" fill="url(#workload-grad)" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -361,7 +433,11 @@ function InsightsPage() {
                   <div className="mt-1.5 h-2 rounded-full bg-white/5 overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
-                      style={{ width: `${d.value}%`, backgroundColor: DEPT_COLOR[d.name as Department] }}
+                      style={{
+                        width: `${d.value}%`,
+                        background: `linear-gradient(90deg, ${DEPT_COLOR[d.name as Department]}, ${DEPT_COLOR[d.name as Department]}66)`,
+                        boxShadow: `0 0 12px ${DEPT_COLOR[d.name as Department]}55`,
+                      }}
                     />
                   </div>
                 </div>
@@ -425,15 +501,20 @@ function InsightsPage() {
 }
 
 const tooltipStyle = {
-  background: "#0A0A0A",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: 8,
+  background: "rgba(10,10,10,0.85)",
+  border: "1px solid rgba(255,255,255,0.15)",
+  borderRadius: 10,
   fontSize: 12,
+  backdropFilter: "blur(8px)",
+  boxShadow: "0 10px 30px -10px rgba(0,0,0,0.6)",
 };
 
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent p-6 ${className}`}>
+    <div
+      className={`group relative rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-transparent p-6 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] transition hover:border-white/20 ${className}`}
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05), 0 30px 60px -30px rgba(0,0,0,0.6)" }}
+    >
       <h3 className="mb-4 text-[13px] font-bold uppercase tracking-wider text-white/60">{title}</h3>
       {children}
     </div>
@@ -442,8 +523,18 @@ function Card({ title, children, className = "" }: { title: string; children: Re
 
 function Kpi({ label, value, accent }: { label: string; value: number | string; accent: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-4">
-      <div className="text-[11px] uppercase tracking-wider text-white/40">{label}</div>
+    <div
+      className="relative overflow-hidden rounded-2xl border border-white/10 p-4 transition hover:border-white/20"
+      style={{
+        background: `radial-gradient(120% 100% at 0% 0%, ${accent}14, transparent 60%), linear-gradient(180deg, rgba(255,255,255,0.04), transparent)`,
+        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
+      }}
+    >
+      <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] uppercase tracking-wider text-white/40">{label}</div>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+      </div>
       <div className="mt-1.5 text-[28px] font-black tracking-tight tabular-nums" style={{ color: accent }}>{value}</div>
     </div>
   );
@@ -477,14 +568,25 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[]; labels: string[] }) {
   const max = Math.max(1, ...rows.flatMap((r) => r.months));
-  const colorFor = (n: number) => {
-    if (!n) return "rgba(255,255,255,0.04)";
-    const a = 0.15 + (n / max) * 0.7;
-    return `rgba(236, 72, 153, ${a.toFixed(2)})`;
+  const cellStyle = (n: number) => {
+    if (!n) {
+      return {
+        background: "transparent",
+        border: "1px dashed rgba(255,255,255,0.08)",
+      } as React.CSSProperties;
+    }
+    const t = n / max;
+    const a1 = 0.25 + t * 0.55;
+    const a2 = 0.10 + t * 0.30;
+    return {
+      background: `linear-gradient(135deg, rgba(236,72,153,${a1.toFixed(2)}), rgba(236,72,153,${a2.toFixed(2)}))`,
+      boxShadow: `0 0 12px rgba(236,72,153,${(t * 0.35).toFixed(2)})`,
+      border: "1px solid rgba(236,72,153,0.18)",
+    } as React.CSSProperties;
   };
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs">
+      <table className="w-full text-xs border-separate" style={{ borderSpacing: "4px" }}>
         <thead className="text-muted-foreground">
           <tr>
             <th className="sticky left-0 bg-transparent py-1 pr-3 text-left font-medium">팀원</th>
@@ -501,10 +603,10 @@ function Heatmap({ rows, labels }: { rows: { member: string; months: number[] }[
               <tr key={r.member}>
                 <td className="sticky left-0 bg-transparent py-1 pr-3 font-medium">{r.member}</td>
                 {r.months.map((n, i) => (
-                  <td key={i} className="px-1 py-1">
+                  <td key={i} className="p-0">
                     <div
-                      className="mx-auto flex h-7 w-10 items-center justify-center rounded text-[11px] text-white/80"
-                      style={{ background: colorFor(n) }}
+                      className="mx-auto flex h-7 w-10 items-center justify-center rounded-md text-[11px] text-white/90"
+                      style={cellStyle(n)}
                     >
                       {n || ""}
                     </div>
