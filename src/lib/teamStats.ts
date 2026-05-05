@@ -72,6 +72,7 @@ function statsFor(
     id?: string;
     name: string;
     rank: string;
+    role?: string;
     department: Department | "공통";
     phone?: string | null;
     email?: string | null;
@@ -107,6 +108,7 @@ function statsFor(
     id: member.id,
     name: member.name,
     rank: member.rank,
+    role: member.role ?? "팀원",
     department: member.department,
     phone: member.phone ?? "",
     email: member.email ?? "",
@@ -133,6 +135,7 @@ export function buildAllStats(
           id: m.id,
           name: m.name,
           rank: m.rank,
+          role: m.role,
           department: m.department as Department | "공통",
           phone: m.phone,
           email: m.email,
