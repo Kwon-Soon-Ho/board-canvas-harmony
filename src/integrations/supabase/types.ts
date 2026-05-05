@@ -50,6 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string
+          department: string
+          email: string | null
+          id: string
+          name: string
+          original_name: string
+          phone: string | null
+          rank: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          email?: string | null
+          id?: string
+          name: string
+          original_name: string
+          phone?: string | null
+          rank: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          email?: string | null
+          id?: string
+          name?: string
+          original_name?: string
+          phone?: string | null
+          rank?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

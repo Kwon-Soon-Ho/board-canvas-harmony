@@ -1,13 +1,12 @@
 import { X } from "lucide-react";
 import { DEPT_COLOR, type Department } from "@/lib/mockProjects";
 
-export type TeamView = "card" | "table" | "tree";
+export type TeamView = "table" | "tree";
 
 export interface TeamFiltersState {
   depts: Set<Department | "공통">;
   ranks: Set<string>;
   search: string;
-  workloadMin: number; // 0..150
   onlyOnLeaveToday: boolean;
 }
 
@@ -18,7 +17,6 @@ export const DEFAULT_TEAM_FILTERS: TeamFiltersState = {
   depts: new Set(ALL_DEPTS),
   ranks: new Set(ALL_RANKS),
   search: "",
-  workloadMin: 0,
   onlyOnLeaveToday: false,
 };
 
@@ -75,23 +73,6 @@ export function TeamFilters({ filters, onChange }: Props) {
             onChange={() => onChange({ ...filters, ranks: toggle(filters.ranks, r) })}
           />
         ))}
-      </Section>
-
-      <Section title="가동률">
-        <div className="px-1">
-          <input
-            type="range"
-            min={0}
-            max={150}
-            step={10}
-            value={filters.workloadMin}
-            onChange={(e) => onChange({ ...filters, workloadMin: Number(e.target.value) })}
-            className="w-full accent-teal-500"
-          />
-          <p className="text-[12px] text-gray-400 mt-1">
-            {filters.workloadMin}% 이상만 표시
-          </p>
-        </div>
       </Section>
 
       <Section title="상태">

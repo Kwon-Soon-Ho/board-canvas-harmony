@@ -291,6 +291,31 @@ function ControlCenter() {
           return next;
         });
       }
+      if (msg?.type === "MEMBER_RENAME") {
+        // localStorage was already rewritten by teamSync; sync in-memory state.
+        const { oldName, newName } = msg as { oldName: string; newName: string };
+        setProjects((prev) => {
+          const next = prev.map((p) => {
+            let touched = false;
+            const np = { ...p };
+            if (p.pm === oldName) { np.pm = newName; touched = true; }
+            if (p.members.includes(oldName)) {
+              np.members = p.members.map((m) => (m === oldName ? newName : m));
+              touched = true;
+            }
+            if (p.tasks?.some((t) => t.assignee === oldName)) {
+              np.tasks = p.tasks.map((t) => (t.assignee === oldName ? { ...t, assignee: newName } : t));
+              touched = true;
+            }
+            if (p.issues?.some((i) => i.assignee === oldName)) {
+              np.issues = p.issues.map((i) => (i.assignee === oldName ? { ...i, assignee: newName } : i));
+              touched = true;
+            }
+            return touched ? np : p;
+          });
+          return next;
+        });
+      }
     };
     return () => ch.close();
   }, [lastOpenedId, projects, hydrated]);

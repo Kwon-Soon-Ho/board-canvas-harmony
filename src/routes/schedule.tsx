@@ -76,6 +76,10 @@ function SchedulePage() {
               : [...prev, msg.project];
           });
         }
+        if (msg?.type === "MEMBER_RENAME") {
+          // Leaves are already renamed in DB by teamSync — just refetch.
+          setRefreshTick((t) => t + 1);
+        }
       };
     }
     const onStorage = (e: StorageEvent) => {
