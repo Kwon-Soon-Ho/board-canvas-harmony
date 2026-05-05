@@ -1,44 +1,35 @@
-## 일정 페이지 개선 계획
+## 통합 정합성 + 정렬 + 용어 통일
 
-### 1. 상단 KPI "휴가 인원" 대체
+### 1. 팀 표 열 정렬 수정
+부서마다 데이터 길이가 달라 컬럼이 어긋남. `<table>`에 `<colgroup>`을 추가해 모든 부서 표가 동일한 폭을 사용하도록 강제.
+- 부서 80 / 직급 120 / 역할 80 / 이름 120 / 연락처 160 / 진행·대기·완료·이슈 80 / 이번달연차 120
+- 편집 모드 좌(8)·우(10) 핸들 컬럼 포함
 
-단순 합계는 의미가 적어, **"오늘 휴가"** 지표로 바꿈 — 오늘 날짜에 연차/시차 중인 인원 수를 표시 (실시간 가용 인력 파악에 유용).
+### 2. 용어/위치 통일
+- 일정·팀 페이지 모두 KPI 라벨 **"오늘 휴가"** 로 통일
+- 팀 관리의 KPI를 일정관리와 같은 **툴바 중앙**으로 이동 (제목은 좌측 단독)
 
-- `src/routes/schedule.tsx`의 `kpi` 계산에 `todayLeave` 추가 (오늘 날짜의 leaves 카운트)
-- KPI 바에서 `휴가 인원` → `오늘 휴가`로 라벨 + 값 교체
-- 다른 안 원하시면 단순 제거도 가능 (1개 지표 삭제)
+### 3. 데이터 싱크 일원화 (정적 → DB)
+신규 훅 `src/lib/useLiveTeam.ts`:
+- `team_members` 로드 + `MEMBER_UPDATE`/`MEMBER_RENAME` 구독
+- `{ members, deptOf, rankOf, roleOf, byDept }` 반환
 
-### 2. 시차 시간 슬롯 단순화
+다음 파일이 정적 `TEAM_DATA`/`ALL_MEMBERS` 대신 이 훅을 사용:
+- `CreateProjectModal.tsx` — PM/멤버 셀렉트
+- `AddLeaveModal.tsx` — 팀원 드롭다운, 부서 매핑
+- `TeamWorkloadBar.tsx` — 워크로드 계산
+- `routes/detail.tsx` — 담당자 셀렉트 두 곳 (Task/Issue, ProjectEditModal)
 
-`src/lib/mockSchedule.ts`의 `TIME_SLOTS`를 09:00~18:00 정시 10개로 변경:
+→ 팀 관리에서 추가/수정/직급변경/부서이동이 즉시 다른 화면에 반영.
 
-```ts
-export const TIME_SLOTS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00"];
-```
+### 4. 역할 표시 연동
+- `MemberDrawer` 내 PM 텍스트 옆에 팀장/셀장 색배지
+- 일정 상세 leave 항목에 role 한 줄 추가
 
-`AddLeaveModal`의 기본값도 `startTime="09:00"`, `endTime="18:00"`으로 조정.
-
-### 3. 연차/시차 사유 표시
-
-현재 DB에는 `reason`이 저장되지만 달력 상세 패널에 노출되지 않음. 추가:
-
-- `src/components/schedule/EventChip.tsx`의 `CalendarEvent` 인터페이스에 `reason?: string | null` 추가
-- `schedule.tsx`에서 leave → event 매핑 시 `reason: l.reason` 전달
-- `DayDetailPanel.tsx` leave 섹션에서 사유가 있으면 두 번째 줄에 회색 텍스트로 표시:
-  ```
-  김태식  영상   연차
-  └ "병원 진료"
-  ```
-  레이아웃을 한 줄에서 두 줄(flex-col)로 바꿔 사유를 하단에 노출.
+### 5. 콘솔 에러 수정
+- **schedule 달력 셀**: outer `<button>` → `<div role="button" tabIndex={0} onKeyDown>` 로 변경 (EventChip 내부 `<button>` 유지)
+- **team `<tbody>` 안 div**: `<DndContext>`를 `<table>` 바깥으로 이동, `<SortableContext>`만 `<tbody>` 안에 유지 (DndContext의 hidden helper div가 tbody 직속 자식이 되지 않도록)
 
 ### 변경 파일
-
-- `src/routes/schedule.tsx` — KPI 변경, leave→event에 reason 포함
-- `src/lib/mockSchedule.ts` — TIME_SLOTS 축소
-- `src/components/schedule/AddLeaveModal.tsx` — 기본 시간 09:00/18:00
-- `src/components/schedule/EventChip.tsx` — CalendarEvent에 reason 추가
-- `src/components/schedule/DayDetailPanel.tsx` — leave 항목에 사유 표시
-
-### 질문
-
-KPI "휴가 인원"을 **(A) "오늘 휴가"로 교체** 할지, **(B) 그냥 제거** 할지 알려주세요. 기본은 (A)로 진행. -> 오늘 휴가로 교체.
+- 신규: `src/lib/useLiveTeam.ts`
+- 수정: `src/routes/team.tsx`, `src/routes/schedule.tsx`, `src/routes/detail.tsx`, `src/components/control/CreateProjectModal.tsx`, `src/components/control/TeamWorkloadBar.tsx`, `src/components/schedule/AddLeaveModal.tsx`, `src/components/schedule/DayDetailPanel.tsx`, `src/components/schedule/EventChip.tsx`, `src/components/team/MemberDrawer.tsx`, `src/lib/teamStats.ts`
