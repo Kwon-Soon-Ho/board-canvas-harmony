@@ -1328,7 +1328,7 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
             <div className="space-y-3">
               <label className="text-sm font-semibold text-white/70">PM (담당 책임자)</label>
               <select value={pm} onChange={e => setPm(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition appearance-none">
-                {availableMembers.map(m => (
+                {availableMembers.map((m) => (
                   <option key={m.name} value={m.name} className="bg-neutral-900">{m.name}</option>
                 ))}
               </select>
