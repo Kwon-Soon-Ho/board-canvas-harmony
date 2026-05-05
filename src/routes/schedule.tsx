@@ -282,7 +282,7 @@ function SchedulePage() {
           <Kpi label="이달 마감" value={kpi.total} />
           <Kpi label="진행중" value={kpi.inProgress} tone="text-emerald-300" />
           <Kpi label="지연" value={kpi.overdue} tone="text-red-300" />
-          <Kpi label="휴가 인원" value={kpi.leaveCount} tone="text-blue-300" />
+          <Kpi label="오늘 휴가" value={kpi.todayLeave} tone="text-blue-300" />
         </div>
 
         <div className="flex items-center gap-2">
