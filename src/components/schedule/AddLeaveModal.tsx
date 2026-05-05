@@ -54,7 +54,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
         className="w-[440px] rounded-lg border border-white/10 bg-[#0a0a0a] p-6"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[17px] font-semibold text-foreground">연차 / 시차 등록</h2>
+          <h2 className="text-[17px] font-semibold text-foreground">연차 등록</h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
@@ -65,7 +65,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
             <select
               value={member}
               onChange={(e) => setMember(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground"
+              className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-1 focus:ring-teal-500 [&>option]:bg-[#0a0a0a] [&>option]:text-foreground [&>optgroup]:bg-[#0a0a0a] [&>optgroup]:text-gray-400"
             >
               {(Object.keys(TEAM_DATA) as Department[]).map((d) => (
                 <optgroup key={d} label={d}>
@@ -102,7 +102,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
                       : "bg-white/5 border-white/10 text-gray-400 hover:text-foreground"
                   }`}
                 >
-                  {t === "연차" ? "🏖 연차 (전일)" : "⏱ 시차 (시간 선택)"}
+                  {t}
                 </button>
               ))}
             </div>
@@ -114,7 +114,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
                 <select
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-1 focus:ring-teal-500 [&>option]:bg-[#0a0a0a] [&>option]:text-foreground"
                 >
                   {TIME_SLOTS.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -124,7 +124,7 @@ export function AddLeaveModal({ defaultDate, onClose, onCreated }: Props) {
                 <select
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-[14px] text-foreground focus:outline-none focus:ring-1 focus:ring-teal-500 [&>option]:bg-[#0a0a0a] [&>option]:text-foreground"
                 >
                   {TIME_SLOTS.map((t) => (
                     <option key={t} value={t}>{t}</option>
