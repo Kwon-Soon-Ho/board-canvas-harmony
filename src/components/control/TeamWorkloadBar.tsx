@@ -30,15 +30,15 @@ function dDayDiff(deadline?: string): number | null {
 
 export function TeamWorkloadBar({ projects, assignees, toggleAssignee, clearAssignees }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const liveMembers = useLiveTeam();
 
   const stats = useMemo<MemberStat[]>(() => {
     const map = new Map<string, MemberStat>();
-    for (const m of ALL_MEMBERS) {
+    for (const m of liveMembers) {
       map.set(m.name, { name: m.name, rank: m.rank, active: 0, total: 0, pmCount: 0, urgent: 0 });
     }
     for (const p of projects) {
       const involved = new Set<string>([p.pm, ...p.members]);
-      // "active" now includes both 진행 and 상시 projects
       const isActiveLike = p.status === "진행" || p.status === "상시";
       const isOpen = p.status !== "완료";
       const diff = dDayDiff(p.deadline);
@@ -53,7 +53,7 @@ export function TeamWorkloadBar({ projects, assignees, toggleAssignee, clearAssi
       }
     }
     return Array.from(map.values()).sort((a, b) => b.active - a.active || b.total - a.total);
-  }, [projects]);
+  }, [projects, liveMembers]);
 
   const visible = expanded ? stats : stats.slice(0, 12);
 
