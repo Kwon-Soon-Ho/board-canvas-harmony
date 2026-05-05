@@ -867,9 +867,10 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
     };
   });
 
-  const members = project.department === "공통" 
-    ? ALL_MEMBERS.map(m => m.name) 
-    : (TEAM_DATA[project.department] || []).map(m => m.name);
+  const liveMembers = useLiveTeam();
+  const members = project.department === "공통"
+    ? liveMembers.map((m) => m.name)
+    : liveMembers.filter((m) => m.department === project.department).map((m) => m.name);
   const taskStatuses: TaskStatus[] = ["진행", "대기", "완료"];
 
   const handleSave = (e: React.FormEvent) => {
