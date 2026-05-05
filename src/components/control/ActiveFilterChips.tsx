@@ -94,7 +94,7 @@ export function ActiveFilterChips({
       <button
         type="button"
         onClick={onResetAll}
-        className="ml-1 text-[12px] font-semibold text-white/50 underline-offset-4 hover:text-white hover:underline"
+        className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[12px] font-bold text-white/90 hover:bg-white/20 hover:text-white transition"
       >
         모두 초기화
       </button>

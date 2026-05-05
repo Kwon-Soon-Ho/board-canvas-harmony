@@ -105,22 +105,42 @@ function DetailWindow() {
   }, []);
 
   // Broadcast changes to other windows (Window A)
-  const initialProjectRef = useRef(project);
+  // Use a JSON snapshot so reference-identity changes (normalization, sync)
+  // don't falsely trigger an update. Skip the first two project sets
+  // (initial render + OPEN_PROJECT sync) via a counter.
+  const snapshotRef = useRef<string | null>(null);
+  const syncCountRef = useRef(0);
   useEffect(() => {
     if (!project) return;
 
-    // Stamp updatedAt automatically when meaningful state changes (skip first render)
-    let outgoing = project;
-    if (initialProjectRef.current && initialProjectRef.current !== project) {
-      const prev = { ...initialProjectRef.current, updatedAt: undefined };
-      const curr = { ...project, updatedAt: undefined };
-      if (JSON.stringify(prev) === JSON.stringify(curr)) {
-        initialProjectRef.current = project;
-        return; // No meaningful change, skip broadcast
+    const strip = (p: Project) => {
+      const { updatedAt, ...rest } = p;
+      return JSON.stringify(rest);
+    };
+
+    const currentSnap = strip(project);
+
+    // First two project sets are init + sync message — record baseline, don't stamp.
+    if (syncCountRef.current < 2) {
+      syncCountRef.current++;
+      snapshotRef.current = currentSnap;
+      // Still broadcast the project data without changing updatedAt so Window A
+      // stays in sync, but do NOT update updatedAt.
+      const ch = getSyncChannel();
+      if (ch) {
+        ch.postMessage({ type: "PROJECT_UPDATE", project });
+        ch.close();
       }
-      outgoing = { ...project, updatedAt: new Date().toISOString() };
+      return;
     }
-    initialProjectRef.current = outgoing;
+
+    // After init phase: compare against stored snapshot
+    if (snapshotRef.current === currentSnap) {
+      return; // No meaningful change, skip broadcast
+    }
+    snapshotRef.current = currentSnap;
+
+    const outgoing = { ...project, updatedAt: new Date().toISOString() };
 
     // Update the in-memory MOCK_PROJECTS array so it persists during the session
     const idx = MOCK_PROJECTS.findIndex(p => p.id === outgoing.id);
