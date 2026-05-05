@@ -105,13 +105,18 @@ function DetailWindow() {
   }, []);
 
   // Broadcast changes to other windows (Window A)
-  // Use a JSON snapshot so reference-identity changes (normalization, sync)
-  // don't falsely trigger an update. Skip the first two project sets
-  // (initial render + OPEN_PROJECT sync) via a counter.
   const snapshotRef = useRef<string | null>(null);
   const syncCountRef = useRef(0);
+  const lastProjectIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!project) return;
+
+    // If we switched to a different project, reset baseline logic
+    if (lastProjectIdRef.current !== project.id) {
+      syncCountRef.current = 0;
+      lastProjectIdRef.current = project.id;
+    }
 
     const strip = (p: Project) => {
       const { updatedAt, ...rest } = p;
@@ -120,12 +125,11 @@ function DetailWindow() {
 
     const currentSnap = strip(project);
 
-    // First two project sets are init + sync message — record baseline, don't stamp.
+    // Initial phase for the current project ID: set baseline without stamping
     if (syncCountRef.current < 2) {
       syncCountRef.current++;
       snapshotRef.current = currentSnap;
-      // Still broadcast the project data without changing updatedAt so Window A
-      // stays in sync, but do NOT update updatedAt.
+      
       const ch = getSyncChannel();
       if (ch) {
         ch.postMessage({ type: "PROJECT_UPDATE", project });
@@ -134,13 +138,18 @@ function DetailWindow() {
       return;
     }
 
-    // After init phase: compare against stored snapshot
+    // After baseline is established: only stamp if content (ignoring updatedAt) changed
     if (snapshotRef.current === currentSnap) {
-      return; // No meaningful change, skip broadcast
+      return;
     }
-    snapshotRef.current = currentSnap;
-
+    
+    // Meaningful change detected!
     const outgoing = { ...project, updatedAt: new Date().toISOString() };
+    
+    // Update local state so Window B also shows the new "Time Ago"
+    // We update the snapshotRef FIRST to prevent an infinite loop in the next effect run
+    snapshotRef.current = strip(outgoing);
+    setProject(outgoing);
 
     // Update the in-memory MOCK_PROJECTS array so it persists during the session
     const idx = MOCK_PROJECTS.findIndex(p => p.id === outgoing.id);
