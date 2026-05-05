@@ -1,10 +1,14 @@
 import { ALL_MEMBERS, DEPT_COLOR, type Department, type Project } from "./mockProjects";
 import { MEMBER_DEPT, type Leave } from "./mockSchedule";
+import type { TeamMemberRow } from "./teamSync";
 
 export interface MemberStats {
+  id?: string; // team_members.id when available
   name: string;
   rank: string;
   department: Department | "공통";
+  phone: string;
+  email: string;
   activeProjects: Project[];
   pendingProjects: Project[];
   doneProjects: Project[];
@@ -12,20 +16,43 @@ export interface MemberStats {
   openIssues: { project: Project; issueId: string; title: string }[];
   leavesThisMonth: Leave[];
   onLeaveToday: boolean;
-  workload: number; // 0..150
-  workloadColor: string; // tailwind text color
 }
 
 const dayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-export function computeMemberStats(
-  member: { name: string; rank: string },
+export const RANK_ORDER: Record<string, number> = {
+  수석: 0,
+  책임: 1,
+  선임: 2,
+  연구원: 3,
+};
+
+export function sortByRankThenName(list: MemberStats[]): MemberStats[] {
+  return list.slice().sort((a, b) => {
+    const ra = RANK_ORDER[a.rank] ?? 99;
+    const rb = RANK_ORDER[b.rank] ?? 99;
+    if (ra !== rb) return ra - rb;
+    return a.name.localeCompare(b.name, "ko");
+  });
+}
+
+export function groupByDept(
+  list: MemberStats[],
+): Record<string, MemberStats[]> {
+  const out: Record<string, MemberStats[]> = {};
+  list.forEach((s) => {
+    (out[s.department] ??= []).push(s);
+  });
+  Object.keys(out).forEach((d) => (out[d] = sortByRankThenName(out[d])));
+  return out;
+}
+
+function statsFor(
+  member: { id?: string; name: string; rank: string; department: Department | "공통"; phone?: string | null; email?: string | null },
   projects: Project[],
   leaves: Leave[],
-  deptAvgs: Record<string, number>,
 ): MemberStats {
-  const dept = (MEMBER_DEPT[member.name] ?? "공통") as Department | "공통";
   const involved = projects.filter(
     (p) => p.pm === member.name || p.members.includes(member.name),
   );
@@ -49,17 +76,13 @@ export function computeMemberStats(
   const leavesThisMonth = memberLeaves.filter((l) => l.leave_date.startsWith(month));
   const onLeaveToday = memberLeaves.some((l) => l.leave_date === today);
 
-  const avg = deptAvgs[dept] || 1;
-  const isPM = pmProjects.length > 0;
-  const raw = (active.length / avg) * 100 * (isPM ? 1.1 : 1);
-  const workload = Math.min(150, Math.round(raw));
-  const workloadColor =
-    workload >= 91 ? "text-red-400" : workload >= 61 ? "text-amber-300" : "text-emerald-300";
-
   return {
+    id: member.id,
     name: member.name,
     rank: member.rank,
-    department: dept,
+    department: member.department,
+    phone: member.phone ?? "",
+    email: member.email ?? "",
     activeProjects: active,
     pendingProjects: pending,
     doneProjects: done,
@@ -67,30 +90,45 @@ export function computeMemberStats(
     openIssues,
     leavesThisMonth,
     onLeaveToday,
-    workload,
-    workloadColor,
   };
 }
 
-export function buildAllStats(projects: Project[], leaves: Leave[]): MemberStats[] {
-  // Compute department averages for active projects per member.
-  const byDept: Record<string, number[]> = {};
-  ALL_MEMBERS.forEach((m) => {
-    const d = (MEMBER_DEPT[m.name] ?? "공통") as string;
-    const cnt = projects.filter(
-      (p) =>
-        (p.pm === m.name || p.members.includes(m.name)) &&
-        (p.status === "진행" || p.status === "상시"),
-    ).length;
-    (byDept[d] ??= []).push(cnt);
-  });
-  const deptAvgs: Record<string, number> = {};
-  Object.entries(byDept).forEach(([d, arr]) => {
-    const sum = arr.reduce((a, b) => a + b, 0);
-    deptAvgs[d] = Math.max(1, sum / arr.length);
-  });
-
-  return ALL_MEMBERS.map((m) => computeMemberStats(m, projects, leaves, deptAvgs));
+/**
+ * Build stats. Prefers `members` (loaded from DB) when provided, otherwise
+ * falls back to the static TEAM_DATA roster.
+ */
+export function buildAllStats(
+  projects: Project[],
+  leaves: Leave[],
+  members?: TeamMemberRow[],
+): MemberStats[] {
+  if (members && members.length > 0) {
+    return members.map((m) =>
+      statsFor(
+        {
+          id: m.id,
+          name: m.name,
+          rank: m.rank,
+          department: m.department as Department | "공통",
+          phone: m.phone,
+          email: m.email,
+        },
+        projects,
+        leaves,
+      ),
+    );
+  }
+  return ALL_MEMBERS.map((m) =>
+    statsFor(
+      {
+        name: m.name,
+        rank: m.rank,
+        department: (MEMBER_DEPT[m.name] ?? "공통") as Department | "공통",
+      },
+      projects,
+      leaves,
+    ),
+  );
 }
 
 export function deptColorFor(dept: Department | "공통"): string {
