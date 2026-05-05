@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Project } from "@/lib/mockProjects";
-import { ALL_MEMBERS } from "@/lib/mockProjects";
+import { useLiveTeam } from "@/lib/useLiveTeam";
 import { Users, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Props {
