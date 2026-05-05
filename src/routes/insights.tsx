@@ -335,9 +335,9 @@ function InsightsPage() {
 
         {/* ── 부서 × 상태 매트릭스 + 마감 임박 ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card title="부서별 상태 구성" className="lg:col-span-2">
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={matrix} barCategoryGap="28%">
+          <Card title="부서별 상태 구성">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={matrix} barCategoryGap="42%" margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                 <defs>
                   {(["진행", "상시", "대기", "완료"] as const).map((s) => (
                     <linearGradient key={`mg-${s}`} id={`mat-grad-${s}`} x1="0" y1="0" x2="0" y2="1">
@@ -347,19 +347,19 @@ function InsightsPage() {
                   ))}
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF" }} />
-                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" />
-                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" />
-                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" />
-                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" radius={[10, 10, 0, 0]} />
+                <XAxis dataKey="dept" stroke="#9CA3AF" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis stroke="#9CA3AF" allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
+                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} formatter={(v: number, n: string) => [`${v}건`, n]} />
+                <RLegend wrapperStyle={{ fontSize: 12, color: "#9CA3AF", paddingTop: 8 }} iconType="circle" iconSize={8} />
+                <Bar dataKey="진행" stackId="a" fill="url(#mat-grad-진행)" maxBarSize={48} />
+                <Bar dataKey="상시" stackId="a" fill="url(#mat-grad-상시)" maxBarSize={48} />
+                <Bar dataKey="대기" stackId="a" fill="url(#mat-grad-대기)" maxBarSize={48} />
+                <Bar dataKey="완료" stackId="a" fill="url(#mat-grad-완료)" maxBarSize={48} radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card title="마감 임박 (30일 내)">
+          <Card title="마감 임박 (30일 내)" className="lg:col-span-2">
             <div className="grid grid-cols-3 gap-2 mb-4">
               {urgency.buckets.map((b, i) => {
                 const grads = [
