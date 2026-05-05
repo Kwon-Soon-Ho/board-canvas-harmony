@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { addMember, formatPhone } from "@/lib/teamSync";
+import { addMember, formatPhone, ROLES } from "@/lib/teamSync";
 import { toast } from "sonner";
 
 const DEPTS = ["공통", "영상", "편집", "UX"] as const;
@@ -23,6 +23,7 @@ export function AddMemberModal({ defaultDepartment = "영상", onClose, onCreate
   const [form, setForm] = useState({
     department: defaultDepartment,
     rank: "선임",
+    role: "팀원",
     name: "",
     phone: "",
     email: "",
@@ -38,6 +39,7 @@ export function AddMemberModal({ defaultDepartment = "영상", onClose, onCreate
     const res = await addMember({
       name: form.name,
       rank: form.rank,
+      role: form.role,
       department: form.department,
       phone: form.phone,
       email: form.email,
@@ -77,6 +79,15 @@ export function AddMemberModal({ defaultDepartment = "영상", onClose, onCreate
               className={inputCls + " [&>option]:bg-[#0a0a0a]"}
             >
               {RANKS.map((r) => <option key={r} value={r}>{RANK_LABEL[r]}</option>)}
+            </select>
+          </Field>
+          <Field label="역할">
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              className={inputCls + " [&>option]:bg-[#0a0a0a]"}
+            >
+              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
           <Field label="이름">

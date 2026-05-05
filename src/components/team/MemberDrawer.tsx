@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Crown, ExternalLink, Plus, Pencil, Save, XCircle } from "lucide-react";
+import { X, ExternalLink, Plus, Pencil, Save, XCircle } from "lucide-react";
 import { type MemberStats, deptColorFor, formatRank } from "@/lib/teamStats";
 import { dDay } from "@/lib/mockSchedule";
 import { openProjectWindow } from "@/lib/sync";
 import { useNavigate } from "@tanstack/react-router";
-import { renameMember, updateMemberFields, formatPhone } from "@/lib/teamSync";
+import { renameMember, updateMemberFields, formatPhone, ROLES } from "@/lib/teamSync";
 import type { Department } from "@/lib/mockProjects";
 import { toast } from "sonner";
 
@@ -20,6 +20,12 @@ interface Props {
 const DEPTS: (Department | "공통")[] = ["영상", "편집", "UX", "공통"];
 const RANKS = ["수석", "책임", "선임", "연구원"];
 
+const ROLE_TONE: Record<string, string> = {
+  팀장: "bg-amber-500/15 text-amber-200 border-amber-400/30",
+  셀장: "bg-teal-500/15 text-teal-200 border-teal-400/30",
+  팀원: "bg-white/5 text-gray-300 border-white/10",
+};
+
 export function MemberDrawer({
   stats,
   onClose,
@@ -33,6 +39,7 @@ export function MemberDrawer({
   const [form, setForm] = useState({
     name: stats.name,
     rank: stats.rank,
+    role: stats.role,
     department: stats.department,
     phone: stats.phone,
     email: stats.email,
@@ -44,6 +51,7 @@ export function MemberDrawer({
     setForm({
       name: stats.name,
       rank: stats.rank,
+      role: stats.role,
       department: stats.department,
       phone: stats.phone,
       email: stats.email,
@@ -58,9 +66,10 @@ export function MemberDrawer({
     }
     setSaving(true);
     try {
-      // Field updates first (rank/dept/phone/email)
+      // Field updates first (rank/role/dept/phone/email)
       const fieldRes = await updateMemberFields(stats.id, {
         rank: form.rank,
+        role: form.role,
         department: form.department,
         phone: form.phone,
         email: form.email,
@@ -100,9 +109,11 @@ export function MemberDrawer({
           <div className="min-w-0">
             <p className="text-[16px] font-semibold text-foreground flex items-center gap-1.5">
               {stats.name}
-              {stats.pmProjects.length > 0 && (
-                <Crown className="h-4 w-4 text-amber-300" aria-label="PM" />
-              )}
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_TONE[stats.role] ?? ROLE_TONE["팀원"]}`}
+              >
+                {stats.role}
+              </span>
             </p>
             <p className="text-[12px] text-gray-400">
               {stats.department} · {formatRank(stats.rank)}
@@ -137,6 +148,7 @@ export function MemberDrawer({
                     setForm({
                       name: stats.name,
                       rank: stats.rank,
+                      role: stats.role,
                       department: stats.department,
                       phone: stats.phone,
                       email: stats.email,
@@ -162,6 +174,7 @@ export function MemberDrawer({
               <dt className="text-gray-500">이름</dt><dd className="text-foreground">{stats.name}</dd>
               <dt className="text-gray-500">부서</dt><dd className="text-foreground">{stats.department}</dd>
               <dt className="text-gray-500">직급</dt><dd className="text-foreground">{formatRank(stats.rank)}</dd>
+              <dt className="text-gray-500">역할</dt><dd className="text-foreground">{stats.role}</dd>
               <dt className="text-gray-500">연락처</dt>
               <dd className="text-foreground">{stats.phone || "—"}</dd>
               <dt className="text-gray-500">이메일</dt>
@@ -192,6 +205,15 @@ export function MemberDrawer({
                   className={inputCls + " [&>option]:bg-[#0a0a0a]"}
                 >
                   {RANKS.map((r) => <option key={r} value={r}>{formatRank(r)}</option>)}
+                </select>
+              </Field>
+              <Field label="역할">
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  className={inputCls + " [&>option]:bg-[#0a0a0a]"}
+                >
+                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </Field>
               <Field label="연락처">
@@ -243,7 +265,9 @@ export function MemberDrawer({
                     <div className="min-w-0 flex-1">
                       <p className="text-[13px] text-foreground truncate flex items-center gap-1.5">
                         {p.pm === stats.name && (
-                          <Crown className="h-3 w-3 text-amber-300 shrink-0" />
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-400/30 shrink-0">
+                            PM
+                          </span>
                         )}
                         {p.title}
                       </p>

@@ -11,11 +11,22 @@ export interface TeamMemberRow {
   name: string;
   original_name: string;
   rank: string;
+  role: string;
   department: string;
   phone: string | null;
   email: string | null;
   sort_order?: number;
 }
+
+export const ROLES = ["팀장", "셀장", "팀원"] as const;
+export type TeamRole = (typeof ROLES)[number];
+
+const ROLE_SEED: Record<string, TeamRole> = {
+  신혜영: "팀장",
+  김태식: "셀장",
+  최혜은: "셀장",
+  정은혜: "셀장",
+};
 
 const STORAGE_KEY = "design-projects-store";
 
@@ -55,6 +66,7 @@ export async function loadOrSeedTeamMembers(): Promise<TeamMemberRow[]> {
       name: m.name,
       original_name: m.name,
       rank: m.rank,
+      role: ROLE_SEED[m.name] ?? "팀원",
       department: dept,
       phone: "000-0000-0000",
       email: null,
@@ -73,10 +85,11 @@ export async function loadOrSeedTeamMembers(): Promise<TeamMemberRow[]> {
  * ───────────────────────────────────────────────────────────────── */
 export async function updateMemberFields(
   id: string,
-  patch: Partial<Pick<TeamMemberRow, "rank" | "department" | "phone" | "email">>,
+  patch: Partial<Pick<TeamMemberRow, "rank" | "role" | "department" | "phone" | "email">>,
 ): Promise<{ error?: string }> {
-  const cleaned: { rank?: string; department?: string; phone?: string; email?: string | null } = {};
+  const cleaned: { rank?: string; role?: string; department?: string; phone?: string; email?: string | null } = {};
   if (patch.rank !== undefined) cleaned.rank = patch.rank;
+  if (patch.role !== undefined) cleaned.role = patch.role;
   if (patch.department !== undefined) cleaned.department = patch.department;
   if (patch.phone !== undefined) cleaned.phone = formatPhone(patch.phone ?? "");
   if (patch.email !== undefined) cleaned.email = patch.email?.trim() ? patch.email.trim() : null;
@@ -210,6 +223,7 @@ export function applyRenameToProjects(
 export async function addMember(input: {
   name: string;
   rank: string;
+  role?: string;
   department: string;
   phone?: string;
   email?: string | null;
@@ -239,6 +253,7 @@ export async function addMember(input: {
     name,
     original_name: name,
     rank: input.rank,
+    role: input.role ?? "팀원",
     department: input.department,
     phone: input.phone ? formatPhone(input.phone) : "000-0000-0000",
     email: input.email?.trim() ? input.email.trim() : null,
