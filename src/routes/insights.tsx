@@ -470,9 +470,9 @@ function InsightsPage() {
         {/* ── Issue Retro ── */}
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card title="이슈 처리 현황">
-            <div className="grid grid-cols-3 gap-3 pt-2">
-              <Stat label="Open" value={issueAgg.open} color="#F97316" />
-              <Stat label="Resolved" value={issueAgg.resolved} color="#22C55E" />
+            <div className="grid grid-cols-3 gap-2">
+              <Stat label="미해결" value={issueAgg.open} color="#F97316" />
+              <Stat label="해결" value={issueAgg.resolved} color="#22C55E" />
               <Stat label="평균 미해결" value={`${issueAgg.avgOpenDays}일`} color="#FFFFFF" />
             </div>
           </Card>
