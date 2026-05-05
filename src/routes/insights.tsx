@@ -226,7 +226,7 @@ function InsightsPage() {
           <Kpi label="완료" value={kpis.done} accent="#22C55E" />
           <Kpi label="대기" value={kpis.pending} accent="#9CA3AF" />
           <Kpi label="상시" value={kpis.ongoing} accent="#3B82F6" />
-          <Kpi label="열린 이슈" value={kpis.openIssues} accent="#F97316" />
+          <Kpi label="이슈" value={kpis.openIssues} accent="#F97316" />
           <Kpi label="이번 달 해결" value={kpis.resolvedThisMonth} accent="#22C55E" />
           <Kpi label="이번 달 휴가" value={kpis.leavesThisMonth} accent="#EC4899" />
           <Kpi label="평균 진행률" value={`${kpis.avgProgress}%`} accent="#FFFFFF" />
