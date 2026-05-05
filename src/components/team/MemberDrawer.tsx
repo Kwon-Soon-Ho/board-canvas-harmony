@@ -207,6 +207,15 @@ export function MemberDrawer({
                   {RANKS.map((r) => <option key={r} value={r}>{formatRank(r)}</option>)}
                 </select>
               </Field>
+              <Field label="역할">
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  className={inputCls + " [&>option]:bg-[#0a0a0a]"}
+                >
+                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
               <Field label="연락처">
                 <input
                   value={form.phone}
