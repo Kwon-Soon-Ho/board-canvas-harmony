@@ -314,17 +314,25 @@ function ControlCenter() {
     ch?.postMessage({ type: "OPEN_PROJECT", projectId: id, project });
     ch?.close();
 
-    // Anti-jump: snapshot scroll, drop focus, restore scroll on next frames.
+    // Anti-jump: snapshot scroll, drop focus, then PIN scroll for ~600ms.
+    // Published (popup-blocked or slow) environments fire a delayed
+    // scrollIntoView from the click target; a single rAF restore isn't enough.
     const savedY = window.scrollY;
+    const savedX = window.scrollX;
     const active = document.activeElement as HTMLElement | null;
     active?.blur?.();
 
     openDetailWindow(id);
 
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: savedY, behavior: "auto" });
-      requestAnimationFrame(() => window.scrollTo({ top: savedY, behavior: "auto" }));
-    });
+    const pin = () => window.scrollTo({ top: savedY, left: savedX, behavior: "auto" });
+    pin();
+    const onScroll = () => pin();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const interval = window.setInterval(pin, 16);
+    window.setTimeout(() => {
+      window.clearInterval(interval);
+      window.removeEventListener("scroll", onScroll);
+    }, 600);
   };
 
   const handleStatusChange = (id: string, next: Status) => {
