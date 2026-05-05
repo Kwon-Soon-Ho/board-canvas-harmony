@@ -39,6 +39,7 @@ export function MemberDrawer({
   const [form, setForm] = useState({
     name: stats.name,
     rank: stats.rank,
+    role: stats.role,
     department: stats.department,
     phone: stats.phone,
     email: stats.email,
@@ -50,6 +51,7 @@ export function MemberDrawer({
     setForm({
       name: stats.name,
       rank: stats.rank,
+      role: stats.role,
       department: stats.department,
       phone: stats.phone,
       email: stats.email,
@@ -64,9 +66,10 @@ export function MemberDrawer({
     }
     setSaving(true);
     try {
-      // Field updates first (rank/dept/phone/email)
+      // Field updates first (rank/role/dept/phone/email)
       const fieldRes = await updateMemberFields(stats.id, {
         rank: form.rank,
+        role: form.role,
         department: form.department,
         phone: form.phone,
         email: form.email,
