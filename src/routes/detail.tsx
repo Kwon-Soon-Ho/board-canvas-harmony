@@ -25,6 +25,15 @@ export const Route = createFileRoute("/detail")({
 
 type ModalConfig = { type: 'task' | 'issue', mode: 'create' | 'edit', id?: string } | { type: 'thumbnails' } | { type: 'project' } | { type: 'design-hub' };
 
+const syncMembers = (p: Project): Project => {
+  const allAssignees = new Set<string>();
+  p.tasks.forEach(t => { if(t.assignee) allAssignees.add(t.assignee); });
+  p.issues.forEach(i => { if(i.assignee) allAssignees.add(i.assignee); });
+  // Project members should be the list of all current assignees except PM
+  const members = Array.from(allAssignees).filter(name => name !== p.pm).sort();
+  return { ...p, members };
+};
+
 function DndProvider({ children }: { children: React.ReactNode }) {
   return <div className="dnd-provider contents">{children}</div>;
 }
@@ -123,31 +132,37 @@ function DetailWindow() {
       return JSON.stringify(rest);
     };
 
-    const currentSnap = strip(project);
+    // Ensure we are always comparing and broadcasting a member-synced version
+    const synced = syncMembers(project);
+    const currentSnap = strip(synced);
 
     // Initial phase for the current project ID: set baseline without stamping
     if (syncCountRef.current < 2) {
       syncCountRef.current++;
       snapshotRef.current = currentSnap;
       
+      // If content was normalized/synced during this phase, update local state
+      if (JSON.stringify(project) !== JSON.stringify(synced)) {
+        setProject(synced);
+      }
+
       const ch = getSyncChannel();
       if (ch) {
-        ch.postMessage({ type: "PROJECT_UPDATE", project });
+        ch.postMessage({ type: "PROJECT_UPDATE", project: synced });
         ch.close();
       }
       return;
     }
 
-    // After baseline is established: only stamp if content (ignoring updatedAt) changed
+    // After baseline is established: only stamp if content changed
     if (snapshotRef.current === currentSnap) {
       return;
     }
     
     // Meaningful change detected!
-    const outgoing = { ...project, updatedAt: new Date().toISOString() };
+    const outgoing = { ...synced, updatedAt: new Date().toISOString() };
     
-    // Update local state so Window B also shows the new "Time Ago"
-    // We update the snapshotRef FIRST to prevent an infinite loop in the next effect run
+    // Update local state and snapshotRef to prevent infinite loop
     snapshotRef.current = strip(outgoing);
     setProject(outgoing);
 
@@ -851,7 +866,9 @@ function CrudModal({ config, project, onClose, onSaveTask, onSaveIssue }: { conf
     };
   });
 
-  const members = Array.from(new Set([project.pm, ...project.members]));
+  const members = project.department === "공통" 
+    ? ALL_MEMBERS.map(m => m.name) 
+    : (TEAM_DATA[project.department] || []).map(m => m.name);
   const taskStatuses: TaskStatus[] = ["진행", "대기", "완료"];
 
   const handleSave = (e: React.FormEvent) => {
@@ -1266,14 +1283,16 @@ function ResizeHandleHorizontal() {
 }
 
 function ProjectEditModal({ project, onClose, onSave }: { project: Project, onClose: () => void, onSave: (p: Partial<Project>) => void }) {
+  const [title, setTitle] = useState(project.title);
+  const [department, setDepartment] = useState<Department>(project.department);
   const [startDate, setStartDate] = useState(project.startDate ?? "");
   const [deadline, setDeadline] = useState(project.deadline);
   const [pm, setPm] = useState(project.pm);
   const [status, setStatus] = useState<any>(project.status);
 
   const availableMembers = useMemo(() => {
-    return project.department === "공통" ? ALL_MEMBERS : TEAM_DATA[project.department] || ALL_MEMBERS;
-  }, [project.department]);
+    return department === "공통" ? ALL_MEMBERS : TEAM_DATA[department] || ALL_MEMBERS;
+  }, [department]);
 
   const dateError = status !== "상시" && startDate && deadline && deadline !== "상시" && startDate > deadline
     ? "시작일이 마감일보다 늦을 수 없습니다."
@@ -1287,7 +1306,32 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
           <button type="button" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition"><X className="w-5 h-5 text-white/50" /></button>
         </div>
         
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-white/70">프로젝트 제목</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-orange-500 transition" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-white/70">담당 부서</label>
+              <select value={department} onChange={e => setDepartment(e.target.value as Department)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition appearance-none">
+                <option value="영상" className="bg-neutral-900">영상</option>
+                <option value="편집" className="bg-neutral-900">편집</option>
+                <option value="UX" className="bg-neutral-900">UX</option>
+                <option value="공통" className="bg-neutral-900">공통</option>
+              </select>
+            </div>
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-white/70">PM (담당 책임자)</label>
+              <select value={pm} onChange={e => setPm(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition appearance-none">
+                {availableMembers.map(m => (
+                  <option key={m.name} value={m.name} className="bg-neutral-900">{m.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="space-y-3">
             <label className="text-sm font-semibold text-white/70 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-white/60" /> 일정
@@ -1305,14 +1349,7 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
             </div>
             {dateError && <p className="text-xs font-semibold text-amber-300">{dateError}</p>}
           </div>
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-white/70">PM (담당 책임자)</label>
-            <select value={pm} onChange={e => setPm(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition appearance-none">
-              {availableMembers.map(m => (
-                <option key={m.name} value={m.name} className="bg-neutral-900">{m.name}</option>
-              ))}
-            </select>
-          </div>
+
           <div className="space-y-3">
             <label className="text-sm font-semibold text-white/70">상태</label>
             <div className="flex gap-2">
@@ -1335,6 +1372,8 @@ function ProjectEditModal({ project, onClose, onSave }: { project: Project, onCl
               (startDate || undefined);
             const userChangedStart = finalStart !== project.startDate;
             onSave({
+              title,
+              department,
               startDate: finalStart,
               startDateUserSet: userChangedStart ? true : project.startDateUserSet,
               deadline: finalDeadline,
