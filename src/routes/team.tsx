@@ -1,5 +1,5 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { Table as TableIcon, Network, Crown } from "lucide-react";
 import { Header } from "@/components/control/Header";
 import {
@@ -335,8 +335,8 @@ function TeamTableGrouped({
             const members = groups[dept];
             const activeSum = members.reduce((a, m) => a + m.activeProjects.length, 0);
             return (
-              <>
-                <tr key={`hd-${dept}`} className="bg-[#0c0c0c]">
+              <Fragment key={dept}>
+                <tr className="bg-[#0c0c0c]">
                   <td colSpan={9} className="px-3 py-2">
                     <span className="inline-flex items-center gap-2 text-[12px] uppercase tracking-wider">
                       <span
@@ -356,7 +356,7 @@ function TeamTableGrouped({
                 {members.map((s) => (
                   <MemberRow key={s.name} s={s} selected={selected === s.name} onSelect={onSelect} />
                 ))}
-              </>
+              </Fragment>
             );
           })}
         </tbody>
