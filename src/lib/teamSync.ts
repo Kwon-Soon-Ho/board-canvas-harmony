@@ -14,6 +14,7 @@ export interface TeamMemberRow {
   department: string;
   phone: string | null;
   email: string | null;
+  sort_order?: number;
 }
 
 const STORAGE_KEY = "design-projects-store";
@@ -50,13 +51,14 @@ export async function loadOrSeedTeamMembers(): Promise<TeamMemberRow[]> {
 
   // Seed from static TEAM_DATA. Use deterministic phones so visuals are stable.
   const seeds = (Object.keys(TEAM_DATA) as Department[]).flatMap((dept) =>
-    TEAM_DATA[dept].map((m) => ({
+    TEAM_DATA[dept].map((m, idx) => ({
       name: m.name,
       original_name: m.name,
       rank: m.rank,
       department: dept,
       phone: "000-0000-0000",
       email: null,
+      sort_order: idx,
     })),
   );
   const { error: insErr } = await supabase.from("team_members").insert(seeds);
