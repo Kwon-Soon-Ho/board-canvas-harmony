@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { TEAM_DATA, ALL_MEMBERS, type Department } from "@/lib/mockProjects";
-import { MEMBER_DEPT, TIME_SLOTS, type LeaveType } from "@/lib/mockSchedule";
+import { type Department } from "@/lib/mockProjects";
+import { TIME_SLOTS, type LeaveType } from "@/lib/mockSchedule";
+import { useLiveTeam, groupLiveByDept } from "@/lib/useLiveTeam";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { X } from "lucide-react";
