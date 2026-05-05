@@ -109,9 +109,11 @@ export function MemberDrawer({
           <div className="min-w-0">
             <p className="text-[16px] font-semibold text-foreground flex items-center gap-1.5">
               {stats.name}
-              {stats.pmProjects.length > 0 && (
-                <Crown className="h-4 w-4 text-amber-300" aria-label="PM" />
-              )}
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded border ${ROLE_TONE[stats.role] ?? ROLE_TONE["팀원"]}`}
+              >
+                {stats.role}
+              </span>
             </p>
             <p className="text-[12px] text-gray-400">
               {stats.department} · {formatRank(stats.rank)}
