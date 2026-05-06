@@ -452,7 +452,26 @@ export const MOCK_PROJECTS: Project[] = (() => {
     };
   });
 
-  return [...initialData, ...pendingExtras];
+  const all: Project[] = [...initialData, ...pendingExtras];
+  // Demo seeding: deterministic "last edited" per project so cards show
+  // a believable "X시간 전 수정" label without any user interaction.
+  const now = Date.now();
+  return all.map((p) => {
+    if (p.updatedAt) return p;
+    const r = seededRand(p.id + ":updatedAt");
+    let maxMin: number;
+    let minMin = 0;
+    switch (p.status) {
+      case "진행": maxMin = 60 * 24 * 3; break;
+      case "상시": maxMin = 60 * 24 * 7; break;
+      case "완료": minMin = 60 * 24 * 7; maxMin = 60 * 24 * 45; break;
+      case "대기": minMin = 60 * 24; maxMin = 60 * 24 * 21; break;
+      default: maxMin = 60 * 24 * 5;
+    }
+    const minutesAgo = Math.floor(minMin + r * (maxMin - minMin));
+    const updatedAt = new Date(now - minutesAgo * 60_000).toISOString();
+    return { ...p, updatedAt };
+  });
 })();
 
 // ──────────────────────────────────────────────────────────────────────
