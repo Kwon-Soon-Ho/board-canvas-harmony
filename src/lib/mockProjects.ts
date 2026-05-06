@@ -452,7 +452,7 @@ export const MOCK_PROJECTS: Project[] = (() => {
     };
   });
 
-  const all = [...initialData, ...pendingExtras];
+  const all: Project[] = [...initialData, ...pendingExtras];
   // Demo seeding: deterministic "last edited" per project so cards show
   // a believable "X시간 전 수정" label without any user interaction.
   const now = Date.now();
