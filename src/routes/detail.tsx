@@ -325,8 +325,8 @@ function DetailWindow() {
               <Edit2 className="w-4 h-4" />
             </button>
             {project.updatedAt && (
-              <span className="ml-2 text-[11px] font-bold text-white/40 tracking-wider bg-white/5 px-2.5 py-1 rounded-md">
-                {timeAgo(project.updatedAt)} 수정
+              <span className="ml-2 text-xs font-medium text-white/50">
+                · 마지막 수정 {timeAgo(project.updatedAt)}
               </span>
             )}
 
