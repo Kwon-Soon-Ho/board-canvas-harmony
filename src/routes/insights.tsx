@@ -179,7 +179,7 @@ function InsightsPage() {
       memberLeaves.forEach(l => {
         const month = parseInt(l.leave_date.split('-')[1]);
         const qIdx = Math.floor((month - 1) / 3);
-        const hours = calculateHours(l.leave_type, l.start_time, l.end_time);
+        const hours = calculateHours(l.leave_type, l.start_time ?? undefined, l.end_time ?? undefined);
         qData[qIdx] += hours;
         qDetails[qIdx].push({ ...l, hours });
       });
