@@ -115,18 +115,20 @@ function DetailWindow() {
     return () => ch.close();
   }, []);
 
-  // Broadcast changes to other windows (Window A)
+  // Broadcast changes to other windows (Window A).
+  // updatedAt is stamped ONLY when the snapshot changes after baseline is set,
+  // so simply opening / re-opening a project does not count as an edit.
   const snapshotRef = useRef<string | null>(null);
-  const syncCountRef = useRef(0);
   const lastProjectIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!project) return;
 
-    // If we switched to a different project, reset baseline logic
+    // When switching to a different project, reset baseline so the first
+    // observation of the new project is treated as initial load (no stamp).
     if (lastProjectIdRef.current !== project.id) {
-      syncCountRef.current = 0;
       lastProjectIdRef.current = project.id;
+      snapshotRef.current = null;
     }
 
     const strip = (p: Project) => {
@@ -134,16 +136,14 @@ function DetailWindow() {
       return JSON.stringify(rest);
     };
 
-    // Ensure we are always comparing and broadcasting a member-synced version
     const synced = syncMembers(project);
     const currentSnap = strip(synced);
 
-    // Initial phase for the current project ID: set baseline without stamping
-    if (syncCountRef.current < 2) {
-      syncCountRef.current++;
+    // First time seeing this project in this window: establish baseline,
+    // broadcast normalized state, but DO NOT stamp updatedAt.
+    if (snapshotRef.current === null) {
       snapshotRef.current = currentSnap;
-      
-      // If content was normalized/synced during this phase, update local state
+
       if (JSON.stringify(project) !== JSON.stringify(synced)) {
         setProject(synced);
       }
@@ -156,27 +156,25 @@ function DetailWindow() {
       return;
     }
 
-    // After baseline is established: only stamp if content changed
+    // No meaningful content change → ignore (prevents loop, no stamp).
     if (snapshotRef.current === currentSnap) {
       return;
     }
-    
-    // Meaningful change detected!
+
+    // Real user edit detected → stamp updatedAt now.
     const outgoing = { ...synced, updatedAt: new Date().toISOString() };
-    
-    // Update local state and snapshotRef to prevent infinite loop
     snapshotRef.current = strip(outgoing);
     setProject(outgoing);
 
-    // Update the in-memory MOCK_PROJECTS array so it persists during the session
     const idx = MOCK_PROJECTS.findIndex(p => p.id === outgoing.id);
     if (idx !== -1) {
       MOCK_PROJECTS[idx] = outgoing;
     }
 
     const ch = getSyncChannel();
-    if (!ch) return;
-    ch.postMessage({ type: "PROJECT_UPDATE", project: outgoing });
+    if (ch) {
+      ch.postMessage({ type: "PROJECT_UPDATE", project: outgoing });
+    }
 
     // Persist to localStorage
     const saved = localStorage.getItem('design-projects-store');
@@ -191,7 +189,7 @@ function DetailWindow() {
     }
     localStorage.setItem('design-projects-store', JSON.stringify(allProjects));
 
-    return () => ch.close();
+    return () => ch?.close();
   }, [project]);
 
   if (!project) return <div className="flex h-screen w-screen items-center justify-center bg-[#050505] text-white/50 text-2xl font-bold tracking-widest">LOADING...</div>;
@@ -327,8 +325,8 @@ function DetailWindow() {
               <Edit2 className="w-4 h-4" />
             </button>
             {project.updatedAt && (
-              <span className="ml-2 text-[11px] font-bold text-white/40 tracking-wider bg-white/5 px-2.5 py-1 rounded-md">
-                {timeAgo(project.updatedAt)} 수정
+              <span className="ml-2 text-xs font-medium text-white/50">
+                · 마지막 수정 {timeAgo(project.updatedAt)}
               </span>
             )}
 

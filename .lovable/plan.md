@@ -1,36 +1,48 @@
-# 인사이트 차트 미세 조정 계획
+# 수정 시간 스탬핑 정상화 + 표기 위치 추가
 
-## 1. 도넛 차트 그라데이션 재설계
+## 1. detail.tsx — 진입은 stamp 안 함, 편집만 stamp
 
-현재: 각 셀에 radial gradient(중심에서 진→밖으로 흐려짐)를 적용 → 셀이 가운데로 빛나는 듯한 부자연스러운 톤.
+- 기존 `useEffect([project])` 안의 자동 `updatedAt` 스탬핑 로직(`syncCountRef < 2` 게이트 포함) 제거.
+- effect는 다음 두 가지만 담당:
+  - 진입 시 `syncMembers(project)` 정규화 결과가 다르면 한 번 `setProject(synced)` 후 한 번 브로드캐스트(이때 `updatedAt`은 건드리지 않음).
+  - 다른 효과/외부 PROJECT_UPDATE 수신과의 충돌 방지.
+- 편집 커밋 헬퍼 추가:
+  ```ts
+  const commitEdit = (next: Project) => {
+    const synced = syncMembers(next);
+    const stamped = { ...synced, updatedAt: new Date().toISOString() };
+    setProject(stamped);
+    const idx = MOCK_PROJECTS.findIndex(p => p.id === stamped.id);
+    if (idx !== -1) MOCK_PROJECTS[idx] = stamped;
+    const ch = getSyncChannel();
+    ch?.postMessage({ type: "PROJECT_UPDATE", project: stamped });
+    ch?.close();
+  };
+  ```
+- 사용자 편집을 일으키는 모든 경로(제목 변경, 태스크 CRUD, 이슈 CRUD, 일정/마감 변경, 진행도 변경 등)에서 기존 `setProject(...)` + 수동 `updatedAt` 처리들을 `commitEdit(...)` 호출로 일원화.
+- 단순 토글 UI(드로어 열고닫기, 편집 모드 진입, 입력 중 임시 상태)는 절대 `commitEdit`를 호출하지 않음.
 
-변경:
-- 각 부서 셀을 **위→아래 linearGradient**(상단 100% → 하단 78%)로 교체. 모든 셀이 동일한 광택 방향을 공유해 도넛 전체가 한 덩어리 처럼 빛나 보이게.
-- 도넛에 **cornerRadius={6}** 추가 → 세그먼트 끝이 부드럽게 둥글게 처리되어 참조 이미지(image-34)의 매끈한 느낌에 근접.
-- paddingAngle을 3 → 2로 줄여 분리 너무 강한 느낌 완화, stroke를 검정 35% 1px로 두어 셀간 깔끔한 분리선.
-- 도넛 위에 동심 라디얼 셰이딩 Pie를 한 겹 더 깔아 외곽으로 갈수록 살짝 어두워지는 vignette 효과(블랙 0% → 35%) → 입체감.
+## 2. ProjectCard.tsx (Window A 썸네일) — 수정 시간 표기 위치 보강
 
-## 2. "부서 × 상태 매트릭스" → 명칭 + 그라데이션 재구성
+현재 제목 우측에 작게 노출 중인 `{timeAgo(project.updatedAt)} 수정`을 더 잘 보이게 조정:
+- 카드 푸터(제목 줄) 우측에 유지하되 색/크기를 살짝 강화: `text-[11px] text-white/55 font-medium`.
+- `updatedAt`이 없으면 미표시(기존과 동일).
 
-- 카드 타이틀: **"부서 × 상태 매트릭스"** → **"부서별 상태 구성"** 으로 변경.
-- 현재: 4개 스택(진행/상시/대기/완료)이 각각 독립 그라데이션 → 막대 안에서 4번 밝아졌다 어두워지는 패턴이 어색.
-- 변경:
-  - **막대 전체에 1개의 베이스 그라데이션**(상단 흰색 12% → 하단 흰색 0%)을 깔아 전체적으로 위가 밝은 광택을 통일.
-  - 그 위에 각 상태 컬러를 **단색 평면 fill**로 stack — 컬러 구분은 또렷하게, 광택은 막대 단위로 자연스럽게.
-  - 구현: Recharts에서는 한 막대 전체에 단일 그라디언트 오버레이가 어렵기 때문에, 각 Bar의 fill을 `linearGradient`로 두되 **모든 상태가 동일한 stops**(예: 색 100% → 색 88%)를 사용하도록 통일. 변화량을 작게 유지하면 막대 안에서의 밝기 변동이 사라지고 전체가 한 톤의 광택으로 보임.
-  - 가장 위 세그먼트(완료)에만 `radius={[10,10,0,0]}` 유지.
+## 3. detail.tsx (Window B 상세보기) — 최상단 제목 옆에 표기
 
-## 3. "최근 해결된 이슈" hover 시 전체 초록 변색 버그
+현재 329줄 부근에 이미 `timeAgo(project.updatedAt)` 표기가 있으나 위치/스타일을 정리:
+- 헤더 타이틀 H1 옆에 `· 마지막 수정 {timeAgo(project.updatedAt)}` 형태로 inline 배치.
+- 클래스: `ml-2 text-xs text-white/50 font-medium`.
+- `updatedAt`이 없으면 미표시.
 
-원인: 행 버튼에 `group hover:bg-white/5` 적용 후, 안쪽 타이틀에 `group-hover:text-emerald-400`이 걸려 있음. → 호버하면 제목이 초록색으로 변하면서 인접 텍스트와 함께 전반적으로 초록 인상.
+## 4. 정렬/인사이트 영향
+- `index.tsx` 최신순 정렬 로직 변경 없음. `updatedAt`이 실제 편집 시에만 박히게 되므로 자연 복구.
+- `insights.ts`의 `p.updatedAt || p.deadline` 사용도 변경 없음.
 
-변경:
-- 제목의 `group-hover:text-emerald-400` 제거.
-- 호버 효과는 **행 좌측에 4px 에메랄드 인디케이터 바**가 나타나는 형태로 교체(텍스트 색 변경 X).
-- 호버 배경은 `bg-white/5` 유지, 보더 좌측만 `border-l-2 border-emerald-400/0 → /80` 트랜지션.
+## 변경 파일
+- `src/routes/detail.tsx` (effect 리팩터 + commitEdit 도입 + 편집 호출부 통일 + 헤더 표기 위치)
+- `src/components/control/ProjectCard.tsx` (수정 시간 스타일 강화)
 
-## 4. 변경 파일
-
-- `src/routes/insights.tsx` — 위 3가지만 수정. 다른 카드/차트는 변경 없음.
-
-승인해 주시면 적용하겠습니다.
+## 비변경 (의도적으로 건드리지 않음)
+- mockProjects.ts 초기 데이터: 기존 카드들은 한 번이라도 편집해야 라벨이 뜸(정상 동작).
+- BroadcastChannel/sync 흐름 자체.

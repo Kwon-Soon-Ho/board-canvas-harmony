@@ -239,7 +239,7 @@ export function ProjectCard({ project, onOpen, onDelete, quarterRange }: Props) 
                 {project.title}
               </h3>
               {project.updatedAt && (
-                <span className="shrink-0 text-[10px] text-white/30 whitespace-nowrap font-medium">
+                <span className="shrink-0 text-[11px] text-white/55 whitespace-nowrap font-medium">
                   {timeAgo(project.updatedAt)} 수정
                 </span>
               )}
